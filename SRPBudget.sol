@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 /**
  * @title SRPBudget
+ * @author Ramprasad
  * @notice x402-compatible budget locking and settlement for SRP executions
  * @dev Implements the x402 V2 pay-per-compute model for security reasoning.
  *

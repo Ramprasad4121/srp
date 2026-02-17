@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 /**
  * @title SRPPolicy
+ * @author Ramprasad
  * @notice ERC-8004 compatible policy contract for Security Reasoning Protocol
  * @dev Every SRP execution intent must be approved by this contract before running.
  *      No approval = no execution. This is enforced at the protocol level.

@@ -8,7 +8,9 @@
 [![OpenClaw](https://img.shields.io/badge/Agent-OpenClaw-red)](https://openclaw.ai)
 
 ---
-
+> [!IMPORTANT]  
+> SRP is under development,do not use it until official announcement.
+> 
 ## What SRP Is
 
 SRP is **not** a chatbot. It is **not** an AI auditor. It is **not** a SaaS.
@@ -37,30 +39,6 @@ Every execution is paid, authorized, traced, and verifiable. No step is optional
 
 ---
 
-## Quick Start
-
-```bash
-# Install
-pip install -e .
-
-# Initialize
-srp init
-
-# Set context
-srp context set protocol=lending chain=ethereum
-
-# Add assumptions
-srp assume oracle=manipulable flash-loans=enabled
-
-# Analyze
-srp analyze contracts/ --budget 5.0 --depth 3
-
-# Export
-srp export report
-srp export trace
-```
-
----
 
 ## Execution Flow (No Step Optional)
 
@@ -115,15 +93,6 @@ srp budget show                   # Show x402 budget
 srp status                        # System status
 ```
 
----
-
-## What This Is Not
-
-- ❌ Not a chatbot
-- ❌ Not a SaaS
-- ❌ Not a Discord bot
-- ❌ Not a model wrapper
-- ❌ Not a subscription service
 
 ---
 
@@ -132,5 +101,4 @@ srp status                        # System status
 - **OpenClaw** — Agent runtime (untrusted worker)
 - **ERC-8004** — On-chain agent identity + policy (live on mainnet Jan 29, 2026)
 - **x402 V2** — HTTP-native payment protocol (Coinbase)
-- **Kimi K2.5** — Default LLM (model-agnostic)
-- **Trail of Bits Skills** — Security skill graph
+
