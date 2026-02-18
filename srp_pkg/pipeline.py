@@ -16,11 +16,11 @@ import uuid
 from typing import List, Dict, Optional, Tuple
 from pathlib import Path
 
-from intent import ExecutionIntent
-from trace import ReasoningTrace, ReasoningPass
-from agent import OpenClawWorker
-from budget import X402BudgetEngine, PaymentIntent
-from policy import EIP8004PolicyClient
+from srp_pkg.intent import ExecutionIntent
+from srp_pkg.trace import ReasoningTrace, ReasoningPass
+from srp_pkg.agent import OpenClawWorker
+from srp_pkg.budget import X402BudgetEngine, PaymentIntent
+from srp_pkg.policy import ERC8004PolicyClient
 
 
 # Canonical pass sequence
@@ -98,7 +98,7 @@ class MultiPassReasoningPipeline:
         self,
         agent: OpenClawWorker,
         budget_engine: X402BudgetEngine,
-        policy_client: EIP8004PolicyClient,
+        policy_client: ERC8004PolicyClient,
     ):
         self.agent = agent
         self.budget_engine = budget_engine

@@ -1,0 +1,16 @@
+[
+  {
+    "payment_id": "srp-803018b52b0decc2",
+    "intent_hash": "0x60eef306a3ac6be9fb5ad8d7dc4bfe622526f8e16396ab6f426125b4bd049abd",
+    "amount_usdc": 5.0,
+    "recipient": "",
+    "network": "eip155:8453",
+    "token": "USDC",
+    "status": "settled",
+    "created_at": "2026-02-17T17:38:44.802746+00:00",
+    "locked_at": "2026-02-17T17:38:44.802824+00:00",
+    "settled_at": "2026-02-17T17:44:17.224973+00:00",
+    "amount_used_usdc": 0.003,
+    "amount_refunded_usdc": 4.997
+  }
+]

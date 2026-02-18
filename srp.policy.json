@@ -1,0 +1,19 @@
+{
+  "allowed_skills": [
+    "business-logic-analyzer",
+    "invariant-discovery",
+    "evm-foundry-audit",
+    "solana-anchor-audit",
+    "solana-vulnerability-scanner",
+    "attack-hypothesis",
+    "exploit-simulation",
+    "web3-security-learning",
+    "token-integration-analyzer",
+    "audit-prep-assistant"
+  ],
+  "max_reasoning_depth": 5,
+  "max_budget_usdc": 100.0,
+  "exploit_sim_allowed": true,
+  "human_in_loop_required": false,
+  "active": true
+}

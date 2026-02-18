@@ -115,7 +115,7 @@ def cmd_init(args):
         json.dump(config, f, indent=2)
 
     # Write default policy
-    from core.policy import PolicyConfig
+    from policy import PolicyConfig
     PolicyConfig.default().save("srp.policy.json")
 
     print("✅ SRP initialized successfully\n")
@@ -198,11 +198,11 @@ def cmd_analyze(args):
     print()
 
     # ── Step 1: Build Execution Intent ──────────────────────
-    from core.intent import ExecutionIntent
-    from core.policy import EIP8004PolicyClient
-    from core.budget import X402BudgetEngine
-    from core.agent import OpenClawWorker
-    from core.trace import ReasoningTrace
+    from intent import ExecutionIntent
+    from policy import EIP8004PolicyClient
+    from budget import X402BudgetEngine
+    from agent import OpenClawWorker
+    from trace import ReasoningTrace
     from reasoning.pipeline import MultiPassReasoningPipeline, PASS_SEQUENCE
 
     task = args.task or f"Perform comprehensive security analysis of {target}"
@@ -517,7 +517,7 @@ def cmd_verify(args):
 
 def cmd_policy(args):
     """Show or set policy configuration."""
-    from core.policy import PolicyConfig
+    from policy import PolicyConfig
 
     if args.subcommand == "show":
         policy_path = Path("srp.policy.json")

@@ -17,8 +17,8 @@ import json
 from typing import Optional, List, Tuple
 from pathlib import Path
 
-from trace import ReasoningTrace, ReasoningPass, ToolCall, Finding
-from budget import X402BudgetEngine, PaymentIntent
+from srp_pkg.trace import ReasoningTrace, ReasoningPass, ToolCall, Finding
+from srp_pkg.budget import X402BudgetEngine, PaymentIntent
 
 
 # Compute units per reasoning pass (approximate)
