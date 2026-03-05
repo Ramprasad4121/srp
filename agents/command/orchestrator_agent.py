@@ -117,146 +117,211 @@ class OrchestratorAgent:
     async def get_skills_manifest(self) -> dict:
         return self.skill_loader.get_manifest()
 
-    async def _handle_new_audit(self, event: dict) -> dict:
-        contract_code, contract_paths = self._resolve_contract_inputs(event)
-        raw_input = str(event.get("raw_input", "")).strip()
+    async def _handle_new_audit(self, project_context: dict) -> dict:
+        import uuid
+        from core.audit_progress import AuditProgress
+        from core.guardrails import SRPGuardrails
 
-        await self._emit_status("ReconAgent", "started", {})
-        recon = await self.recon_agent.run({"contract_paths": contract_paths})
-        await self._emit_status("ReconAgent", "completed", {"entry_points": len(recon.get("entry_points", []))})
+        audit_id = str(uuid.uuid4())
+        all_contracts = project_context.get("all_contracts", {})
+        contract_paths = list(all_contracts.keys())
+        project_root = project_context.get("project_root", project_context.get("root", "."))
 
-        await self._emit_status("ForkAgent", "started", {})
-        fork = await self.fork_agent.run(
+        invalid_contracts = []
+        for path, source in list(all_contracts.items()):
+            ok, reason = SRPGuardrails.check_contract_input(source)
+            if not ok:
+                invalid_contracts.append({"path": path, "reason": reason})
+        if invalid_contracts:
+            await self._broadcast("guardrail_warning", {
+                "message": f"{len(invalid_contracts)} contracts failed input validation",
+                "details": invalid_contracts,
+            })
+            for item in invalid_contracts:
+                all_contracts.pop(item["path"], None)
+        
+        progress = AuditProgress(project_root)
+        progress.init_audit(
+            audit_id=audit_id,
+            contracts=contract_paths,
+            project_name=project_context.get("project_name", "unknown"),
+        )
+
+        for agent in [
+            self.recon_agent,
+            self.fork_agent,
+            self.attack_alpha,
+            self.attack_beta,
+            self.attack_gamma,
+            self.defense_agent,
+            self.patch_agent,
+            self.trace_agent,
+        ]:
+            if hasattr(agent, "set_progress"):
+                agent.set_progress(progress)
+
+        entry_contracts = project_context.get("entry_contracts", [])
+
+        progress.set_phase("recon")
+        await self._broadcast("phase_start", {"phase": "recon", "audit_id": audit_id})
+
+        recon_result = await self.recon_agent.run(
             {
-                "contract_code": contract_code,
-                "contract_paths": contract_paths,
-                "raw_input": raw_input,
-                "contract_name": event.get("contract_name", ""),
+                "contracts_dir": project_context.get("contracts_dir"),
+                "all_contracts": all_contracts,
+                "project_type": project_context.get("project_type"),
             }
         )
-        await self._emit_status("ForkAgent", "completed", {"is_fork": bool(fork.get("is_fork", False))})
 
-        alpha_ctx, beta_ctx, gamma_ctx = self._build_isolated_attack_contexts(
-            contract_code=contract_code,
-            system_map=recon.get("system_map", {}),
-            entry_points=recon.get("entry_points", []),
-            invariants=recon.get("invariants", []),
-        )
+        progress.set_phase("fork_check")
+        await self._broadcast("phase_start", {"phase": "fork_check"})
 
-        await self._emit_status("AttackAgents", "started", {"mode": "parallel"})
-        alpha_result, beta_result, gamma_result = await asyncio.gather(
-            self.attack_alpha.run(alpha_ctx),
-            self.attack_beta.run(beta_ctx),
-            self.attack_gamma.run(gamma_ctx),
-        )
-        await self._emit_status("AttackAgents", "completed", {})
-
-        combined_vulns = self._merge_attack_vulnerabilities(alpha_result, beta_result, gamma_result)
-        defense_context = {
-            "attack_results": {
-                "alpha": alpha_result,
-                "beta": beta_result,
-                "gamma": gamma_result,
-            },
-            "combined_findings": combined_vulns,
-            "contract_code": contract_code,
-            "documented_spec": event.get("documented_spec", ""),
-        }
-
-        await self._emit_status("DefenseAgent", "started", {"findings": len(combined_vulns)})
-        defense = await self.defense_agent.run(defense_context)
-        await self._emit_status(
-            "DefenseAgent",
-            "completed",
+        fork_result = await self.fork_agent.run(
             {
-                "confirmed": len(defense.get("confirmed_vulnerabilities", [])),
-                "score": defense.get("security_score"),
-            },
-        )
-
-        patch_trace_id = str(uuid4())
-        await self._emit_status("PatchAgent", "started", {"trace_id": patch_trace_id})
-        patch = await self.patch_agent.run(
-            {
-                "contract_code": contract_code,
-                "confirmed_vulnerabilities": defense.get("confirmed_vulnerabilities", []),
-                "trace_id": patch_trace_id,
+                "all_contracts": all_contracts,
+                "system_map": recon_result.get("system_map", {}),
             }
         )
-        await self._emit_status("PatchAgent", "completed", {"patches": len(patch.get("patches", []))})
 
-        trace_context = {
-            "contract_paths": contract_paths,
-            "final_findings": defense,
-            "defense_output": {
-                **defense,
-                "overall_security_score": defense.get("security_score"),
-            },
-            "vulnerabilities": combined_vulns,
-            "overall_security_score": defense.get("security_score"),
-            "agent_traces": {
-                "ReconAgent": self.recon_agent.get_trace(),
-                "AttackAgent": [
-                    *self.attack_alpha.get_trace(),
-                    *self.attack_beta.get_trace(),
-                    *self.attack_gamma.get_trace(),
+        progress.set_phase("attack")
+        await self._broadcast("phase_start", {"phase": "attack", "total": len(contract_paths)})
+
+        all_attack_findings: list[dict[str, Any]] = []
+        priority_order = entry_contracts + [c for c in contract_paths if c not in entry_contracts]
+
+        for contract_path in priority_order:
+            contract_source = all_contracts.get(contract_path, "")
+
+            if not contract_source.strip():
+                progress.complete_contract(contract_path, [], "orchestrator")
+                continue
+
+            await self._broadcast("contract_start", {
+                "contract": contract_path,
+                "remaining": len(progress.data.get("contracts_queue", [])),
+            })
+
+            deps = project_context.get("dependency_graph", {}).get(contract_path, [])
+            dep_sources: dict[str, str] = {}
+            for dep in deps[:3]:
+                for p, src in all_contracts.items():
+                    if dep in p:
+                        dep_sources[p] = src[:2000]
+
+            contract_context = {
+                "contract_path": contract_path,
+                "contract_source": contract_source,
+                "dependency_sources": dep_sources,
+                "entry_points": recon_result.get("entry_points", {}).get(contract_path, []),
+                "slither_findings": [
+                    f for f in recon_result.get("slither_findings", []) if contract_path in str(f)
                 ],
-                "DefenseAgent": self.defense_agent.get_trace(),
-                "ForkAgent": self.fork_agent.get_trace(),
-                "PatchAgent": self.patch_agent.get_trace(),
-            },
-            "assumptions": event.get("assumptions", []),
-        }
+                "system_map": recon_result.get("system_map", {}),
+                "fork_info": fork_result,
+                "handoff_context": "",
+            }
 
-        await self._emit_status("TraceAgent", "started", {})
-        trace = await self.trace_agent.run(trace_context)
-        await self._emit_status("TraceAgent", "completed", {"trace_id": trace.get("trace_id")})
+            alpha_ctx = {
+                **contract_context,
+                "handoff_context": self.attack_alpha.get_handoff_context(),
+            }
+            beta_ctx = {
+                **contract_context,
+                "handoff_context": self.attack_beta.get_handoff_context(),
+            }
+            gamma_ctx = {
+                **contract_context,
+                "handoff_context": self.attack_gamma.get_handoff_context(),
+            }
 
-        attack_summary = (
-            f"Alpha findings: {len(alpha_result.get('vulnerabilities', []))}; "
-            f"Beta findings: {len(beta_result.get('vulnerabilities', []))}; "
-            f"Gamma findings: {len(gamma_result.get('vulnerabilities', []))}."
+            alpha_result, beta_result, gamma_result = await asyncio.gather(
+                self.attack_alpha.run(alpha_ctx),
+                self.attack_beta.run(beta_ctx),
+                self.attack_gamma.run(gamma_ctx),
+            )
+
+            contract_findings = [
+                *alpha_result.get("vulnerabilities", []),
+                *beta_result.get("vulnerabilities", []),
+                *gamma_result.get("vulnerabilities", []),
+            ]
+
+            all_attack_findings.extend(contract_findings)
+            progress.complete_contract(contract_path, contract_findings, "attack_agents")
+
+            await self._broadcast("contract_done", {
+                "contract": contract_path,
+                "findings": len(contract_findings),
+                "done": len(progress.data.get("contracts_done", [])),
+                "total": len(contract_paths),
+            })
+
+            critical = [
+                f
+                for f in contract_findings
+                if f.get("severity", "").upper() == "CRITICAL" and f.get("confidence", 0) >= 0.8
+            ]
+            if len(critical) >= 2:
+                await self._broadcast("emergency_alert", {
+                    "contract": contract_path,
+                    "critical_count": len(critical),
+                    "message": f"CRITICAL vulnerability confirmed by multiple agents in {contract_path}",
+                })
+
+        progress.set_phase("defense")
+        await self._broadcast("phase_start", {"phase": "defense"})
+
+        defense_result = await self.defense_agent.run(
+            {
+                "all_findings": all_attack_findings,
+                "alpha_findings": [],
+                "beta_findings": [],
+                "gamma_findings": [],
+                "system_map": recon_result.get("system_map", {}),
+            }
         )
-        report_context = {
-            "raw_input": raw_input,
-            "contract_paths": contract_paths,
-            "intent_output": {
-                "task": raw_input,
-                "scope": event.get("scope", ""),
-                "risk_level": event.get("risk_level", "medium"),
-                "skills": event.get("skills", []),
-                "budget": event.get("budget_usd"),
-            },
-            "recon_output": recon,
-            "attack_output": {
-                "vulnerabilities": combined_vulns,
-                "attack_summary": attack_summary,
-            },
-            "defense_output": {
-                **defense,
-                "overall_security_score": defense.get("security_score"),
-            },
-            "trace_output": trace,
-        }
 
-        await self._emit_status("ReportAgent", "started", {})
-        report = await self.report_agent.run(report_context)
-        await self._emit_status("ReportAgent", "completed", {"report_path": report.get("report_path")})
+        progress.set_phase("patch")
+        await self._broadcast("phase_start", {"phase": "patch"})
+
+        patch_result = await self.patch_agent.run(
+            {
+                "confirmed_vulnerabilities": defense_result.get("confirmed_vulnerabilities", []),
+                "all_contracts": all_contracts,
+                "project_root": project_root,
+            }
+        )
+
+        progress.set_phase("trace")
+        trace_result = await self.trace_agent.run(
+            {
+                "audit_id": audit_id,
+                "recon": recon_result,
+                "fork": fork_result,
+                "attack": {"all_findings": all_attack_findings},
+                "defense": defense_result,
+                "patch": patch_result,
+                "project": project_context,
+                "progress": progress.get_summary(),
+            }
+        )
+
+        progress.complete_audit(defense_result.get("security_score", 0))
+        await self._broadcast("audit_complete", {
+            "audit_id": audit_id,
+            "score": defense_result.get("security_score"),
+            "findings": len(defense_result.get("confirmed_vulnerabilities", [])),
+            "trace_id": trace_result.get("trace_id"),
+        })
 
         return {
-            "event_type": "new_audit",
-            "recon": recon,
-            "fork": fork,
-            "attack": {
-                "alpha": alpha_result,
-                "beta": beta_result,
-                "gamma": gamma_result,
-                "combined_vulnerabilities": combined_vulns,
-            },
-            "defense": defense,
-            "patch": patch,
-            "trace": trace,
-            "report": report,
+            "audit_id": audit_id,
+            "recon": recon_result,
+            "fork": fork_result,
+            "attack": {"all_findings": all_attack_findings},
+            "defense": defense_result,
+            "patch": patch_result,
+            "trace": trace_result,
         }
 
     async def _handle_anomalous_tx(self, event: dict) -> dict:
@@ -440,6 +505,9 @@ class OrchestratorAgent:
         maybe_awaitable = self.status_callback(step_name, status, data)
         if inspect.isawaitable(maybe_awaitable):
             await maybe_awaitable
+
+    async def _broadcast(self, event: str, data: dict[str, Any]) -> None:
+        await self._emit_status(event, "broadcast", data)
 
     def _resolve_contract_inputs(self, event: dict) -> tuple[str, list[str]]:
         contract_code = str(event.get("contract_code", "")).strip()

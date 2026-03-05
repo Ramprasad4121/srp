@@ -149,6 +149,11 @@ def start(no_browser, port):
         threading.Thread(target=open_browser, daemon=True).start()
 
     os.environ["SRP_PROJECT_ROOT"] = str(project.root)
+    import sys
+    srp_root = Path(__file__).parent.resolve()
+    if str(srp_root) not in sys.path:
+        sys.path.insert(0, str(srp_root))
+    os.chdir(srp_root)
     uvicorn.run("server:app", host="0.0.0.0", port=port, reload=False, log_level="warning")
 
 

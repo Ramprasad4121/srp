@@ -7,17 +7,41 @@ from typing import Any
 
 from anthropic import AsyncAnthropic
 
-from core.skill_loader import SkillLoader
-
 
 class BaseAgent(ABC):
-    def __init__(self, name: str, role: str, skill_keys: list = []) -> None:
+    def __init__(self, name: str, role: str, skill_keys: list | None = None, model: str | None = None) -> None:
         self.name = name
         self.role = role
-        skill_loader = SkillLoader()
-        self.skill_content = skill_loader.load_many(skill_keys)
+        self.model = model or os.environ.get("SRP_MODEL", "claude-sonnet-4-20250514")
         self.trace_log: list[dict[str, Any]] = []
-        self.model = "claude-sonnet-4-20250514"
+
+        from core.skill_loader import SkillLoader
+        sl = SkillLoader()
+
+        # Load soul first — identity before skills
+        self.soul_content = sl.load_soul(name)
+
+        # Load skills — methodology after identity
+        self.skill_content = sl.load_many(skill_keys) if skill_keys else ""
+
+        if self.soul_content:
+            print(f"  \u2705 {name}: soul loaded ({len(self.soul_content)} chars)")
+
+        self.progress = None
+
+    def set_progress(self, progress: "AuditProgress") -> None:
+        """Inject audit progress tracker into agent."""
+        self.progress = progress
+
+    def get_handoff_context(self) -> str:
+        """Get notes left by previous agents — read at start of every run."""
+        if not getattr(self, "progress", None):
+            return ""
+        notes = self.progress.get_handoff_notes_for(self.name)
+        if not notes:
+            return ""
+        notes_text = "\n".join([f"- {n['from']}: {n['note']}" for n in notes])
+        return f"\n\n## Handoff Notes From Previous Agents\n{notes_text}\n"
 
     @abstractmethod
     async def run(self, context: dict) -> dict:
@@ -37,12 +61,33 @@ class BaseAgent(ABC):
         return self.trace_log
 
     async def call_llm(self, system_extra: str, messages: list) -> str:
+        from core.guardrails import SRPGuardrails
+        import json
+
+        last_msg = messages[-1].get("content", "") if messages else ""
+        if len(last_msg) > 100:
+            injected, reason = SRPGuardrails.is_prompt_injection(str(last_msg)[:2000])
+            if injected:
+                self.log_step("guardrail_blocked", {"reason": reason})
+                return json.dumps({"error": "guardrail_blocked", "reason": reason})
+
         api_key = os.environ["ANTHROPIC_API_KEY"]
-        system_prompt = (
-            f"You are {self.name}. Role: {self.role}\n\n"
-            f"{self.skill_content}\n\n"
-            f"{system_extra}"
-        )
+
+        # Soul first — this is WHO the agent is
+        # Skills second — this is WHAT the agent knows
+        # System extra third — this is WHAT the agent is doing right now
+        system_prompt = ""
+
+        if self.soul_content:
+            system_prompt += self.soul_content + "\n\n"
+
+        if self.skill_content:
+            system_prompt += "---\n\n# YOUR SKILLS ARSENAL\n\n"
+            system_prompt += self.skill_content + "\n\n"
+
+        if system_extra:
+            system_prompt += "---\n\n# CURRENT TASK\n\n"
+            system_prompt += system_extra
 
         self.log_step(
             "llm_call_started",

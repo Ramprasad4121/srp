@@ -53,8 +53,34 @@ class SkillLoader:
         "ethskills-concepts": "skills/ethskills/concepts.md",
     }
 
+    SOUL_REGISTRY = {
+        "SentinelAgent":      "agents/souls/WATCHDOG.md",
+        "ThreatIntelAgent":   "agents/souls/ORACLE.md",
+        "GraphAgent":         "agents/souls/SPIDER.md",
+        "AttackAgentAlpha":   "agents/souls/VIPER.md",
+        "AttackAgentBeta":    "agents/souls/GHOST.md",
+        "AttackAgentGamma":   "agents/souls/ZERO.md",
+        "DefenseAgent":       "agents/souls/SHIELD.md",
+        "PatchAgent":         "agents/souls/FORGE.md",
+        "BlastRadiusAgent":   "agents/souls/SHOCKWAVE.md",
+        "ForkAgent":          "agents/souls/MIRROR.md",
+        "DiffAgent":          "agents/souls/DELTA.md",
+        "OrchestratorAgent":  "agents/souls/COMMAND.md",
+        "TraceAgent":         "agents/souls/LEDGER.md",
+    }
+
     def __init__(self, root_dir: str | Path | None = None) -> None:
         self.root_dir = Path(root_dir) if root_dir is not None else Path(__file__).resolve().parents[1]
+
+    def load_soul(self, agent_name: str) -> str:
+        """Load the soul file for an agent. Returns empty string if not found."""
+        soul_path = self.SOUL_REGISTRY.get(agent_name)
+        if not soul_path:
+            return ""
+        full_path = self.root_dir / soul_path
+        if not full_path.exists():
+            return ""
+        return full_path.read_text()
 
     def load(self, skill_key: str) -> str:
         rel_path = self.SKILL_REGISTRY.get(skill_key)

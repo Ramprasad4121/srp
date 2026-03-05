@@ -106,11 +106,17 @@ class SRPProject:
         return "."
 
     def _detect_compiler_version(self) -> str:
-        foundry = self.root / "foundry.toml"
-        if foundry.exists():
-            for line in foundry.read_text().splitlines():
-                if "solc" in line and "=" in line:
-                    return line.split("=")[-1].strip().strip('"')
+        try:
+            foundry = self.root / "foundry.toml"
+            if foundry.exists():
+                for line in foundry.read_text().splitlines():
+                    if "solc" in line and "=" in line:
+                        val = line.split("=")[-1].strip().strip('"').strip("'")
+                        if val and val[0].isdigit():
+                            return val
+        except Exception:
+            pass
+
         hardhat = self.root / "hardhat.config.js"
         if hardhat.exists():
             for line in hardhat.read_text().splitlines():
@@ -120,6 +126,7 @@ class SRPProject:
                     m = re.search(r"0\.\d+\.\d+", line)
                     if m:
                         return m.group()
+
         contracts = self._find_all_contracts()
         if contracts:
             code = (self.root / contracts[0]).read_text()
@@ -130,6 +137,7 @@ class SRPProject:
                 ver = re.search(r"0\.\d+\.\d+", m.group())
                 if ver:
                     return ver.group()
+
         return "0.8.20"
 
     def _find_all_contracts(self) -> list:

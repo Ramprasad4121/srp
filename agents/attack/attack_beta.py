@@ -23,6 +23,7 @@ class AttackAgentBeta(BaseAgent):
                 "ethskills-audit",
                 "tob-building-secure",
             ],
+            model=None,  # Tier 2 — Full Sonnet reasoning. Only activated for suspicious contracts.
         )
         self.angle = "evm_reentrancy_oracles_proxies"
 
@@ -103,6 +104,19 @@ class AttackAgentBeta(BaseAgent):
                 "echidna_findings": len(echidna_findings),
             },
         )
+        if hasattr(self, "progress") and self.progress:
+            reentrancy_found = [v for v in normalized_vulns if "reentrancy" in v.get("title", "").lower()]
+            oracle_found = [v for v in normalized_vulns if "oracle" in v.get("title", "").lower()]
+            if reentrancy_found or oracle_found:
+                note = (
+                    f"AttackBeta found: {len(reentrancy_found)} reentrancy, {len(oracle_found)} oracle issues in {context.get('contract_path', 'unknown')}. "
+                    "DefenseAgent: prioritize reentrancy cross-contract validation. PatchAgent: CEI pattern fixes needed."
+                )
+                self.progress.add_handoff_note(
+                    from_agent="AttackBeta",
+                    to_agent="all",
+                    note=note,
+                )
         solodit = SoloditClient()
         if solodit.available and normalized_vulns:
             for vuln in normalized_vulns:

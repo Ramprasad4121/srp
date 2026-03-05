@@ -10,7 +10,7 @@ from uuid import uuid4
 import uvicorn
 from fastapi import BackgroundTasks, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError
 
@@ -146,6 +146,8 @@ async def _run_audit(
                         "data": _json_safe(data),
                     }
                 )
+            elif status == "broadcast":
+                await emit({"event": "broadcast", "type": step_name, "data": _json_safe(data)})
             else:
                 await emit(
                     {
@@ -178,6 +180,8 @@ async def startup_event() -> None:
         "╚═══════════════════════════════════════╝"
     )
     print(banner)
+    print("SentinelAgent model: claude-haiku-4-5-20251001 (triage)")
+    print("AttackAgents model:  claude-sonnet-4-20250514 (deep reasoning)")
 
 
 @app.websocket("/ws/audit")
@@ -303,6 +307,20 @@ async def api_status() -> dict:
     return {"status": "ok", "version": "srp-2026.1"}
 
 
+@app.get("/api/audit/emergency")
+async def get_emergency():
+    """Returns emergency state if audit was halted."""
+    project = get_project()
+    if not project.initialized:
+        return {}
+    from core.audit_progress import AuditProgress
+
+    progress = AuditProgress(str(project.root))
+    if progress.is_emergency():
+        return progress.data.get("emergency", {})
+    return {"triggered": False}
+
+
 @app.get("/api/project")
 async def get_project_info():
     project = get_project()
@@ -344,6 +362,29 @@ async def get_audit(trace_id: str):
     if not audit_path.exists():
         return {"error": "Audit not found"}
     return json.loads(audit_path.read_text(encoding="utf-8"))
+
+
+@app.get("/audit")
+async def audit_page():
+    """Serve the main UI — audit page"""
+    ui_path = os.path.join(os.path.dirname(__file__), "ui", "index.html")
+    return FileResponse(ui_path)
+
+
+@app.get("/")
+async def root():
+    """Serve the main UI"""
+    ui_path = os.path.join(os.path.dirname(__file__), "ui", "index.html")
+    return FileResponse(ui_path)
+
+
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    """Catch-all — serve UI for any frontend route"""
+    ui_path = os.path.join(os.path.dirname(__file__), "ui", "index.html")
+    if os.path.exists(ui_path):
+        return FileResponse(ui_path)
+    return {"detail": "UI not found — check ui/index.html exists"}
 
 
 if UI_DIR.exists():

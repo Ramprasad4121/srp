@@ -15,8 +15,9 @@ class SentinelAgent(BaseAgent):
     def __init__(self) -> None:
         super().__init__(
             name="SentinelAgent",
-            role="Monitors on-chain transactions and flags likely attack behavior patterns",
-            skill_keys=["audit-firm-1-solidity-auditor", "ethskills-concepts"],
+            role="24/7 transaction anomaly triage",
+            skill_keys=["solidity-auditor", "ethskills-concepts"],
+            model="claude-haiku-4-5-20251001",
         )
         self.monitored_contracts: list[str] = []
 
@@ -31,35 +32,32 @@ class SentinelAgent(BaseAgent):
             },
         )
 
-        system_extra = (
-            "Is this transaction anomalous? Check for: flash loan attack pattern, reentrancy call sequence, "
-            "unusual gas consumption, price manipulation signals, unexpected large value transfer, governance "
-            "attack patterns.\n\n"
-            "Return ONLY valid JSON with keys: "
-            "is_anomalous, confidence, attack_type, severity, explanation, trigger_agents. "
-            "confidence must be 0.0-1.0. attack_type may be null."
+        triage_result = await self.call_llm(
+            system_extra="Reply with ONLY a JSON object: {\"suspicious\": true/false, \"reason\": \"one sentence\", \"attack_type\": \"string or null\"}. No other text.",
+            messages=[
+                {
+                    "role": "user",
+                    "content": (
+                        f"Is this transaction suspicious? tx_hash: {normalized_tx.get('hash')} from: {normalized_tx.get('from')} "
+                        f"value: {normalized_tx.get('value')} gas_used: {normalized_tx.get('gas_used')} "
+                        f"input_length: {len(normalized_tx.get('input', ''))} logs_count: {len(normalized_tx.get('logs', []))}"
+                    ),
+                }
+            ],
         )
-        user_payload = {"tx": normalized_tx}
-        messages = [{"role": "user", "content": json.dumps(user_payload, default=str)}]
 
         try:
-            llm_output = await self.call_llm(system_extra=system_extra, messages=messages)
-            parsed = self._parse_json_output(llm_output)
-        except Exception as exc:  # pragma: no cover - network/env dependent
-            self.log_step("sentinel_analyze_tx_llm_failed", {"error": str(exc)})
-            parsed = {}
+            import json, re
 
-        result = self._normalize_anomaly_result(parsed, normalized_tx)
-        self.log_step(
-            "sentinel_analyze_tx_completed",
-            {
-                "hash": normalized_tx.get("hash"),
-                "is_anomalous": result["is_anomalous"],
-                "attack_type": result["attack_type"],
-                "severity": result["severity"],
-                "confidence": result["confidence"],
-            },
-        )
+            clean = re.sub(r'```json|```', '', triage_result).strip()
+            result = json.loads(clean)
+        except Exception:
+            result = {"suspicious": False, "reason": "parse error", "attack_type": None}
+
+        result["tier"] = "haiku_triage"
+        result["tx_hash"] = tx.get("hash")
+
+        self.log_step("triage", result)
         return result
 
     async def run_heartbeat(self) -> dict:

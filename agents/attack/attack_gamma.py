@@ -24,6 +24,7 @@ class AttackAgentGamma(BaseAgent):
                 "scv-scan",
                 "scv-scan-cheatsheet",
             ],
+            model=None,  # Tier 2 — Full Sonnet reasoning. Only activated for suspicious contracts.
         )
         self.angle = "supply_chain_signatures_dos_36vuln_sweep"
         self._scv_reference_dir = (
@@ -107,6 +108,22 @@ class AttackAgentGamma(BaseAgent):
                         "references_found": len(real_findings),
                         "confidence_boosted": True
                     })
+        if hasattr(self, "progress") and self.progress:
+            dos_found = [
+                v
+                for v in normalized_vulns
+                if "dos" in v.get("title", "").lower() or "grief" in v.get("title", "").lower()
+            ]
+            if dos_found:
+                note = (
+                    f"AttackGamma found {len(dos_found)} DoS/griefing vectors in {context.get('contract_path', 'unknown')}. "
+                    "These are often low severity individually but critical in combination. DefenseAgent: check for chaining."
+                )
+                self.progress.add_handoff_note(
+                    from_agent="AttackGamma",
+                    to_agent="DefenseAgent",
+                    note=note,
+                )
         return result
 
     def _scope_context(self, context: dict[str, Any]) -> dict[str, Any]:

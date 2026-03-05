@@ -20,6 +20,7 @@ class AttackAgentAlpha(BaseAgent):
                 "quillai-semantic-guard",
                 "quillai-state-invariant",
             ],
+            model=None,  # Tier 2 — Full Sonnet reasoning. Only activated for suspicious contracts.
         )
         self.angle = "business_logic_and_invariants"
 
@@ -111,6 +112,19 @@ class AttackAgentAlpha(BaseAgent):
                         "references_found": len(real_findings),
                         "confidence_boosted": True
                     })
+        if hasattr(self, "progress") and self.progress:
+            high_confidence = [v for v in normalized_vulns if v.get("confidence", 0) >= 0.7]
+            if high_confidence:
+                note = (
+                    f"AttackAlpha found {len(high_confidence)} high-confidence findings in {context.get('contract_path', 'unknown')}. "
+                    f"Top finding: {high_confidence[0].get('title', 'N/A')} ({high_confidence[0].get('severity', 'N/A')}). "
+                    f"Beta should check for flash loan chaining. Gamma should check signature implications."
+                )
+                self.progress.add_handoff_note(
+                    from_agent="AttackAlpha",
+                    to_agent="all",
+                    note=note,
+                )
         return result
 
     def _scope_context(self, context: dict[str, Any]) -> dict[str, Any]:

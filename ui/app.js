@@ -1,5 +1,29 @@
 const API_BASE = "http://localhost:7337";
 const WS_URL = "ws://localhost:7337/ws/audit";
+
+const AGENT_CODENAMES = {
+    "SentinelAgent":    { codename: "WATCHDOG",  color: "#ff6b35" },
+    "ThreatIntelAgent": { codename: "ORACLE",    color: "#9b59b6" },
+    "GraphAgent":       { codename: "SPIDER",    color: "#1abc9c" },
+    "AttackAgentAlpha": { codename: "VIPER",     color: "#e74c3c" },
+    "AttackAgentBeta":  { codename: "GHOST",     color: "#95a5a6" },
+    "AttackAgentGamma": { codename: "ZERO",      color: "#e67e22" },
+    "DefenseAgent":     { codename: "SHIELD",    color: "#3498db" },
+    "PatchAgent":       { codename: "FORGE",     color: "#f39c12" },
+    "BlastRadiusAgent": { codename: "SHOCKWAVE", color: "#e74c3c" },
+    "ForkAgent":        { codename: "MIRROR",    color: "#2ecc71" },
+    "DiffAgent":        { codename: "DELTA",     color: "#00d4ff" },
+    "OrchestratorAgent":{ codename: "COMMAND",   color: "#00ff88" },
+    "TraceAgent":       { codename: "LEDGER",    color: "#bdc3c7" },
+};
+
+// Usage: show "VIPER (AttackAgentAlpha)" in UI
+function getAgentDisplay(agentName) {
+    const info = AGENT_CODENAMES[agentName];
+    if (!info) return agentName;
+    return `<span style="color:${info.color};font-weight:bold">${info.codename}</span> <span style="opacity:0.5;font-size:11px">${agentName}</span>`;
+}
+
 const DEFAULT_SKILL = {
   name: "solidity-auditor",
   source: "audit-skills",
@@ -333,6 +357,37 @@ async function launchAudit() {
         return;
       }
       handleSocketEvent(payload);
+      if (payload.event === "broadcast") {
+        if (payload.type === "contract_done") {
+          updateContractProgress(payload.data);
+        }
+        if (payload.type === "phase_start") {
+          updatePhaseIndicator(payload.data.phase);
+        }
+        if (payload.type === "emergency_alert") {
+          const banner = document.createElement("div");
+          banner.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+            background: #ff0033; color: white; padding: 20px;
+            font-family: monospace; font-size: 16px; font-weight: bold;
+            text-align: center; box-shadow: 0 4px 20px rgba(255,0,0,0.5);
+          `;
+          banner.innerHTML = `
+            🚨 CRITICAL VULNERABILITY CONFIRMED 🚨<br>
+            <span style="font-size:14px;font-weight:normal">
+                ${payload.data.critical_count} agents independently confirmed: ${payload.data.contract}<br>
+                Audit halted. Immediate attention required.
+            </span>
+          `;
+          document.body.prepend(banner);
+
+          let flash = true;
+          setInterval(() => {
+            document.title = flash ? '🚨 CRITICAL — SRP' : 'SRP Security Dashboard';
+            flash = !flash;
+          }, 800);
+        }
+      }
     };
 
     ws.onerror = () => {
@@ -348,6 +403,38 @@ async function launchAudit() {
     appendGlobalLog(`Failed to start audit: ${error.message}`, "error");
     el.launchAuditBtn.disabled = false;
     el.launchAuditBtn.textContent = "LAUNCH AUDIT";
+  }
+}
+
+async function startAudit() {
+  try {
+    const response = await fetch('/api/audit/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await response.json();
+    console.log('Audit started:', data);
+    const agentPipeline = document.getElementById('agent-pipeline');
+    if (agentPipeline) {
+      agentPipeline.style.display = 'block';
+    }
+  } catch (error) {
+    console.error('Failed to auto-start audit:', error);
+  }
+}
+
+async function loadProject() {
+  try {
+    const response = await fetch('/api/project');
+    const project = await response.json();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('autostart') === 'true') {
+      setTimeout(() => startAudit(), 500);
+    }
+    return project;
+  } catch (error) {
+    console.warn('Project auto-start check failed:', error);
+    return null;
   }
 }
 
@@ -480,6 +567,30 @@ function handleSocketEvent(payload) {
     }
     return;
   }
+}
+
+function updateContractProgress(msg) {
+  const pct = msg.total ? Math.round((msg.done / msg.total) * 100) : 0;
+  const bar = document.getElementById("audit-progress-bar");
+  const label = document.getElementById("audit-progress-label");
+  if (bar) bar.style.width = pct + "%";
+  if (label)
+    label.textContent = `${msg.done}/${msg.total} contracts scanned — ${msg.findings} findings so far`;
+}
+
+function updatePhaseIndicator(phase) {
+  const phases = ["recon", "fork_check", "attack", "defense", "patch", "trace"];
+  phases.forEach((p) => {
+    const el = document.getElementById(`phase-${p}`);
+    if (!el) return;
+    if (p === phase) {
+      el.className = "phase-item active";
+    } else if (phases.indexOf(p) < phases.indexOf(phase)) {
+      el.className = "phase-item done";
+    } else {
+      el.className = "phase-item";
+    }
+  });
 }
 
 function formatStepMessage(data) {

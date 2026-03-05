@@ -18,6 +18,16 @@ class DefenseAgent(BaseAgent):
         )
 
     async def run(self, context: dict) -> dict:
+        handoff_context = self.get_handoff_context()
+        system_extra = f"""
+You are validating findings from 3 independent attack agents.
+
+{handoff_context}
+
+Apply the Devil's Advocate protocol to every finding.
+Apply the QuillAI severity matrix.
+Kill false positives aggressively.
+"""
         self.log_step("defense_run_started", {"context_keys": list(context.keys())})
 
         merged_findings = self._collect_merged_findings(context)
