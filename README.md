@@ -96,9 +96,29 @@ srp status                        # System status
 
 ---
 
+### Optional: Solodit Integration (claudit)
+
+Install claudit to give agents access to 20,000+ real-world audit findings:
+
+```bash
+npm install -g @marchev/claudit
+```
+
+Get a free Solodit API key at [solodit.cyfrin.io](https://solodit.cyfrin.io) → sign in → API Keys
+
+Add to your `.env`:
+
+```
+SOLODIT_API_KEY=your_key_here
+```
+
+When set, agents automatically cross-reference every finding against real exploits.
+Finding confirmed by 2+ agents AND matching a real Solodit exploit = confidence boosted to critical.
+
+---
+
 ## Built With
 
 - **OpenClaw** — Agent runtime (untrusted worker)
 - **ERC-8004** — On-chain agent identity + policy (live on mainnet Jan 29, 2026)
 - **x402 V2** — HTTP-native payment protocol (Coinbase)
-

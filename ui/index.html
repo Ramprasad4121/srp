@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SRP Mission Control</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <div class="brand-logo">SRP</div>
+          <div class="brand-meta">
+            <div class="brand-title">Security Reasoning Protocol</div>
+            <div class="brand-version">v2026.1</div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button id="latest-results-btn" class="ghost-button hidden" type="button">Latest Results</button>
+          <div class="system-indicator" id="system-indicator">
+            <span class="pulse-dot"></span>
+            <span id="system-indicator-text">SYSTEM ONLINE</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="layout">
+        <aside class="sidebar">
+          <nav class="nav-list">
+            <button class="nav-item active" data-page="audit-page" type="button">Audit</button>
+            <button class="nav-item" data-page="traces-page" type="button">Traces</button>
+            <button class="nav-item" data-page="reports-page" type="button">Reports</button>
+            <button class="nav-item" data-page="status-page" type="button">Status</button>
+          </nav>
+        </aside>
+
+        <main class="main-content">
+          <section class="page active" id="audit-page">
+            <div class="panel hero-panel">
+              <h1>Launch Audit Mission</h1>
+              <p>Paste contract source, define mission scope, assign budget, and launch the SRP multi-agent pipeline.</p>
+            </div>
+
+            <div class="panel form-panel">
+              <label class="field-label" for="audit-description">Audit Description / Focus</label>
+              <input id="audit-description" class="field-input" type="text" placeholder="Example: Focus on access control, liquidation logic, reentrancy and invariant breaks." />
+
+              <label class="field-label" for="contract-code">Solidity Contract Code</label>
+              <textarea id="contract-code" class="field-textarea" placeholder="Paste Solidity source code here..."></textarea>
+
+              <div class="budget-row">
+                <div>
+                  <label class="field-label" for="budget-slider">Budget</label>
+                  <input id="budget-slider" type="range" min="1" max="500" value="50" />
+                </div>
+                <div class="budget-value" id="budget-value">$50</div>
+              </div>
+
+              <button id="launch-audit-btn" class="launch-button" type="button">LAUNCH AUDIT</button>
+            </div>
+
+            <div class="panel skills-panel">
+              <h2>Skills</h2>
+              <div class="skills-grid">
+                <div class="skill-metric">
+                  <div class="skill-label">Skill Name</div>
+                  <div id="active-skill-name" class="skill-value">solidity-auditor</div>
+                </div>
+                <div class="skill-metric">
+                  <div class="skill-label">Source</div>
+                  <div id="active-skill-source" class="skill-value">pashov/skills</div>
+                </div>
+                <div class="skill-metric">
+                  <div class="skill-label">Status</div>
+                  <div><span id="active-skill-badge" class="skill-active-badge">ACTIVE</span></div>
+                </div>
+              </div>
+              <details class="skills-arsenal" id="skills-arsenal">
+                <summary>Skills Arsenal</summary>
+                <div class="skills-tagline">7 firms. Every agent armed.</div>
+                <div class="table-wrap">
+                  <table class="skills-arsenal-table">
+                    <thead>
+                      <tr>
+                        <th>Agent</th>
+                        <th>Skills Loaded</th>
+                        <th>Source</th>
+                        <th>Git Hash</th>
+                      </tr>
+                    </thead>
+                    <tbody id="skills-arsenal-body"></tbody>
+                  </table>
+                </div>
+              </details>
+            </div>
+
+            <div class="panel pipeline-panel">
+              <h2>Live Agent Pipeline</h2>
+              <div id="pipeline-track" class="pipeline-track"></div>
+              <div id="vs-battle" class="vs-battle">
+                <span>ATTACK</span>
+                <span class="vs-icon">VS</span>
+                <span>DEFENSE</span>
+              </div>
+            </div>
+
+            <div class="panel logs-panel">
+              <h2>Live Log Stream</h2>
+              <div id="live-log" class="live-log"></div>
+            </div>
+          </section>
+
+          <section class="page" id="results-page">
+            <div class="panel hero-panel">
+              <h1>Mission Results</h1>
+              <p>Post-audit risk posture and actionable remediation outputs.</p>
+            </div>
+
+            <div class="results-grid">
+              <div class="panel gauge-panel">
+                <h2>Security Score</h2>
+                <div class="score-gauge" id="score-gauge">
+                  <div class="score-inner">
+                    <div id="score-value" class="score-value">0</div>
+                    <div class="score-label">/ 100</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="panel result-actions-panel">
+                <h2>Actions</h2>
+                <button id="view-report-btn" class="action-button" type="button">View Full Report</button>
+                <button id="view-trace-btn" class="action-button" type="button">View Trace</button>
+                <button id="export-report-btn" class="action-button" type="button">Export Report</button>
+                <div id="result-summary" class="result-summary"></div>
+              </div>
+            </div>
+
+            <div class="panel vulnerabilities-panel">
+              <h2>Vulnerabilities</h2>
+              <div id="vulnerability-list" class="vulnerability-list"></div>
+            </div>
+          </section>
+
+          <section class="page" id="traces-page">
+            <div class="panel hero-panel">
+              <h1>Audit Traces</h1>
+              <p>Inspect historical trace executions and replay workflows.</p>
+            </div>
+
+            <div class="panel table-panel">
+              <div class="table-header-row">
+                <h2>Trace Registry</h2>
+                <button id="refresh-traces-btn" class="ghost-button" type="button">Refresh</button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Trace ID</th>
+                      <th>Date</th>
+                      <th>Contract</th>
+                      <th>Score</th>
+                      <th>Status</th>
+                      <th>Replay</th>
+                    </tr>
+                  </thead>
+                  <tbody id="traces-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel trace-detail-panel">
+              <h2>Trace Details</h2>
+              <pre id="trace-detail" class="json-viewer">Select a trace row to inspect details.</pre>
+            </div>
+
+            <div class="panel table-panel">
+              <h2>Trace Skills Arsenal</h2>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Agent</th>
+                      <th>Skills Loaded</th>
+                      <th>Source</th>
+                      <th>Git Hash</th>
+                    </tr>
+                  </thead>
+                  <tbody id="trace-skills-body">
+                    <tr>
+                      <td colspan="4">Select a trace to view skills arsenal.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section class="page" id="reports-page">
+            <div class="panel hero-panel">
+              <h1>Reports</h1>
+              <p>Open and export generated markdown audit reports.</p>
+            </div>
+
+            <div class="panel report-controls-panel">
+              <label class="field-label" for="report-trace-id">Trace ID</label>
+              <div class="inline-controls">
+                <input id="report-trace-id" class="field-input" type="text" placeholder="Enter trace id" />
+                <button id="load-report-btn" class="ghost-button" type="button">Load</button>
+              </div>
+            </div>
+
+            <div class="panel table-panel">
+              <div class="table-header-row">
+                <h2>Known Reports</h2>
+                <button id="refresh-reports-btn" class="ghost-button" type="button">Refresh</button>
+              </div>
+              <div id="report-list" class="report-list"></div>
+            </div>
+
+            <div class="panel report-viewer-panel">
+              <h2>Report Markdown</h2>
+              <pre id="report-content" class="markdown-viewer">Load a report to preview markdown content.</pre>
+            </div>
+          </section>
+
+          <section class="page" id="status-page">
+            <div class="panel hero-panel">
+              <h1>System Status</h1>
+              <p>Live mission control health for agents, policy, budget, and runtime.</p>
+            </div>
+
+            <div class="status-grid" id="agent-status-grid"></div>
+
+            <div class="panel status-metrics-panel">
+              <div class="status-metric">
+                <div class="metric-title">ERC-8004 Policy</div>
+                <div id="policy-status" class="metric-value">local-mode</div>
+              </div>
+              <div class="status-metric">
+                <div class="metric-title">x402 Budget</div>
+                <div id="budget-status" class="metric-value">local simulation</div>
+              </div>
+              <div class="status-metric">
+                <div class="metric-title">System Version</div>
+                <div id="version-status" class="metric-value">srp-2026.1</div>
+              </div>
+              <div class="status-metric">
+                <div class="metric-title">Uptime</div>
+                <div id="uptime-status" class="metric-value">00:00:00</div>
+              </div>
+            </div>
+
+            <div class="panel skills-health-panel">
+              <div class="table-header-row">
+                <h2>Skills Health</h2>
+                <button id="refresh-skills-health-btn" class="ghost-button" type="button">Refresh</button>
+              </div>
+              <div id="skills-health-summary" class="skills-health-summary">Checking skills arsenal...</div>
+              <div id="skills-health-list" class="skills-health-list"></div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,233 +1,205 @@
-"""
-SRP Reasoning: Multi-Pass Pipeline
-
-The 5-pass reasoning engine that produces verifiable security analysis.
-Each pass is skill-constrained, budget-gated, and traced.
-
-Pass 1: Business Logic Analysis    → understand the protocol
-Pass 2: Invariant Discovery        → what must always be true
-Pass 3: Attack Hypothesis          → what if invariants break
-Pass 4: Exploit Simulation         → can we prove it works
-Pass 5: Confidence Assessment      → final structured output
-"""
+from __future__ import annotations
 
 import hashlib
-import uuid
-from typing import List, Dict, Optional, Tuple
+import os
 from pathlib import Path
+from typing import Any
+from uuid import uuid4
 
-from intent import ExecutionIntent
-from trace import ReasoningTrace, ReasoningPass
-from agent import OpenClawWorker
-from budget import X402BudgetEngine, PaymentIntent
-from policy import EIP8004PolicyClient
-
-
-# Canonical pass sequence
-PASS_SEQUENCE = [
-    {
-        "skill": "business-logic-analyzer",
-        "name": "Business Logic Analysis",
-        "goal": "Understand the protocol's intended behavior, roles, flows, and invariants.",
-        "questions": [
-            "What does this protocol do?",
-            "Who are the actors (users, admins, keepers)?",
-            "What are the core state transitions?",
-            "What economic assumptions are made?",
-        ]
-    },
-    {
-        "skill": "invariant-discovery",
-        "name": "Invariant Discovery",
-        "goal": "Enumerate all invariants that must hold for the protocol to be secure.",
-        "questions": [
-            "What must always be true about balances?",
-            "What access control invariants exist?",
-            "What ordering constraints must hold?",
-            "What economic invariants protect the protocol?",
-        ]
-    },
-    {
-        "skill": "attack-hypothesis",
-        "name": "Attack Hypothesis Generation",
-        "goal": "For each invariant, generate hypotheses for how it could be violated.",
-        "questions": [
-            "What happens if this invariant is violated?",
-            "What inputs could cause this violation?",
-            "What sequence of calls enables the attack?",
-            "What is the economic incentive for an attacker?",
-        ]
-    },
-    {
-        "skill": "exploit-simulation",
-        "name": "Exploit Simulation",
-        "goal": "Simulate each attack hypothesis. Confirm or reject with evidence.",
-        "questions": [
-            "Can this attack be executed in a single transaction?",
-            "Does this require flash loans or MEV?",
-            "What is the exact exploit call sequence?",
-            "What is the maximum extractable value?",
-        ]
-    },
-    {
-        "skill": "confidence-assessment",
-        "name": "Confidence Assessment",
-        "goal": "Rate each finding with confidence. Compile final structured report.",
-        "questions": [
-            "How confident are we in each finding?",
-            "What assumptions were made?",
-            "What remains unknown?",
-            "What should be manually verified?",
-        ]
-    },
-]
+from chain.erc8004 import ERC8004Policy
+from chain.x402 import X402Budget
+from core.orchestrator import SRPOrchestrator
 
 
-class MultiPassReasoningPipeline:
-    """
-    Executes multi-pass security reasoning with full protocol enforcement.
+class PolicyRejectedError(Exception):
+    """Raised when an audit intent is rejected by policy controls."""
 
-    All 5 passes are:
-    - Intent-constrained (only allowed skills run)
-    - Policy-gated (ERC-8004 approved)
-    - Budget-gated (x402 enforced per pass)
-    - Fully traced (every call logged)
-    """
 
-    def __init__(
-        self,
-        agent: OpenClawWorker,
-        budget_engine: X402BudgetEngine,
-        policy_client: EIP8004PolicyClient,
-    ):
-        self.agent = agent
-        self.budget_engine = budget_engine
-        self.policy_client = policy_client
+def _resolve_contract_paths(
+    contract_code: str,
+    contract_paths: list | None,
+) -> list[str]:
+    if contract_paths:
+        resolved_paths: list[str] = []
+        for raw_path in contract_paths:
+            path = Path(str(raw_path)).expanduser()
+            if not path.is_absolute():
+                path = Path.cwd() / path
+            resolved_paths.append(str(path.resolve()))
+        return resolved_paths
 
-    def execute(
-        self,
-        intent: ExecutionIntent,
-        payment: PaymentIntent,
-        trace: ReasoningTrace,
-        target_path: str,
-    ) -> ReasoningTrace:
-        """
-        Execute the full multi-pass reasoning pipeline.
+    if not contract_code.strip():
+        raise ValueError("contract_code cannot be empty when contract_paths is not provided")
 
-        This is the core of SRP. Everything before and after this
-        is protocol enforcement. This is where reasoning happens.
-        """
-        session_id = f"srp-{trace.trace_id[:8]}"
+    runtime_dir = Path.cwd() / ".runtime" / "contracts"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    target_path = runtime_dir / f"{uuid4().hex}.sol"
+    target_path.write_text(contract_code, encoding="utf-8")
+    return [str(target_path.resolve())]
 
-        # Set input hash from target files
-        input_content = self._read_target(target_path)
-        trace.set_input_hash(input_content)
 
-        accumulated_context = self._build_initial_context(intent, target_path, input_content)
-        final_output_parts = []
+def _build_policy_intent(
+    intent_id: str,
+    description: str,
+    budget_usd: float,
+    contract_code: str,
+    resolved_paths: list[str],
+) -> dict:
+    code_hash = hashlib.sha256(contract_code.encode("utf-8")).hexdigest()
+    return {
+        "intent_id": intent_id,
+        "description": description,
+        "budget_usd": float(budget_usd),
+        "contract_paths": resolved_paths,
+        "contract_code_hash": code_hash,
+    }
 
-        passes_to_run = PASS_SEQUENCE[:intent.max_reasoning_depth]
 
-        for pass_config in passes_to_run:
-            skill = pass_config["skill"]
-            pass_number = len(trace.reasoning_passes) + 1
+def _lock_budget(budget: X402Budget, payment_intent: dict) -> dict:
+    payment_id = payment_intent["payment_id"]
 
-            # Skip if skill not in intent allowlist
-            if skill not in intent.allowed_skills:
-                print(f"[SRP] ⏭  Skipping {skill}: not in allowed_skills")
-                continue
+    if payment_id in budget._payments:
+        budget._payments[payment_id]["status"] = "locked"
 
-            # Build pass-specific task
-            task = self._build_pass_task(pass_config, accumulated_context, intent)
+    payment_intent["status"] = "locked"
+    return payment_intent
 
-            try:
-                output, reasoning_pass = self.agent.execute_pass(
-                    session_id=session_id,
-                    skill_name=skill,
-                    task_description=task,
-                    accumulated_context=accumulated_context,
-                    trace=trace,
-                    budget_engine=self.budget_engine,
-                    payment=payment,
-                    pass_number=pass_number,
-                )
 
-                trace.add_pass(reasoning_pass)
-                accumulated_context += f"\n\n[Pass {pass_number} — {skill}]:\n{output[:800]}"
-                final_output_parts.append(f"=== Pass {pass_number}: {pass_config['name']} ===\n{output}")
+def _extract_actual_cost_usd(result: dict, fallback_budget: float) -> float:
+    trace = result.get("trace", {}) if isinstance(result, dict) else {}
+    for key in ("cost_usd", "charged_usd", "estimated_cost_usd"):
+        value = trace.get(key) if isinstance(trace, dict) else None
+        if value is None:
+            continue
+        try:
+            return max(0.0, float(value))
+        except (TypeError, ValueError):
+            continue
+    return float(fallback_budget)
 
-            except RuntimeError as e:
-                print(f"[SRP] ⛔ Pipeline stopped: {e}")
-                break
 
-        # Compile final output
-        final_output = "\n\n".join(final_output_parts)
+def _build_partial_trace(
+    orchestrator: SRPOrchestrator | None,
+    intent_id: str | None,
+    resolved_paths: list[str] | None,
+    policy_result: dict | None,
+    payment_intent: dict | None,
+    settlement: dict | None,
+) -> dict | None:
+    if orchestrator is None:
+        return None
 
-        # Add x402 payment reference to trace
-        trace.x402_payment_tx = payment.lock_tx_hash
-        trace.cost_usdc = payment.amount_used_usdc
+    def safe_trace(agent: Any) -> list:
+        if agent is None:
+            return []
+        if not hasattr(agent, "get_trace"):
+            return []
+        try:
+            trace = agent.get_trace()
+            return trace if isinstance(trace, list) else []
+        except Exception:
+            return []
 
-        # Finalize trace (sets output hash, confidence)
-        trace.finalize(final_output)
+    return {
+        "intent_id": intent_id,
+        "contract_paths": resolved_paths or [],
+        "policy": policy_result,
+        "payment_intent": payment_intent,
+        "settlement": settlement,
+        "agent_traces": {
+            "IntentAgent": safe_trace(getattr(orchestrator, "intent_agent", None)),
+            "ReconAgent": safe_trace(getattr(orchestrator, "recon_agent", None)),
+            "AttackAgent": safe_trace(getattr(orchestrator, "attack_agent", None)),
+            "DefenseAgent": safe_trace(getattr(orchestrator, "defense_agent", None)),
+            "TraceAgent": safe_trace(getattr(orchestrator, "trace_agent", None)),
+            "ReportAgent": safe_trace(getattr(orchestrator, "report_agent", None)),
+        },
+    }
 
-        return trace
 
-    def _read_target(self, target_path: str) -> str:
-        """Read target contracts for input hash computation."""
-        target = Path(target_path)
-        content_parts = []
+async def run_audit(
+    contract_code: str,
+    description: str,
+    budget_usd: float,
+    contract_paths: list = None,
+) -> dict:
+    orchestrator: SRPOrchestrator | None = None
+    intent_id: str | None = None
+    resolved_paths: list[str] | None = None
+    policy_result: dict | None = None
+    payment_intent: dict | None = None
+    settlement: dict | None = None
 
-        if target.is_file():
-            try:
-                content_parts.append(target.read_text())
-            except Exception:
-                content_parts.append(f"[unreadable: {target_path}]")
-        elif target.is_dir():
-            for ext in ["*.sol", "*.rs", "*.ts", "*.py"]:
-                for f in sorted(target.rglob(ext))[:20]:  # cap at 20 files
-                    try:
-                        content_parts.append(f"// {f}\n{f.read_text()[:2000]}")
-                    except Exception:
-                        continue
-        else:
-            content_parts.append(f"[target not found: {target_path}]")
+    try:
+        if not description or not str(description).strip():
+            raise ValueError("description is required")
 
-        return "\n\n".join(content_parts) if content_parts else target_path
+        if budget_usd <= 0:
+            raise ValueError("budget_usd must be greater than 0")
 
-    def _build_initial_context(
-        self,
-        intent: ExecutionIntent,
-        target_path: str,
-        input_content: str
-    ) -> str:
-        """Build initial context for the first reasoning pass."""
-        parts = [
-            f"Target: {target_path}",
-            f"Task: {intent.task}",
-        ]
+        resolved_paths = _resolve_contract_paths(contract_code, contract_paths)
+        intent_id = str(uuid4())
 
-        if intent.protocol_context:
-            parts.append(f"Protocol type: {intent.protocol_context}")
-        if intent.chain_context:
-            parts.append(f"Chain: {intent.chain_context}")
-
-        # Include first 3000 chars of target code
-        if input_content and len(input_content) > 10:
-            parts.append(f"\n--- Target Code (first 3000 chars) ---\n{input_content[:3000]}")
-
-        return "\n".join(parts)
-
-    def _build_pass_task(
-        self,
-        pass_config: dict,
-        accumulated_context: str,
-        intent: ExecutionIntent
-    ) -> str:
-        """Build the specific task description for a reasoning pass."""
-        questions = "\n".join(f"  - {q}" for q in pass_config["questions"])
-        return (
-            f"[{pass_config['name'].upper()}]\n"
-            f"Goal: {pass_config['goal']}\n\n"
-            f"Key questions to answer:\n{questions}\n\n"
-            f"Original task: {intent.task}"
+        policy = ERC8004Policy(
+            rpc_url=os.environ.get("RPC_URL", ""),
+            contract_address=os.environ.get("ERC8004_POLICY_CONTRACT"),
         )
+        budget = X402Budget()
+        orchestrator = SRPOrchestrator()
+
+        policy_intent = _build_policy_intent(
+            intent_id=intent_id,
+            description=description,
+            budget_usd=budget_usd,
+            contract_code=contract_code,
+            resolved_paths=resolved_paths,
+        )
+
+        policy_result = policy.check_policy(policy_intent)
+        if not policy_result.get("approved", False):
+            reason = policy_result.get("reason", "policy rejected")
+            raise PolicyRejectedError(str(reason))
+
+        payment_intent = budget.create_payment_intent(
+            budget_usd=float(budget_usd),
+            intent_id=intent_id,
+        )
+        payment_intent = _lock_budget(budget, payment_intent)
+
+        result = await orchestrator.run_full_audit(
+            raw_input=description,
+            contract_paths=resolved_paths,
+            budget_usd=float(budget_usd),
+        )
+
+        actual_cost_usd = _extract_actual_cost_usd(result, fallback_budget=float(budget_usd))
+        settlement = budget.settle(
+            payment_id=payment_intent["payment_id"],
+            actual_cost_usd=actual_cost_usd,
+        )
+
+        if isinstance(result, dict):
+            result["policy"] = policy_result
+            result["payment_intent"] = payment_intent
+            result["payment_settlement"] = settlement
+            result["intent_id"] = intent_id
+
+        return result
+
+    except Exception as exc:
+        partial_trace = _build_partial_trace(
+            orchestrator=orchestrator,
+            intent_id=intent_id,
+            resolved_paths=resolved_paths,
+            policy_result=policy_result,
+            payment_intent=payment_intent,
+            settlement=settlement,
+        )
+
+        return {
+            "error": str(exc),
+            "trace": partial_trace,
+        }
+
+
+__all__ = ["PolicyRejectedError", "run_audit"]

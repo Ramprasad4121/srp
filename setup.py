@@ -1,15 +1,28 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
+
 
 setup(
-    name="srp",
+    name="srp-protocol",
     version="0.1.0",
     description="Security Reasoning Protocol",
     packages=find_packages(),
+    py_modules=["srp"],
     python_requires=">=3.10",
-    install_requires=["click>=8.0", "rich>=13.0", "requests>=2.31"],
+    install_requires=[
+        "fastapi",
+        "uvicorn",
+        "anthropic",
+        "web3",
+        "python-dotenv",
+        "aiohttp",
+        "pydantic",
+        "rich",
+        "click",
+        "networkx",
+    ],
     entry_points={
         "console_scripts": [
-            "srp=srp_pkg.main:main",
+            "srp=srp:cli",
         ],
     },
 )

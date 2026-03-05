@@ -3,254 +3,141 @@ pragma solidity ^0.8.24;
 
 /**
  * @title SRPPolicy
- * @author Ramprasad
- * @notice ERC-8004 compatible policy contract for Security Reasoning Protocol
- * @dev Every SRP execution intent must be approved by this contract before running.
- *      No approval = no execution. This is enforced at the protocol level.
- *
- * ERC-8004 Integration:
- * - Uses ERC-721 based Identity Registry for agent identification
- * - Approvals are logic-based, not just signature-based
- * - Records execution completions for Reputation Registry
- *
- * Deployment: Base Sepolia (testnet) → Base Mainnet (production)
+ * @notice ERC-8004 style agent policy registry and intent approval checks.
  */
-
-interface IERC8004IdentityRegistry {
-    function ownerOf(uint256 agentId) external view returns (address);
-    function tokenURI(uint256 agentId) external view returns (string memory);
-}
-
-interface IERC8004ReputationRegistry {
-    function submitFeedback(
-        address client,
-        address server,
-        string calldata feedbackURI
-    ) external;
-}
-
 contract SRPPolicy {
-
-    // ─── Structs ──────────────────────────────────────────────────────────────
-
-    struct Policy {
+    struct AgentPolicy {
+        uint256 agentId;
+        address owner;
+        uint256 maxBudgetUSD;
         string[] allowedSkills;
-        uint8 maxReasoningDepth;
-        uint256 maxBudgetUSDC;      // in 6 decimals (USDC precision)
-        bool exploitSimAllowed;
-        bool humanInLoopRequired;
         bool active;
     }
 
-    struct ExecutionRecord {
-        bytes32 intentHash;
-        bytes32 outputHash;
-        uint256 timestamp;
-        bool approved;
-        bool executed;
-    }
+    mapping(uint256 => AgentPolicy) public policies;
 
-    // ─── Storage ──────────────────────────────────────────────────────────────
-
-    IERC8004IdentityRegistry public identityRegistry;
-    IERC8004ReputationRegistry public reputationRegistry;
-
-    mapping(uint256 => Policy) public agentPolicies;
-    mapping(bytes32 => ExecutionRecord) public executions;
-    mapping(bytes32 => bool) public approvedIntents;
-
-    address public owner;
-    uint256 public totalExecutions;
-
-    // ─── Events ───────────────────────────────────────────────────────────────
+    event AgentRegistered(
+        uint256 indexed agentId,
+        address indexed owner,
+        uint256 maxBudgetUSD,
+        string[] skills
+    );
 
     event IntentApproved(
-        bytes32 indexed intentHash,
         uint256 indexed agentId,
-        uint256 budgetUSDC,
-        uint8 depth
+        address indexed requester,
+        uint256 budgetUSD,
+        string skill
     );
 
     event IntentRejected(
-        bytes32 indexed intentHash,
         uint256 indexed agentId,
+        address indexed requester,
+        uint256 budgetUSD,
+        string skill,
         string reason
     );
 
-    event ExecutionRecorded(
-        bytes32 indexed intentHash,
-        bytes32 indexed outputHash,
-        uint256 agentId
-    );
+    event AgentDeactivated(uint256 indexed agentId, address indexed owner);
 
-    event PolicySet(uint256 indexed agentId, address setBy);
+    function registerAgent(
+        uint256 agentId,
+        uint256 maxBudgetUSD,
+        string[] calldata skills
+    ) external {
+        require(agentId != 0, "invalid agentId");
 
-    // ─── Constructor ──────────────────────────────────────────────────────────
+        AgentPolicy storage policy = policies[agentId];
+        if (policy.owner != address(0)) {
+            require(policy.owner == msg.sender, "not policy owner");
+        }
 
-    constructor(address _identityRegistry) {
-        identityRegistry = IERC8004IdentityRegistry(_identityRegistry);
-        owner = msg.sender;
+        policy.agentId = agentId;
+        policy.owner = msg.sender;
+        policy.maxBudgetUSD = maxBudgetUSD;
+        policy.active = true;
+
+        delete policy.allowedSkills;
+        for (uint256 i = 0; i < skills.length; i++) {
+            policy.allowedSkills.push(skills[i]);
+        }
+
+        emit AgentRegistered(agentId, msg.sender, maxBudgetUSD, skills);
     }
 
-    // ─── Core Functions ───────────────────────────────────────────────────────
-
-    /**
-     * @notice Approve an execution intent against agent policy
-     * @dev Called by SRP CLI before execution begins
-     *
-     * Checks:
-     * 1. Agent has an active policy
-     * 2. Budget is within policy limits
-     * 3. Reasoning depth is within policy limits
-     * 4. All requested skills are in the allowlist
-     * 5. Exploit simulation is permitted (if requested)
-     *
-     * @param agentId ERC-8004 agent identity token ID
-     * @param intentHash SHA-256 hash of the execution intent
-     * @param requestedSkills Array of skill names requested
-     * @param depth Reasoning depth (1-5)
-     * @param budgetUSDC Budget in USDC (6 decimals)
-     * @param requestsExploitSim Whether exploit simulation is requested
-     */
     function approveIntent(
         uint256 agentId,
-        bytes32 intentHash,
-        string[] calldata requestedSkills,
-        uint8 depth,
-        uint256 budgetUSDC,
-        bool requestsExploitSim
-    ) external returns (bool approved) {
-        Policy storage policy = agentPolicies[agentId];
+        uint256 budgetUSD,
+        string calldata skill
+    ) external view returns (bool) {
+        AgentPolicy storage policy = policies[agentId];
 
-        // ── Policy must exist and be active ──────────────────────────────────
         if (!policy.active) {
-            emit IntentRejected(intentHash, agentId, "No active policy for agent");
             return false;
         }
 
-        // ── Budget check ──────────────────────────────────────────────────────
-        if (budgetUSDC > policy.maxBudgetUSDC) {
-            emit IntentRejected(intentHash, agentId, "Budget exceeds policy limit");
+        if (budgetUSD > policy.maxBudgetUSD) {
             return false;
         }
 
-        // ── Depth check ───────────────────────────────────────────────────────
-        if (depth > policy.maxReasoningDepth) {
-            emit IntentRejected(intentHash, agentId, "Depth exceeds policy limit");
+        return _isSkillAllowed(policy, skill);
+    }
+
+    /**
+     * @notice Non-view helper that emits approval/rejection events.
+     * @dev Keeps approveIntent() as a strict view method while still producing event logs.
+     */
+    function approveIntentWithEvent(
+        uint256 agentId,
+        uint256 budgetUSD,
+        string calldata skill
+    ) external returns (bool) {
+        AgentPolicy storage policy = policies[agentId];
+
+        if (!policy.active) {
+            emit IntentRejected(agentId, msg.sender, budgetUSD, skill, "agent inactive");
             return false;
         }
 
-        // ── Exploit simulation check ──────────────────────────────────────────
-        if (requestsExploitSim && !policy.exploitSimAllowed) {
-            emit IntentRejected(intentHash, agentId, "Exploit simulation not permitted");
+        if (budgetUSD > policy.maxBudgetUSD) {
+            emit IntentRejected(agentId, msg.sender, budgetUSD, skill, "budget exceeds max");
             return false;
         }
 
-        // ── Skill allowlist check ─────────────────────────────────────────────
-        for (uint256 i = 0; i < requestedSkills.length; i++) {
-            if (!_isSkillAllowed(policy, requestedSkills[i])) {
-                emit IntentRejected(intentHash, agentId, "Skill not in allowlist");
-                return false;
-            }
+        if (!_isSkillAllowed(policy, skill)) {
+            emit IntentRejected(agentId, msg.sender, budgetUSD, skill, "skill not allowed");
+            return false;
         }
 
-        // ── Approve ───────────────────────────────────────────────────────────
-        approvedIntents[intentHash] = true;
-        executions[intentHash] = ExecutionRecord({
-            intentHash: intentHash,
-            outputHash: bytes32(0),
-            timestamp: block.timestamp,
-            approved: true,
-            executed: false
-        });
-
-        emit IntentApproved(intentHash, agentId, budgetUSDC, depth);
+        emit IntentApproved(agentId, msg.sender, budgetUSD, skill);
         return true;
     }
 
-    /**
-     * @notice Record a completed execution (for ERC-8004 Reputation Registry)
-     * @dev Called by SRP after execution completes and output hash is known
-     */
-    function recordExecution(
-        uint256 agentId,
-        bytes32 intentHash,
-        bytes32 outputHash
-    ) external {
-        require(approvedIntents[intentHash], "Intent was not approved");
-        require(!executions[intentHash].executed, "Already executed");
+    function deactivateAgent(uint256 agentId) external {
+        AgentPolicy storage policy = policies[agentId];
+        require(policy.owner != address(0), "agent not registered");
+        require(policy.owner == msg.sender, "not policy owner");
 
-        executions[intentHash].outputHash = outputHash;
-        executions[intentHash].executed = true;
-        totalExecutions++;
-
-        emit ExecutionRecorded(intentHash, outputHash, agentId);
+        policy.active = false;
+        emit AgentDeactivated(agentId, msg.sender);
     }
 
-    /**
-     * @notice Set policy for an agent (only agent owner can set their own policy)
-     * @dev Uses ERC-8004 Identity Registry to verify ownership
-     */
-    function setPolicy(
-        uint256 agentId,
-        string[] calldata allowedSkills,
-        uint8 maxDepth,
-        uint256 maxBudgetUSDC,
-        bool exploitSimAllowed,
-        bool humanInLoopRequired
-    ) external {
-        // Verify caller owns this agent in the ERC-8004 registry
-        address agentOwner = identityRegistry.ownerOf(agentId);
-        require(msg.sender == agentOwner, "Not agent owner");
-
-        agentPolicies[agentId] = Policy({
-            allowedSkills: allowedSkills,
-            maxReasoningDepth: maxDepth,
-            maxBudgetUSDC: maxBudgetUSDC,
-            exploitSimAllowed: exploitSimAllowed,
-            humanInLoopRequired: humanInLoopRequired,
-            active: true
-        });
-
-        emit PolicySet(agentId, msg.sender);
+    function getAllowedSkills(uint256 agentId) external view returns (string[] memory) {
+        return policies[agentId].allowedSkills;
     }
-
-    // ─── View Functions ───────────────────────────────────────────────────────
-
-    function isIntentApproved(bytes32 intentHash) external view returns (bool) {
-        return approvedIntents[intentHash];
-    }
-
-    function isIntentExecuted(bytes32 intentHash) external view returns (bool) {
-        return executions[intentHash].executed;
-    }
-
-    function getExecution(bytes32 intentHash) external view returns (ExecutionRecord memory) {
-        return executions[intentHash];
-    }
-
-    function getPolicy(uint256 agentId) external view returns (
-        uint8 maxDepth,
-        uint256 maxBudget,
-        bool exploitSim,
-        bool active
-    ) {
-        Policy storage p = agentPolicies[agentId];
-        return (p.maxReasoningDepth, p.maxBudgetUSDC, p.exploitSimAllowed, p.active);
-    }
-
-    // ─── Internal ─────────────────────────────────────────────────────────────
 
     function _isSkillAllowed(
-        Policy storage policy,
+        AgentPolicy storage policy,
         string calldata skill
     ) internal view returns (bool) {
         bytes32 skillHash = keccak256(bytes(skill));
+
         for (uint256 i = 0; i < policy.allowedSkills.length; i++) {
             if (keccak256(bytes(policy.allowedSkills[i])) == skillHash) {
                 return true;
             }
         }
+
         return false;
     }
 }
