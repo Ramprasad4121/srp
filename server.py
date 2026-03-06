@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dotenv import load_dotenv
+load_dotenv()
 import asyncio
 import json
 import os
@@ -166,7 +168,6 @@ async def _run_audit(
     )
     return _json_safe(result)
 
-
 @app.on_event("startup")
 async def startup_event() -> None:
     TRACES_DIR.mkdir(parents=True, exist_ok=True)
@@ -180,8 +181,76 @@ async def startup_event() -> None:
         "╚═══════════════════════════════════════╝"
     )
     print(banner)
-    print("SentinelAgent model: claude-haiku-4-5-20251001 (triage)")
-    print("AttackAgents model:  claude-sonnet-4-20250514 (deep reasoning)")
+
+    # Auto-start audit if triggered by `srp audit`
+    if os.environ.get("SRP_AUTOSTART") == "true":
+        project_root = os.environ.get("SRP_PROJECT_ROOT", os.getcwd())
+        print(f"  → Auto-starting audit on: {project_root}")
+        asyncio.create_task(run_audit_on_project(project_root))
+
+
+async def run_audit_on_project(project_root: str) -> None:
+    """Auto-triggered when `srp audit` is run. Reads project contracts and runs the full pipeline."""
+    global audit_state
+    from core.project import SRPProject
+
+    project = SRPProject(project_root)
+    try:
+        project.load()
+    except RuntimeError:
+        # Not initialized — try to auto-init
+        try:
+            project.initialize()
+        except Exception:
+            pass
+
+    # Read all contract source code
+    sources = {}
+    exclude = {"node_modules", ".git", "lib", "cache", "out", "artifacts", ".srp"}
+    for sol_file in Path(project_root).rglob("*.sol"):
+        skip = False
+        for part in sol_file.parts:
+            if part in exclude:
+                skip = True
+                break
+        if skip:
+            continue
+        try:
+            rel = sol_file.relative_to(project_root)
+            sources[str(rel)] = sol_file.read_text(encoding="utf-8")
+        except Exception:
+            continue
+
+    if not sources:
+        audit_state = {"status": "complete", "logs": ["❌ No Solidity contracts found."], "findings": [], "score": 0,
+                       "project": Path(project_root).name, "contracts_total": 0}
+        return
+
+    # Merge all contract code into a single string for the audit
+    merged_code = "\n\n".join(
+        f"// --- {name} ---\n{code}" for name, code in sources.items()
+    )
+
+    project_name = Path(project_root).name
+    audit_state = {
+        "status": "running",
+        "logs": [f"🚀 Audit started — {len(sources)} contracts detected in {project_name}"],
+        "findings": [],
+        "score": 100,
+        "project": project_name,
+        "contracts_total": len(sources),
+        "contracts_done": 0,
+        "current_agent": "WATCHDOG",
+        "agent_statuses": {
+            "WATCHDOG": "active", "ORACLE": "active", "SPIDER": "active",
+            "VIPER": "standby", "GHOST": "standby", "ZERO": "standby",
+            "SHIELD": "standby", "FORGE": "standby", "SHOCKWAVE": "standby",
+            "MIRROR": "standby", "DELTA": "standby", "COMMAND": "active", "LEDGER": "standby",
+        },
+    }
+
+    await run_audit(merged_code, f"Audit all {len(sources)} contracts in {project_name}. Focus on reentrancy, access control, invariant violations, oracle manipulation.")
+
 
 
 @app.websocket("/ws/audit")
@@ -337,34 +406,129 @@ async def get_all_contracts():
     return project.read_all_contracts()
 
 
+audit_state = {"status": "idle", "logs": [], "findings": [], "score": 100}
+
 @app.post("/api/audit/start")
 async def start_audit(request: Request, background_tasks: BackgroundTasks):
+    global audit_state
     body = await request.json()
     contract_code = body.get("contract_code", "")
+    description = body.get("description", "")
     
-    project = get_project()
+    if not contract_code:
+        return {"error": "No contract code provided"}
     
-    if contract_code:
-        # Single contract mode — user pasted code
-        context = {
-            "all_contracts": {"pasted_contract.sol": contract_code},
-            "project_name": "pasted_contract",
-            "entry_contracts": ["pasted_contract.sol"],
-            "dependency_graph": {},
-            "contracts_dir": ".",
-            "project_type": "unknown",
-            "compiler_version": "0.8.20",
-            "project_root": "."
-        }
-    elif project.initialized:
-        # Full project mode
-        project.load()
-        context = project.get_full_project_context()
-    else:
-        return {"error": "No contract provided and no project initialized"}
+    audit_state = {"status": "running", "logs": ["🚀 Audit started — deploying 13 agents..."], "findings": [], "score": 100}
+    background_tasks.add_task(run_audit, contract_code, description)
+    return {"status": "started"}
 
-    background_tasks.add_task(run_audit_background, context, project)
-    return {"status": "started", "contracts": len(context["all_contracts"])}
+@app.get("/api/audit/status")  
+async def get_audit_status():
+    return audit_state
+
+async def run_audit(contract_code: str, description: str = ""):
+    global audit_state
+    
+    try:
+        # Build the AuditRequest for the real orchestrator
+        raw_input = description or "Audit this Solidity contract for security vulnerabilities."
+        audit_req = AuditRequest(
+            raw_input=raw_input,
+            contract_code=contract_code,
+            budget_usd=50.0,
+        )
+        
+        # Create emit callback that populates audit_state for polling
+        async def emit(payload: dict) -> None:
+            event = payload.get("event", "")
+            agent = payload.get("agent", "")
+            data = payload.get("data", {})
+            
+            if event == "agent_start":
+                audit_state["logs"].append(f"🔄 [{agent}] Starting...")
+            elif event == "agent_complete":
+                audit_state["logs"].append(f"✅ [{agent}] Complete")
+            elif event == "step":
+                step_name = data.get("step", "") if isinstance(data, dict) else ""
+                if step_name and not step_name.endswith("_started"):
+                    preview = ""
+                    if isinstance(data, dict):
+                        d = data.get("data", data)
+                        if isinstance(d, dict):
+                            preview = d.get("response_preview", d.get("system_preview", ""))[:80]
+                    log_msg = f"📋 [{agent}] {step_name}"
+                    if preview:
+                        log_msg += f" — {preview}"
+                    audit_state["logs"].append(log_msg)
+        
+        audit_state["logs"].append("🕷️  [SPIDER] Mapping contract dependencies...")
+        audit_state["logs"].append("🔍 [WATCHDOG] Classifying threat surface...")
+        
+        # Run the REAL orchestrator pipeline
+        result = await _run_audit(audit_req, emit=emit)
+        
+        # Extract findings from the defense output
+        defense = result.get("defense", {})
+        reviewed = defense.get("reviewed_vulnerabilities", [])
+        score = defense.get("overall_security_score", 100)
+        
+        # Also grab attack findings for context
+        attack = result.get("attack", {})
+        raw_vulns = attack.get("vulnerabilities", [])
+        
+        # Merge attack findings with defense reviews
+        findings = []
+        for i, rv in enumerate(reviewed):
+            original_vuln = raw_vulns[i] if i < len(raw_vulns) else {}
+            findings.append({
+                "title": original_vuln.get("title", rv.get("original_id", f"Finding {i+1}")),
+                "severity": rv.get("final_severity", original_vuln.get("severity", "medium")),
+                "description": original_vuln.get("description", rv.get("defense_notes", "")),
+                "affected_function": original_vuln.get("affected_function", ""),
+                "location": original_vuln.get("affected_function", ""),
+                "exploit_code": original_vuln.get("exploit_code", ""),
+                "fix_code": rv.get("fix_code", ""),
+                "status": rv.get("status", "needs_more_info"),
+                "defense_notes": rv.get("defense_notes", ""),
+            })
+        
+        if not findings and raw_vulns:
+            findings = [{
+                "title": v.get("title", f"Finding {j+1}"),
+                "severity": v.get("severity", "medium"),
+                "description": v.get("description", ""),
+                "affected_function": v.get("affected_function", ""),
+                "location": v.get("affected_function", ""),
+                "exploit_code": v.get("exploit_code", ""),
+                "fix_code": "",
+            } for j, v in enumerate(raw_vulns)]
+        
+        # Save trace
+        trace = result.get("trace", {})
+        trace_id = trace.get("trace_id")
+        if trace_id:
+            trace_path = TRACES_DIR / f"{trace_id}.json"
+            trace_path.write_text(json.dumps(trace, indent=2, default=str), encoding="utf-8")
+        
+        # Save report
+        report = result.get("report", {})
+        report_md = report.get("markdown", report.get("report_markdown", ""))
+        if trace_id and report_md:
+            report_path = REPORTS_DIR / f"{trace_id}.md"
+            report_path.write_text(report_md, encoding="utf-8")
+        
+        audit_state["logs"].append(f"✅ Audit complete. Score: {score}/100. {len(findings)} findings.")
+        audit_state["status"] = "complete"
+        audit_state["findings"] = findings
+        audit_state["score"] = score
+        
+    except Exception as e:
+        audit_state["logs"].append(f"❌ Error: {str(e)}")
+        audit_state["status"] = "complete"
+        audit_state["findings"] = []
+        audit_state["score"] = 0
+        import traceback
+        traceback.print_exc()
 
 
 @app.get("/api/audits")

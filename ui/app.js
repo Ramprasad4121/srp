@@ -30,7 +30,7 @@ const DEFAULT_SKILL = {
   status: "ACTIVE",
 };
 const FIRM_META = {
-  audit-firm-1: { label: "Pashov", className: "firm-audit-firm-1" },
+  "audit-firm-1": { label: "Pashov", className: "firm-audit-firm-1" },
   quillai: { label: "QuillAI", className: "firm-quillai" },
   trailofbits: { label: "TrailOfBits", className: "firm-trailofbits" },
   ethskills: { label: "EthSkills", className: "firm-ethskills" },
@@ -407,74 +407,82 @@ async function launchAudit() {
 }
 
 async function startAudit() {
-    const contractCode = document.getElementById('contract-code')?.value || '';
+    const contractCode = document.getElementById('contract-code').value.trim();
     const description = document.getElementById('audit-description')?.value || '';
-
-    // Show pipeline section
-    const pipeline = document.getElementById('agent-pipeline');
-    if (pipeline) pipeline.style.display = 'block';
     
-    const launchBtn = document.getElementById('launch-btn');
-    if (launchBtn) {
-        launchBtn.disabled = true;
-        launchBtn.textContent = 'AUDIT IN PROGRESS...';
+    if (!contractCode) {
+        alert('Please paste Solidity contract code first');
+        return;
     }
-
+    
+    console.log('Starting audit...');
+    
+    const btn = document.getElementById('launch-btn') || document.querySelector('button');
+    if (btn) { btn.disabled = true; btn.textContent = 'AUDIT IN PROGRESS...'; }
+    
     try {
-        const response = await fetch('/api/audit/start', {
+        const res = await fetch('/api/audit/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contract_code: contractCode,
-                description: description
-            })
+            body: JSON.stringify({ contract_code: contractCode, description })
         });
-
-        const data = await response.json();
-
-        if (data.error) {
-            alert('Error: ' + data.error);
-            return;
-        }
-
-        // Connect WebSocket for live updates
-        connectWebSocket();
-
+        const data = await res.json();
+        console.log('Audit response:', data);
+        
+        if (data.error) { alert('Error: ' + data.error); return; }
+        
+        // Poll for results every 3 seconds
+        const pollInterval = setInterval(async () => {
+            try {
+                const status = await fetch('/api/audit/status');
+                const s = await status.json();
+                console.log('Status:', s);
+                
+                const logDiv = document.getElementById('live-log');
+                if (logDiv && s.logs) {
+                    logDiv.innerHTML = s.logs.map(l => 
+                        `<div style="padding:4px;font-family:monospace;font-size:12px;border-bottom:1px solid #222">${l}</div>`
+                    ).join('');
+                    logDiv.scrollTop = logDiv.scrollHeight;
+                }
+                
+                if (s.status === 'complete') {
+                    clearInterval(pollInterval);
+                    showResults(s);
+                }
+            } catch(e) { console.error('Poll error:', e); }
+        }, 3000);
+        
     } catch(e) {
-        alert('Failed to start audit: ' + e.message);
-        if (launchBtn) {
-            launchBtn.disabled = false;
-            launchBtn.textContent = 'LAUNCH AUDIT';
-        }
+        console.error('Audit start failed:', e);
+        alert('Failed: ' + e.message);
+        if (btn) { btn.disabled = false; btn.textContent = 'LAUNCH AUDIT'; }
     }
 }
 
-function connectWebSocket() {
-    const ws = new WebSocket('ws://localhost:7337/ws');
-
-    ws.onmessage = function(event) {
-        const msg = JSON.parse(event.data);
-        appendLog(msg);
-
-        if (msg.type === 'phase_start') updatePhase(msg.phase);
-        if (msg.type === 'audit_complete') showResults(msg);
-        if (msg.type === 'emergency_alert') showEmergency(msg);
-    };
-
-    ws.onerror = function() {
-        appendLog({type: 'error', message: 'WebSocket connection failed'});
-    };
+function showResults(data) {
+    const scoreEl = document.getElementById('security-score');
+    if (scoreEl) scoreEl.textContent = data.score || '?';
+    
+    const findingsEl = document.getElementById('findings-list');
+    if (findingsEl && data.findings) {
+        findingsEl.innerHTML = data.findings.map(f => `
+            <div style="border:1px solid #333;padding:12px;margin:8px 0;border-radius:4px">
+                <div style="color:#ff4444;font-weight:bold">[${f.severity}] ${f.title}</div>
+                <div style="color:#aaa;margin-top:4px">${f.description}</div>
+                <div style="color:#666;font-size:11px;margin-top:4px">📍 ${f.location}</div>
+            </div>
+        `).join('');
+    }
 }
 
-function appendLog(msg) {
-    const log = document.getElementById('live-log');
-    if (!log) return;
-    const line = document.createElement('div');
-    line.style.cssText = 'padding:4px 0;border-bottom:1px solid #111;font-family:monospace;font-size:13px';
-    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg.type}: ${msg.message || JSON.stringify(msg)}`;
-    log.appendChild(line);
-    log.scrollTop = log.scrollHeight;
-}
+// Wire the button
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('launch-btn') || 
+                document.querySelector('[onclick*="audit"]') ||
+                document.querySelector('button');
+    if (btn) btn.onclick = startAudit;
+});
 
 async function loadProject() {
   try {

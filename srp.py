@@ -122,88 +122,78 @@ def init():
 @click.option("--no-browser", is_flag=True, help="Start server without opening browser (headless/CI mode)")
 @click.option("--port", default=7337, help="Port to run on (default: 7337)")
 def start(no_browser, port):
-    """Start the SRP dashboard at localhost:7337"""
+    """Start the SRP dashboard (use `srp audit` instead)."""
+    console.print("[yellow]⚠️  `srp start` is deprecated. Use `srp audit` instead.[/yellow]")
+    console.print("[dim]`srp audit` scans your project and launches everything automatically.[/dim]")
+
+
+@cli.command()
+@click.option("--no-browser", is_flag=True, help="Run audit without opening browser")
+@click.option("--port", default=7337, help="Port to run on (default: 7337)")
+def audit(no_browser, port):
+    """Scan current directory and launch full audit with live UI.
+
+    One command does everything:
+    1. Scans current directory for Solidity contracts
+    2. Starts server at localhost:7337
+    3. Opens browser automatically
+    4. Audit begins immediately in the background
+    5. UI shows live agent activity as it happens
+    6. Results appear on screen when done
+    """
+    import threading
     from core.project import SRPProject
 
     console.print(BANNER)
 
-    project = SRPProject(".")
+    # 1. Detect project — auto-init if needed
+    project = SRPProject(os.getcwd())
     if not project.initialized:
-        console.print("[red]❌ SRP not initialized. Run `srp init` first.[/red]")
+        console.print("[dim]No .srp config found. Auto-initializing...[/dim]")
+        try:
+            project.initialize()
+        except Exception:
+            pass
+
+    # Find contracts even without init
+    sol_files = list(Path(os.getcwd()).rglob("*.sol"))
+    sol_files = [f for f in sol_files if not any(
+        p in str(f) for p in ["node_modules", ".git", "lib/", "cache/", "out/", "artifacts/", ".srp/"]
+    )]
+
+    if not sol_files:
+        console.print("[red]❌ No Solidity contracts found in current directory.[/red]")
+        console.print("[dim]   cd into a project with .sol files and try again.[/dim]")
         sys.exit(1)
 
-    config = project.load()
-
+    project_name = Path(os.getcwd()).name
     console.print(Panel(
-        f"[bold]Loading project:[/bold] [cyan]{config['project_name']}[/cyan]\n"
-        f"  {config['total_contracts']} contracts · {config['detected_type']} · solc {config['compiler_version']}\n\n"
-        f"  [bold]Dashboard:[/bold] [link=http://localhost:{port}]http://localhost:{port}[/link]",
-        border_style="cyan"
+        f"[bold green]SRP AUDIT[/bold green]\n\n"
+        f"  Project:   [cyan]{project_name}[/cyan]\n"
+        f"  Contracts: [cyan]{len(sol_files)} Solidity files[/cyan]\n"
+        f"  Agents:    [cyan]13 deploying...[/cyan]\n"
+        f"  Dashboard: [bold]http://localhost:{port}[/bold]",
+        border_style="green",
+        title="[bold]Mission Briefing[/bold]"
     ))
 
+    # 2. Set environment for auto-start
+    os.environ["SRP_AUTOSTART"] = "true"
+    os.environ["SRP_PROJECT_ROOT"] = os.getcwd()
+
+    # 3. Open browser after short delay
     if not no_browser:
         def open_browser():
-            time.sleep(1.5)
+            time.sleep(2)
             webbrowser.open(f"http://localhost:{port}")
-        import threading
         threading.Thread(target=open_browser, daemon=True).start()
 
-    os.environ["SRP_PROJECT_ROOT"] = str(project.root)
-    import sys
+    # 4. Start server (blocks — audit runs inside server on startup)
     srp_root = Path(__file__).parent.resolve()
     if str(srp_root) not in sys.path:
         sys.path.insert(0, str(srp_root))
     os.chdir(srp_root)
     uvicorn.run("server:app", host="0.0.0.0", port=port, reload=False, log_level="warning")
-
-
-@cli.command()
-@click.option("--no-browser", is_flag=True, help="Show progress in terminal only, no browser")
-def audit(no_browser):
-    """Audit the entire project — all contracts scanned together."""
-    from core.project import SRPProject
-
-    project = SRPProject(".")
-    if not project.initialized:
-        console.print("[red]❌ SRP not initialized. Run `srp init` first.[/red]")
-        sys.exit(1)
-
-    config = project.load()
-
-    console.print(Panel(
-        f"[bold cyan]Launching Full Project Audit[/bold cyan]\n\n"
-        f"  Project:   [cyan]{config['project_name']}[/cyan]\n"
-        f"  Contracts: [cyan]{config['total_contracts']} files[/cyan]\n"
-        f"  Agents:    [cyan]13 agents deploying...[/cyan]",
-        border_style="cyan"
-    ))
-
-    if not no_browser:
-        console.print(f"\n[dim]Opening dashboard at http://localhost:7337/audit[/dim]")
-        console.print("[dim]Watch all 13 agents work in real-time →[/dim]\n")
-        try:
-            webbrowser.open("http://localhost:7337/audit?autostart=true")
-        except Exception:
-            pass
-
-    console.print("[bold]Agent Pipeline:[/bold]\n")
-
-    agents = [
-        ("ReconAgent",        "Scanning all contracts + running Slither/Aderyn"),
-        ("ForkAgent",         "Checking for fork inheritance"),
-        ("AttackAlpha",       "Business logic + invariant attack (independent)"),
-        ("AttackBeta",        "EVM + reentrancy + oracle attack (independent)"),
-        ("AttackGamma",       "Supply chain + 36-vuln sweep (independent)"),
-        ("DefenseAgent",      "Validating findings + killing false positives"),
-        ("PatchAgent",        "Writing production-grade fixes"),
-        ("TraceAgent",        "Producing verifiable cryptographic trace"),
-    ]
-
-    for name, desc in agents:
-        console.print(f"  [dim]→[/dim] [bold]{name:<20}[/bold] [dim]{desc}[/dim]")
-
-    console.print("\n[dim]Results saved to .srp/audits/ when complete[/dim]")
-    console.print("[dim]Full report at http://localhost:7337[/dim]")
 
 
 @cli.command()

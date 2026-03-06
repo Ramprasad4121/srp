@@ -16,7 +16,7 @@ class SkillNotFoundError(Exception):
 class SkillLoader:
     SKILL_REGISTRY = {
         # ATTACK ALPHA skills
-        "audit-firm-1-solidity-auditor": "skills/audit-firm-1/solidity-auditor/SKILL.md",
+        "audit-firm-1-solidity-auditor": "skills/pashov/solidity-auditor/SKILL.md",
         "quillai-bsa": "skills/quillai/plugins/behavioral-state-analysis/skills/behavioral-state-analysis/SKILL.md",
         "quillai-semantic-guard": "skills/quillai/plugins/semantic-guard-analysis/skills/semantic-guard-analysis/SKILL.md",
         "quillai-state-invariant": "skills/quillai/plugins/state-invariant-detection/skills/state-invariant-detection/SKILL.md",
@@ -107,8 +107,11 @@ class SkillLoader:
     def load_many(self, skill_keys: list[str]) -> str:
         blocks: list[str] = []
         for key in skill_keys:
-            content = self.load(key)
-            blocks.append(f"# === SKILL: {key} ===\n\n{content}")
+            try:
+                content = self.load(key)
+                blocks.append(f"# === SKILL: {key} ===\n\n{content}")
+            except SkillNotFoundError as exc:
+                print(f"  ⚠️  Skipping missing skill '{key}': {exc}")
         return "\n\n".join(blocks)
 
     def list_all(self) -> list[str]:
@@ -159,7 +162,7 @@ class SkillLoader:
 
     @staticmethod
     def _repo_folder_from_path(skill_path: str) -> str | None:
-        if skill_path.startswith("skills/audit-firm-1/"):
+        if skill_path.startswith("skills/audit-firm-1/") or skill_path.startswith("skills/pashov/"):
             return "audit-firm-1"
         if skill_path.startswith("skills/quillai/"):
             return "quillai"

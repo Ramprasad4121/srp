@@ -1,378 +1,1045 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SRP Mission Control</title>
-    <link rel="stylesheet" href="/ui/style.css" />
-  </head>
-  <body>
-    <div class="app-shell">
-      <header class="topbar">
-        <div class="brand-block">
-          <div class="brand-logo">SRP</div>
-          <div class="brand-meta">
-            <div class="brand-title">Security Reasoning Protocol</div>
-            <div class="brand-version">v2026.1</div>
-          </div>
-        </div>
-        <div class="topbar-actions">
-          <button
-            id="latest-results-btn"
-            class="ghost-button hidden"
-            type="button"
-          >
-            Latest Results
-          </button>
-          <div class="system-indicator" id="system-indicator">
-            <span class="pulse-dot"></span>
-            <span id="system-indicator-text">SYSTEM ONLINE</span>
-          </div>
-        </div>
-      </header>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRP — Security Reasoning Protocol</title>
+<meta name="description" content="AI agent army for smart contract security. 13 agents. One command. Zero vulnerabilities.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════ */
+/* RESET & BASE — x402-inspired light mode */
+/* ═══════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-      <div class="layout">
-        <aside class="sidebar">
-          <nav class="nav-list">
-            <button
-              class="nav-item active"
-              data-page="audit-page"
-              type="button"
-            >
-              Audit
-            </button>
-            <button class="nav-item" data-page="traces-page" type="button">
-              Traces
-            </button>
-            <button class="nav-item" data-page="reports-page" type="button">
-              Reports
-            </button>
-            <button class="nav-item" data-page="status-page" type="button">
-              Status
-            </button>
-          </nav>
-        </aside>
+:root {
+  --bg:         #fafafa;
+  --bg-surface: #f5f5f5;
+  --bg-card:    #ffffff;
+  --bg-hover:   #f0f0f0;
+  --border:     #e0e0e0;
+  --border-bright: #ccc;
+  --text:       #111;
+  --text-dim:   #666;
+  --text-muted: #999;
+  --accent:     #0a8f4f;
+  --accent-dim: rgba(10,143,79,0.1);
+  --red:        #cc2222;
+  --red-dim:    rgba(204,34,34,0.08);
+  --amber:      #b87a00;
+  --amber-dim:  rgba(184,122,0,0.08);
+  --blue:       #2266cc;
+  --mono:       'JetBrains Mono', monospace;
+  --sans:       'Inter', -apple-system, sans-serif;
+}
 
-        <main class="main-content">
-          <section class="page active" id="audit-page">
-            <div class="panel hero-panel">
-              <h1>Launch Audit Mission</h1>
-              <p>
-                Paste contract source, define mission scope, assign budget, and
-                launch the SRP multi-agent pipeline.
-              </p>
-            </div>
+/* ═══════════════════════════════════════ */
+/* DARK MODE OVERRIDES                    */
+/* ═══════════════════════════════════════ */
+[data-theme="dark"] {
+  --bg:         #050505;
+  --bg-surface: #0a0a0a;
+  --bg-card:    #0f0f0f;
+  --bg-hover:   #141414;
+  --border:     #1a1a1a;
+  --border-bright: #2a2a2a;
+  --text:       #e0e0e0;
+  --text-dim:   #666;
+  --text-muted: #444;
+  --accent:     #00ff88;
+  --accent-dim: rgba(0,255,136,0.15);
+  --red:        #ff4444;
+  --red-dim:    rgba(255,68,68,0.15);
+  --amber:      #ffaa00;
+  --amber-dim:  rgba(255,170,0,0.15);
+  --blue:       #4488ff;
+}
 
-            <div class="panel form-panel">
-              <label class="field-label" for="audit-description"
-                >Audit Description / Focus</label
-              >
-              <input
-                id="audit-description"
-                class="field-input"
-                type="text"
-                placeholder="Example: Focus on access control, liquidation logic, reentrancy and invariant breaks."
-              />
+html { font-size: 15px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
 
-              <label class="field-label" for="contract-code"
-                >Solidity Contract Code</label
-              >
-              <textarea
-                id="contract-code"
-                class="field-textarea"
-                placeholder="Paste Solidity source code here..."
-              ></textarea>
+/* ═══════════════════════════════════════ */
+/* HEADER — minimal, authoritative        */
+/* ═══════════════════════════════════════ */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 48px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  backdrop-filter: blur(20px);
+}
 
-              <div class="budget-row">
-                <div>
-                  <label class="field-label" for="budget-slider">Budget</label>
-                  <input
-                    id="budget-slider"
-                    type="range"
-                    min="1"
-                    max="500"
-                    value="50"
-                  />
-                </div>
-                <div class="budget-value" id="budget-value">$50</div>
-              </div>
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 
-              <button
-                id="launch-audit-btn"
-                class="launch-button"
-                type="button"
-                onclick="startAudit()"
-              >
-                LAUNCH AUDIT
-              </button>
-            </div>
+.logo {
+  font-family: var(--mono);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -1px;
+}
 
-            <div class="panel skills-panel">
-              <h2>Skills</h2>
-              <div class="skills-grid">
-                <div class="skill-metric">
-                  <div class="skill-label">Skill Name</div>
-                  <div id="active-skill-name" class="skill-value">
-                    solidity-auditor
-                  </div>
-                </div>
-                <div class="skill-metric">
-                  <div class="skill-label">Source</div>
-                  <div id="active-skill-source" class="skill-value">
-                    audit-skills
-                  </div>
-                </div>
-                <div class="skill-metric">
-                  <div class="skill-label">Status</div>
-                  <div>
-                    <span id="active-skill-badge" class="skill-active-badge"
-                      >ACTIVE</span
-                    >
-                  </div>
-                </div>
-              </div>
-              <details class="skills-arsenal" id="skills-arsenal">
-                <summary>Skills Arsenal</summary>
-                <div class="skills-tagline">7 firms. Every agent armed.</div>
-                <div class="table-wrap">
-                  <table class="skills-arsenal-table">
-                    <thead>
-                      <tr>
-                        <th>Agent</th>
-                        <th>Skills Loaded</th>
-                        <th>Source</th>
-                        <th>Git Hash</th>
-                      </tr>
-                    </thead>
-                    <tbody id="skills-arsenal-body"></tbody>
-                  </table>
-                </div>
-              </details>
-            </div>
+.logo-sub {
+  font-family: var(--mono);
+  font-size: 0.73rem;
+  color: var(--text-dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
 
-            <div class="panel pipeline-panel">
-              <h2>Live Agent Pipeline</h2>
-              <div id="pipeline-track" class="pipeline-track"></div>
-              <div id="vs-battle" class="vs-battle">
-                <span>ATTACK</span>
-                <span class="vs-icon">VS</span>
-                <span>DEFENSE</span>
-              </div>
-            </div>
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
 
-            <div class="panel logs-panel">
-              <h2>Live Log Stream</h2>
-              <div id="live-log" class="live-log"></div>
-            </div>
-          </section>
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 0.73rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
 
-          <section class="page" id="results-page">
-            <div class="panel hero-panel">
-              <h1>Mission Results</h1>
-              <p>Post-audit risk posture and actionable remediation outputs.</p>
-            </div>
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
 
-            <div class="results-grid">
-              <div class="panel gauge-panel">
-                <h2>Security Score</h2>
-                <div class="score-gauge" id="score-gauge">
-                  <div class="score-inner">
-                    <div id="score-value" class="score-value">0</div>
-                    <div class="score-label">/ 100</div>
-                  </div>
-                </div>
-              </div>
+.status-dot.idle { background: var(--text-dim); animation: none; }
+.status-dot.error { background: var(--red); }
 
-              <div class="panel result-actions-panel">
-                <h2>Actions</h2>
-                <button
-                  id="view-report-btn"
-                  class="action-button"
-                  type="button"
-                >
-                  View Full Report
-                </button>
-                <button id="view-trace-btn" class="action-button" type="button">
-                  View Trace
-                </button>
-                <button
-                  id="export-report-btn"
-                  class="action-button"
-                  type="button"
-                >
-                  Export Report
-                </button>
-                <div id="result-summary" class="result-summary"></div>
-              </div>
-            </div>
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,136,0.4); }
+  50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(0,255,136,0); }
+}
 
-            <div class="panel vulnerabilities-panel">
-              <h2>Vulnerabilities</h2>
-              <div id="vulnerability-list" class="vulnerability-list"></div>
-            </div>
-          </section>
+.project-name {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
 
-          <section class="page" id="traces-page">
-            <div class="panel hero-panel">
-              <h1>Audit Traces</h1>
-              <p>Inspect historical trace executions and replay workflows.</p>
-            </div>
+/* ═══════════════════════════════════════ */
+/* HERO STATS — x402-style large numbers  */
+/* ═══════════════════════════════════════ */
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--border);
+  margin: 0 48px;
+}
 
-            <div class="panel table-panel">
-              <div class="table-header-row">
-                <h2>Trace Registry</h2>
-                <button
-                  id="refresh-traces-btn"
-                  class="ghost-button"
-                  type="button"
-                >
-                  Refresh
-                </button>
-              </div>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Trace ID</th>
-                      <th>Date</th>
-                      <th>Contract</th>
-                      <th>Score</th>
-                      <th>Status</th>
-                      <th>Replay</th>
-                    </tr>
-                  </thead>
-                  <tbody id="traces-table-body"></tbody>
-                </table>
-              </div>
-            </div>
+.stat-block {
+  padding: 32px 0;
+  border-right: 1px solid var(--border);
+}
+.stat-block:last-child { border-right: none; }
 
-            <div class="panel trace-detail-panel">
-              <h2>Trace Details</h2>
-              <pre id="trace-detail" class="json-viewer">
-Select a trace row to inspect details.</pre
-              >
-            </div>
+.stat-number {
+  font-family: var(--mono);
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -2px;
+  line-height: 1;
+}
+.stat-number.accent { color: var(--accent); }
+.stat-number.red { color: var(--red); }
+.stat-number.amber { color: var(--amber); }
 
-            <div class="panel table-panel">
-              <h2>Trace Skills Arsenal</h2>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Agent</th>
-                      <th>Skills Loaded</th>
-                      <th>Source</th>
-                      <th>Git Hash</th>
-                    </tr>
-                  </thead>
-                  <tbody id="trace-skills-body">
-                    <tr>
-                      <td colspan="4">
-                        Select a trace to view skills arsenal.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
+.stat-label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 8px;
+}
 
-          <section class="page" id="reports-page">
-            <div class="panel hero-panel">
-              <h1>Reports</h1>
-              <p>Open and export generated markdown audit reports.</p>
-            </div>
+/* ═══════════════════════════════════════ */
+/* CONTENT LAYOUT                         */
+/* ═══════════════════════════════════════ */
+.content {
+  max-width: 100%;
+  padding: 0 48px;
+}
 
-            <div class="panel report-controls-panel">
-              <label class="field-label" for="report-trace-id">Trace ID</label>
-              <div class="inline-controls">
-                <input
-                  id="report-trace-id"
-                  class="field-input"
-                  type="text"
-                  placeholder="Enter trace id"
-                />
-                <button id="load-report-btn" class="ghost-button" type="button">
-                  Load
-                </button>
-              </div>
-            </div>
+.section-header {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  padding: 32px 0 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+}
 
-            <div class="panel table-panel">
-              <div class="table-header-row">
-                <h2>Known Reports</h2>
-                <button
-                  id="refresh-reports-btn"
-                  class="ghost-button"
-                  type="button"
-                >
-                  Refresh
-                </button>
-              </div>
-              <div id="report-list" class="report-list"></div>
-            </div>
+/* ═══════════════════════════════════════ */
+/* AGENT GRID — 13 agents, x402 card style*/
+/* ═══════════════════════════════════════ */
 
-            <div class="panel report-viewer-panel">
-              <h2>Report Markdown</h2>
-              <pre id="report-content" class="markdown-viewer">
-Load a report to preview markdown content.</pre
-              >
-            </div>
-          </section>
+/* Recon row: WATCHDOG, ORACLE, SPIDER */
+.agent-row-recon {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--border);
+}
 
-          <section class="page" id="status-page">
-            <div class="panel hero-panel">
-              <h1>System Status</h1>
-              <p>
-                Live mission control health for agents, policy, budget, and
-                runtime.
-              </p>
-            </div>
+/* Attack divider */
+.attack-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 0;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--red);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  background: var(--red-dim);
+  border-bottom: 1px solid rgba(255,68,68,0.2);
+}
 
-            <div class="status-grid" id="agent-status-grid"></div>
+/* Attack row: VIPER, GHOST, ZERO */
+.agent-row-attack {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid rgba(255,68,68,0.2);
+  background: rgba(255,68,68,0.03);
+}
 
-            <div class="panel status-metrics-panel">
-              <div class="status-metric">
-                <div class="metric-title">ERC-8004 Policy</div>
-                <div id="policy-status" class="metric-value">local-mode</div>
-              </div>
-              <div class="status-metric">
-                <div class="metric-title">x402 Budget</div>
-                <div id="budget-status" class="metric-value">
-                  local simulation
-                </div>
-              </div>
-              <div class="status-metric">
-                <div class="metric-title">System Version</div>
-                <div id="version-status" class="metric-value">srp-2026.1</div>
-              </div>
-              <div class="status-metric">
-                <div class="metric-title">Uptime</div>
-                <div id="uptime-status" class="metric-value">00:00:00</div>
-              </div>
-            </div>
+/* Defense/Analysis row */
+.agent-row-defense {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--border);
+}
 
-            <div class="panel skills-health-panel">
-              <div class="table-header-row">
-                <h2>Skills Health</h2>
-                <button
-                  id="refresh-skills-health-btn"
-                  class="ghost-button"
-                  type="button"
-                >
-                  Refresh
-                </button>
-              </div>
-              <div id="skills-health-summary" class="skills-health-summary">
-                Checking skills arsenal...
-              </div>
-              <div id="skills-health-list" class="skills-health-list"></div>
-            </div>
-          </section>
-        </main>
-      </div>
+/* Trace row */
+.agent-row-trace {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+
+.agent-card {
+  padding: 20px 24px;
+  border-right: 1px solid var(--border);
+  transition: background 0.2s;
+  min-height: 100px;
+}
+.agent-card:last-child { border-right: none; }
+.agent-card:hover { background: var(--bg-hover); }
+
+.agent-row-attack .agent-card {
+  border-right-color: rgba(255,68,68,0.15);
+}
+
+.agent-codename {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+.agent-row-attack .agent-codename { color: var(--red); }
+
+.agent-role {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+.agent-status {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 8px;
+  padding: 2px 8px;
+  border-radius: 2px;
+}
+
+.agent-status.standby  { color: var(--text-muted); background: transparent; border: 1px solid var(--border); }
+.agent-status.active   { color: var(--accent); background: var(--accent-dim); border: 1px solid rgba(0,255,136,0.3); }
+.agent-status.complete { color: var(--accent); background: transparent; }
+.agent-status.failed   { color: var(--red); background: var(--red-dim); border: 1px solid rgba(255,68,68,0.3); }
+
+.agent-log-line {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+/* ═══════════════════════════════════════ */
+/* LIVE LOG STREAM                        */
+/* ═══════════════════════════════════════ */
+.log-stream {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  max-height: 280px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 0.73rem;
+  line-height: 1.8;
+}
+
+.log-stream::-webkit-scrollbar { width: 4px; }
+.log-stream::-webkit-scrollbar-track { background: var(--bg); }
+.log-stream::-webkit-scrollbar-thumb { background: var(--border-bright); }
+
+.log-line {
+  padding: 2px 24px;
+  border-bottom: 1px solid rgba(26,26,26,0.5);
+  display: flex;
+  gap: 12px;
+  transition: background 0.15s;
+}
+.log-line:hover { background: var(--bg-hover); }
+
+.log-time { color: var(--text-muted); flex-shrink: 0; }
+.log-agent { color: var(--accent); font-weight: 600; flex-shrink: 0; min-width: 90px; }
+.log-msg { color: var(--text); }
+.log-line.finding .log-msg { color: var(--red); font-weight: 500; }
+.log-line.error .log-msg { color: var(--red); }
+
+/* ═══════════════════════════════════════ */
+/* RESULTS — slides in when complete      */
+/* ═══════════════════════════════════════ */
+.results-section {
+  display: none;
+  padding: 40px 0;
+}
+
+.results-section.visible {
+  display: block;
+  animation: slideIn 0.5s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.score-display {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+
+.score-number {
+  font-family: var(--mono);
+  font-size: 6rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -4px;
+}
+.score-number.safe   { color: var(--accent); }
+.score-number.warn   { color: var(--amber); }
+.score-number.danger { color: var(--red); }
+
+.score-meta {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.score-meta span { display: block; margin-top: 4px; }
+
+/* Finding cards — x402 comparison style */
+.findings-grid {
+  display: grid;
+  gap: 0;
+}
+
+.finding-card {
+  padding: 24px;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 24px;
+  transition: background 0.15s;
+}
+.finding-card:hover { background: var(--bg-hover); }
+
+.finding-severity {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 2px;
+  text-align: center;
+  height: fit-content;
+}
+.finding-severity.critical { color: var(--red); background: var(--red-dim); border: 1px solid rgba(255,68,68,0.3); }
+.finding-severity.high     { color: #ff6644; background: rgba(255,102,68,0.12); border: 1px solid rgba(255,102,68,0.3); }
+.finding-severity.medium   { color: var(--amber); background: var(--amber-dim); border: 1px solid rgba(255,170,0,0.3); }
+.finding-severity.low      { color: var(--blue); background: rgba(68,136,255,0.12); border: 1px solid rgba(68,136,255,0.3); }
+
+.finding-content h3 {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.finding-meta {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.finding-description {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+.finding-code {
+  margin-top: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 16px;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text);
+  overflow-x: auto;
+  white-space: pre;
+  border-radius: 2px;
+}
+.finding-code.fix { border-color: rgba(0,255,136,0.2); }
+
+/* ═══════════════════════════════════════ */
+/* SKILLS PANEL (bottom, collapsible)     */
+/* ═══════════════════════════════════════ */
+.skills-panel {
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+  padding: 24px 0;
+}
+
+.skills-toggle {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.skills-toggle:hover { color: var(--text); }
+
+.skills-grid {
+  display: none;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 16px;
+}
+.skills-grid.open { display: flex; }
+
+.skill-pill {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+/* ═══════════════════════════════════════ */
+/* FOOTER                                 */
+/* ═══════════════════════════════════════ */
+.footer {
+  border-top: 1px solid var(--border);
+  margin: 60px 48px 0;
+  padding: 24px 0;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.footer a { color: var(--text-dim); text-decoration: none; }
+.footer a:hover { color: var(--accent); }
+
+/* ═══════════════════════════════════════ */
+/* RESPONSIVE                             */
+/* ═══════════════════════════════════════ */
+@media (max-width: 900px) {
+  .header, .content, .footer { padding-left: 20px; padding-right: 20px; }
+  .hero-stats { margin: 0 20px; grid-template-columns: repeat(2, 1fr); }
+  .agent-row-recon, .agent-row-attack { grid-template-columns: 1fr; }
+  .agent-row-defense { grid-template-columns: repeat(2, 1fr); }
+  .agent-row-trace { grid-template-columns: 1fr; }
+  .finding-card { grid-template-columns: 1fr; }
+  .score-number { font-size: 4rem; }
+  .stat-number { font-size: 2rem; }
+}
+
+/* ═══════════════════════════════════════ */
+/* WAITING STATE                          */
+/* ═══════════════════════════════════════ */
+.waiting-overlay {
+  text-align: center;
+  padding: 80px 20px;
+}
+.waiting-overlay h2 {
+  font-family: var(--mono);
+  font-size: 1.4rem;
+  font-weight: 300;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+.waiting-overlay p {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.scan-line {
+  width: 200px;
+  height: 2px;
+  background: var(--border);
+  margin: 24px auto;
+  position: relative;
+  overflow: hidden;
+}
+.scan-line::after {
+  content: '';
+  position: absolute;
+  width: 60px;
+  height: 100%;
+  background: var(--accent);
+  animation: scan 1.5s ease-in-out infinite;
+}
+@keyframes scan {
+  0% { left: -60px; }
+  100% { left: 200px; }
+}
+
+/* ═══════════════════════════════════════ */
+/* THEME TOGGLE BUTTON                    */
+/* ═══════════════════════════════════════ */
+.theme-toggle {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+.theme-toggle:hover {
+  color: var(--text);
+  border-color: var(--border-bright);
+  background: var(--bg-hover);
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo">SRP</div>
+    <div class="logo-sub">Security Reasoning Protocol</div>
+  </div>
+  <div class="header-right">
+    <div class="status-badge">
+      <div class="status-dot idle" id="status-dot"></div>
+      <span id="status-text">WAITING</span>
+    </div>
+    <div class="project-name" id="project-name">—</div>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
+      <span id="theme-icon">◐</span>
+    </button>
+  </div>
+</header>
+
+<!-- ═══ HERO STATS ═══ -->
+<div class="hero-stats">
+  <div class="stat-block">
+    <div class="stat-number" id="stat-contracts">—</div>
+    <div class="stat-label">Contracts</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-number" id="stat-agents">13</div>
+    <div class="stat-label">Agents Deployed</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-number" id="stat-findings">0</div>
+    <div class="stat-label">Findings</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-number accent" id="stat-score">—</div>
+    <div class="stat-label">Security Score</div>
+  </div>
+</div>
+
+<!-- ═══ MAIN CONTENT ═══ -->
+<div class="content">
+
+  <!-- Waiting state (before audit starts) -->
+  <div id="waiting-state" class="waiting-overlay">
+    <h2>Waiting for audit pipeline...</h2>
+    <div class="scan-line"></div>
+    <p>Run <code style="color:var(--accent);">srp audit</code> from your project directory</p>
+  </div>
+
+  <!-- Agent pipeline (shown during audit) -->
+  <div id="agent-pipeline" style="display:none;">
+    <div class="section-header">Agent Pipeline — 13 Units Deployed</div>
+
+    <!-- Recon Phase: WATCHDOG, ORACLE, SPIDER -->
+    <div class="agent-row-recon" id="row-recon"></div>
+
+    <!-- Attack Divider -->
+    <div class="attack-divider">
+      <span>⚔</span>
+      <span>Simultaneous Attack</span>
+      <span>⚔</span>
     </div>
 
-    <script src="/ui/app.js"></script>
-  </body>
+    <!-- Attack Phase: VIPER, GHOST, ZERO -->
+    <div class="agent-row-attack" id="row-attack"></div>
+
+    <!-- Defense Phase: SHIELD, FORGE, SHOCKWAVE, MIRROR -->
+    <div class="agent-row-defense" id="row-defense"></div>
+
+    <!-- Trace Phase: DELTA, COMMAND, LEDGER -->
+    <div class="agent-row-trace" id="row-trace"></div>
+
+    <!-- Live Log Stream -->
+    <div class="section-header">Live Log Stream</div>
+    <div class="log-stream" id="log-stream"></div>
+  </div>
+
+  <!-- Results (slides in when done) -->
+  <div class="results-section" id="results-section">
+    <div class="section-header">Mission Results</div>
+    <div class="score-display">
+      <div class="score-number" id="final-score">—</div>
+      <div class="score-meta">
+        <span>/ 100</span>
+        <span id="score-label">Security Score</span>
+      </div>
+    </div>
+    <div class="findings-grid" id="findings-grid"></div>
+  </div>
+
+  <!-- Skills Panel -->
+  <div class="skills-panel">
+    <button class="skills-toggle" onclick="toggleSkills()">
+      <span id="skills-arrow">▸</span> Skills Arsenal — <span id="skills-count">0</span> loaded from 7 firms
+    </button>
+    <div class="skills-grid" id="skills-grid"></div>
+  </div>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="footer">
+  <div>SRP v2026.1 — Open Source</div>
+  <div><a href="https://github.com/Ramprasad4121/srp" target="_blank">GitHub ↗</a></div>
+</footer>
+
+<!-- ═══ JAVASCRIPT ═══ -->
+<script>
+/* ═══════════════════════════════════════ */
+/* AGENT DEFINITIONS                      */
+/* ═══════════════════════════════════════ */
+const AGENTS = {
+  recon: [
+    { id: 'WATCHDOG', name: 'WATCHDOG', role: 'Triage & threat classification' },
+    { id: 'ORACLE',   name: 'ORACLE',   role: 'Threat intelligence & pattern matching' },
+    { id: 'SPIDER',   name: 'SPIDER',   role: 'Dependency mapping & call graph' },
+  ],
+  attack: [
+    { id: 'VIPER', name: 'VIPER', role: 'Business logic & invariant attacks' },
+    { id: 'GHOST', name: 'GHOST', role: 'Reentrancy, oracle & proxy attacks' },
+    { id: 'ZERO',  name: 'ZERO',  role: 'Signature, DoS & arithmetic attacks' },
+  ],
+  defense: [
+    { id: 'SHIELD',    name: 'SHIELD',    role: 'Blue team validation & adjudication' },
+    { id: 'FORGE',     name: 'FORGE',     role: 'Remediation & fix generation' },
+    { id: 'SHOCKWAVE', name: 'SHOCKWAVE', role: 'Impact analysis & blast radius' },
+    { id: 'MIRROR',    name: 'MIRROR',    role: 'Fork detection & comparison' },
+  ],
+  trace: [
+    { id: 'DELTA',   name: 'DELTA',   role: 'Differential review' },
+    { id: 'COMMAND', name: 'COMMAND', role: 'Pipeline orchestration' },
+    { id: 'LEDGER',  name: 'LEDGER',  role: 'Cryptographic trace generation' },
+  ],
+};
+
+/* ═══════════════════════════════════════ */
+/* STATE                                  */
+/* ═══════════════════════════════════════ */
+let lastLogCount = 0;
+let pollInterval = null;
+let auditStarted = false;
+let agentLogMap = {};
+
+/* ═══════════════════════════════════════ */
+/* RENDER AGENTS                          */
+/* ═══════════════════════════════════════ */
+function renderAgentRow(containerId, agents) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = agents.map(a => `
+    <div class="agent-card" id="card-${a.id}">
+      <div class="agent-codename">${a.name}</div>
+      <div class="agent-role">${a.role}</div>
+      <div class="agent-status standby" id="status-${a.id}">STANDBY</div>
+      <div class="agent-log-line" id="log-${a.id}"></div>
+    </div>
+  `).join('');
+}
+
+function initAgentGrid() {
+  renderAgentRow('row-recon',   AGENTS.recon);
+  renderAgentRow('row-attack',  AGENTS.attack);
+  renderAgentRow('row-defense', AGENTS.defense);
+  renderAgentRow('row-trace',   AGENTS.trace);
+}
+
+/* ═══════════════════════════════════════ */
+/* UPDATE AGENT STATUS                    */
+/* ═══════════════════════════════════════ */
+function updateAgentStatus(agentId, status) {
+  const el = document.getElementById(`status-${agentId}`);
+  if (!el) return;
+  el.className = `agent-status ${status}`;
+  el.textContent = status.toUpperCase();
+}
+
+function updateAgentLog(agentId, msg) {
+  const el = document.getElementById(`log-${agentId}`);
+  if (el) el.textContent = msg;
+}
+
+/* ═══════════════════════════════════════ */
+/* LOG STREAM                             */
+/* ═══════════════════════════════════════ */
+function addLogLine(text) {
+  const stream = document.getElementById('log-stream');
+  const now = new Date().toLocaleTimeString('en-US', { hour12: false });
+
+  // Extract agent name from log
+  let agent = 'SYSTEM';
+  let msg = text;
+  let cls = '';
+
+  const agentMatch = text.match(/\[([A-Z]+(?:Agent)?)\]/);
+  if (agentMatch) {
+    const rawAgent = agentMatch[1];
+    // Map agent names to codenames
+    const agentMap = {
+      'IntentAgent': 'WATCHDOG', 'ReconAgent': 'SPIDER', 'AttackAgent': 'VIPER',
+      'DefenseAgent': 'SHIELD', 'TraceAgent': 'LEDGER', 'ReportAgent': 'COMMAND',
+      'WATCHDOG': 'WATCHDOG', 'ORACLE': 'ORACLE', 'SPIDER': 'SPIDER',
+      'VIPER': 'VIPER', 'GHOST': 'GHOST', 'ZERO': 'ZERO',
+      'SHIELD': 'SHIELD', 'FORGE': 'FORGE', 'SHOCKWAVE': 'SHOCKWAVE',
+      'MIRROR': 'MIRROR', 'DELTA': 'DELTA', 'COMMAND': 'COMMAND', 'LEDGER': 'LEDGER',
+    };
+    agent = agentMap[rawAgent] || rawAgent;
+    msg = text.replace(/\[([A-Z]+(?:Agent)?)\]\s*/, '');
+  }
+
+  if (text.includes('CRITICAL') || text.includes('❌') || text.includes('Error')) cls = 'error';
+  if (text.includes('[CRITICAL]') || text.includes('[HIGH]')) cls = 'finding';
+
+  const line = document.createElement('div');
+  line.className = `log-line ${cls}`;
+  line.innerHTML = `
+    <span class="log-time">${now}</span>
+    <span class="log-agent">${agent}</span>
+    <span class="log-msg">${escapeHtml(msg)}</span>
+  `;
+  stream.appendChild(line);
+  stream.scrollTop = stream.scrollHeight;
+
+  // Update agent card log line
+  if (agent !== 'SYSTEM') {
+    agentLogMap[agent] = msg.substring(0, 60);
+    updateAgentLog(agent, agentLogMap[agent]);
+  }
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+/* ═══════════════════════════════════════ */
+/* POLL STATUS                            */
+/* ═══════════════════════════════════════ */
+async function pollStatus() {
+  try {
+    const res = await fetch('/api/audit/status');
+    const data = await res.json();
+
+    // First time we get data — show the pipeline
+    if (data.status !== 'idle' && !auditStarted) {
+      auditStarted = true;
+      document.getElementById('waiting-state').style.display = 'none';
+      document.getElementById('agent-pipeline').style.display = 'block';
+
+      // Status dot active
+      const dot = document.getElementById('status-dot');
+      dot.className = 'status-dot';
+      document.getElementById('status-text').textContent = 'AUDIT IN PROGRESS';
+    }
+
+    // Update project info
+    if (data.project) {
+      document.getElementById('project-name').textContent = data.project;
+    }
+    if (data.contracts_total !== undefined) {
+      document.getElementById('stat-contracts').textContent = data.contracts_total;
+    }
+
+    // Update agent statuses
+    if (data.agent_statuses) {
+      Object.entries(data.agent_statuses).forEach(([id, status]) => {
+        updateAgentStatus(id, status);
+      });
+    }
+
+    // Update logs incrementally
+    if (data.logs && data.logs.length > lastLogCount) {
+      const newLogs = data.logs.slice(lastLogCount);
+      newLogs.forEach(log => addLogLine(log));
+      lastLogCount = data.logs.length;
+    }
+
+    // Parse logs for agent activity to update statuses
+    if (data.logs) {
+      data.logs.forEach(log => {
+        if (log.includes('Starting')) {
+          const m = log.match(/\[(\w+)\]/);
+          if (m) updateAgentStatus(mapAgentName(m[1]), 'active');
+        }
+        if (log.includes('Complete') || log.includes('✅')) {
+          const m = log.match(/\[(\w+)\]/);
+          if (m) updateAgentStatus(mapAgentName(m[1]), 'complete');
+        }
+      });
+    }
+
+    // Update findings count
+    if (data.findings) {
+      const count = data.findings.length;
+      document.getElementById('stat-findings').textContent = count;
+      if (count > 0) {
+        document.getElementById('stat-findings').className = 'stat-number red';
+      }
+    }
+
+    // Complete
+    if (data.status === 'complete') {
+      clearInterval(pollInterval);
+
+      const score = data.score || 0;
+      document.getElementById('stat-score').textContent = score;
+      document.getElementById('final-score').textContent = score;
+
+      // Color the score
+      const scoreEl = document.getElementById('final-score');
+      const statScoreEl = document.getElementById('stat-score');
+      if (score >= 90) {
+        scoreEl.className = 'score-number safe';
+        statScoreEl.className = 'stat-number accent';
+      } else if (score >= 70) {
+        scoreEl.className = 'score-number warn';
+        statScoreEl.className = 'stat-number amber';
+      } else {
+        scoreEl.className = 'score-number danger';
+        statScoreEl.className = 'stat-number red';
+      }
+
+      document.getElementById('score-label').textContent =
+        score >= 90 ? 'Secure' : score >= 70 ? 'Needs Attention' : 'Critical Issues Found';
+
+      // Status
+      document.getElementById('status-dot').className = score >= 70 ? 'status-dot' : 'status-dot error';
+      document.getElementById('status-text').textContent = 'AUDIT COMPLETE';
+
+      // Mark all agents complete
+      Object.values(AGENTS).flat().forEach(a => updateAgentStatus(a.id, 'complete'));
+
+      // Render findings
+      renderFindings(data.findings || []);
+
+      // Show results
+      document.getElementById('results-section').classList.add('visible');
+    }
+
+  } catch (e) {
+    console.error('Poll error:', e);
+  }
+}
+
+function mapAgentName(raw) {
+  const map = {
+    'IntentAgent': 'WATCHDOG', 'ReconAgent': 'SPIDER', 'AttackAgent': 'VIPER',
+    'DefenseAgent': 'SHIELD', 'TraceAgent': 'LEDGER', 'ReportAgent': 'COMMAND',
+  };
+  return map[raw] || raw;
+}
+
+/* ═══════════════════════════════════════ */
+/* RENDER FINDINGS                        */
+/* ═══════════════════════════════════════ */
+function renderFindings(findings) {
+  const grid = document.getElementById('findings-grid');
+  if (!findings.length) {
+    grid.innerHTML = `
+      <div style="padding:32px 24px; color:var(--text-dim); font-family:var(--mono); font-size:0.8rem;">
+        No confirmed vulnerabilities found. Contract appears secure.
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = findings.map((f, i) => {
+    const sev = (f.severity || 'medium').toLowerCase();
+    return `
+      <div class="finding-card">
+        <div class="finding-severity ${sev}">${(f.severity || 'medium').toUpperCase()}</div>
+        <div class="finding-content">
+          <h3>${escapeHtml(f.title || `Finding ${i+1}`)}</h3>
+          <div class="finding-meta">
+            ${f.location ? `Location: ${escapeHtml(f.location)}` : ''}
+            ${f.affected_function ? ` · ${escapeHtml(f.affected_function)}` : ''}
+          </div>
+          <div class="finding-description">${escapeHtml(f.description || '')}</div>
+          ${f.exploit_code ? `<div class="finding-code">${escapeHtml(f.exploit_code)}</div>` : ''}
+          ${f.fix_code ? `<div class="finding-code fix">// FORGE fix →\n${escapeHtml(f.fix_code)}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════ */
+/* SKILLS                                 */
+/* ═══════════════════════════════════════ */
+function toggleSkills() {
+  const grid = document.getElementById('skills-grid');
+  const arrow = document.getElementById('skills-arrow');
+  const isOpen = grid.classList.toggle('open');
+  arrow.textContent = isOpen ? '▾' : '▸';
+}
+
+async function loadSkills() {
+  try {
+    const res = await fetch('/api/skills');
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      document.getElementById('skills-count').textContent = data.length;
+      document.getElementById('skills-grid').innerHTML = data.map(s =>
+        `<span class="skill-pill">${escapeHtml(s.name || s)}</span>`
+      ).join('');
+    }
+  } catch (e) { /* skills not critical */ }
+}
+
+/* ═══════════════════════════════════════ */
+/* THEME TOGGLE                           */
+/* ═══════════════════════════════════════ */
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    html.removeAttribute('data-theme');
+    document.getElementById('theme-icon').textContent = '◐';
+    localStorage.setItem('srp-theme', 'light');
+  } else {
+    html.setAttribute('data-theme', 'dark');
+    document.getElementById('theme-icon').textContent = '◑';
+    localStorage.setItem('srp-theme', 'dark');
+  }
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('srp-theme');
+  if (saved === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.getElementById('theme-icon').textContent = '◑';
+  }
+}
+
+/* ═══════════════════════════════════════ */
+/* INIT                                   */
+/* ═══════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  initAgentGrid();
+  loadSkills();
+
+  // Start polling immediately
+  pollStatus();
+  pollInterval = setInterval(pollStatus, 2000);
+});
+</script>
+</body>
 </html>
