@@ -8,11 +8,12 @@ from .base_agent import BaseAgent
 
 
 class DefenseAgent(BaseAgent):
-    def __init__(self, model: str = "meta/llama-3.1-405b-instruct") -> None:
+    def __init__(self, model: str = "deepseek-ai/deepseek-v3.2") -> None:
         super().__init__(
             name="DefenseAgent",
             role="Blue team agent — challenges AttackAgent findings and proposes fixes",
             skill_keys=["audit-firm-1-solidity-auditor"],
+            model=model,
         )
         self.skill_name = "solidity-auditor"
         self.skill_role = "defense"

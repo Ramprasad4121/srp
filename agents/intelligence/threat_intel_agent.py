@@ -21,6 +21,7 @@ class ThreatIntelAgent(BaseAgent):
             name="ThreatIntelAgent",
             role="Tracks latest DeFi exploit intelligence and maps known exploit patterns to contracts",
             skill_keys=["ethskills-concepts"],
+            model="moonshotai/kimi-k2.5",
         )
         self.threat_db_path = "./data/threat_intel.json"
 

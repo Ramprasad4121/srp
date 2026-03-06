@@ -9,11 +9,12 @@ from .base_agent import BaseAgent
 
 
 class AttackAgent(BaseAgent):
-    def __init__(self, model: str = "meta/llama-3.1-405b-instruct") -> None:
+    def __init__(self, model: str = "deepseek-ai/deepseek-v3.2") -> None:
         super().__init__(
             name="AttackAgent",
             role="Red team agent — actively tries to find exploits",
             skill_keys=["audit-firm-1-solidity-auditor"],
+            model=model,
         )
         self.skill_name = "solidity-auditor"
         self.skill_source = "audit-skills"
@@ -160,8 +161,10 @@ class AttackAgent(BaseAgent):
             "severity must be one of: low, medium, high, critical. "
             "confidence must be a number from 0.0 to 1.0."
         )
+        # Only send the contract map keys (contract names) to avoid massive payload
+        contract_names = list(contract_map.keys()) if isinstance(contract_map, dict) else []
         user_payload = {
-            "contract_map": contract_map,
+            "contracts": contract_names,
             "entry_points": entry_points,
             "business_logic_pass": business_logic_result,
             "invariant_pass": invariant_result,
@@ -190,10 +193,16 @@ class AttackAgent(BaseAgent):
             "severity must be one of: low, medium, high, critical. "
             "confidence must be a number from 0.0 to 1.0."
         )
+        # Only send top 5 highest-confidence hypotheses to keep payload small
+        hypotheses = self._ensure_list(hypothesis_result.get("hypotheses", []))
+        top_hypotheses = sorted(
+            hypotheses,
+            key=lambda h: float(h.get("confidence", 0)) if isinstance(h.get("confidence"), (int, float, str)) else 0,
+            reverse=True,
+        )[:5]
         user_payload = {
-            "contract_map": contract_map,
             "entry_points": entry_points,
-            "hypothesis_pass": hypothesis_result,
+            "hypotheses": top_hypotheses,
         }
 
         result = await self._execute_json_pass(pass_name, system_prompt, user_payload)
@@ -212,6 +221,11 @@ class AttackAgent(BaseAgent):
         ghost_skill = self.sl.load_many(["quillai-reentrancy", "quillai-oracle-flashloan", "quillai-proxy-upgrade"])
         self.log(f"ghost_skills_loaded — {len(ghost_skill)} chars")
 
+        from core.solodit import solodit
+        ghost_solodit = await solodit.search("reentrancy cross-function", limit=3)
+        oracle_solodit = await solodit.search("oracle price manipulation", limit=3)
+        solodit_block = f"Real-world exploit references:\n{ghost_solodit}\n{oracle_solodit}"
+
         system_prompt = (
             "You are GHOST — specialist in reentrancy, oracle manipulation, and proxy storage collisions.\n"
             "Focus ONLY on:\n"
@@ -220,10 +234,12 @@ class AttackAgent(BaseAgent):
             "- Proxy implementation slot collisions\n"
             "- Delegatecall vulnerabilities\n\n"
             f"{ghost_skill}\n\n"
+            f"{solodit_block}\n\n"
             "Return ONLY valid JSON with keys: vulnerabilities (array of objects with id, title, severity, affected_function, description, exploit_code, confidence)."
         )
+        # Send only entry_points and contract names instead of full source map
         user_payload = {
-            "contract_map": contract_map,
+            "entry_points": list(contract_map.keys()) if isinstance(contract_map, dict) else [],
         }
 
         result = await self._execute_json_pass(pass_name, system_prompt, user_payload)
@@ -242,6 +258,11 @@ class AttackAgent(BaseAgent):
         zero_skill = self.sl.load_many(["quillai-signature-replay", "quillai-dos-griefing", "quillai-input-arithmetic"])
         self.log(f"zero_skills_loaded — {len(zero_skill)} chars")
 
+        from core.solodit import solodit
+        sig_solodit = await solodit.search("signature replay missing nonce", limit=3)
+        dos_solodit = await solodit.search("gas griefing DoS", limit=3)
+        solodit_block = f"Real-world exploit references:\n{sig_solodit}\n{dos_solodit}"
+
         system_prompt = (
             "You are ZERO — specialist in signature replay, DoS vectors, and arithmetic exploits.\n"
             "Focus ONLY on:\n"
@@ -250,10 +271,12 @@ class AttackAgent(BaseAgent):
             "- Integer overflow/underflow edge cases\n"
             "- Front-running and sandwich attacks\n\n"
             f"{zero_skill}\n\n"
+            f"{solodit_block}\n\n"
             "Return ONLY valid JSON with keys: vulnerabilities (array of objects with id, title, severity, affected_function, description, exploit_code, confidence)."
         )
+        # Send only entry_points and contract names instead of full source map
         user_payload = {
-            "contract_map": contract_map,
+            "entry_points": list(contract_map.keys()) if isinstance(contract_map, dict) else [],
         }
 
         result = await self._execute_json_pass(pass_name, system_prompt, user_payload)

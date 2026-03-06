@@ -64,23 +64,16 @@ class ReconAgent(BaseAgent):
             system_prompt_addition = ""
 
         system_prompt = (
-            "You are a smart contract reconnaissance analyst. "
-            "Analyze Solidity contracts and return ONLY valid JSON with this exact shape: "
-            "{"
-            "\"contract_map\": {"
-            "\"contracts\": [], "
-            "\"modifiers\": [], "
-            "\"inheritance_tree\": [], "
-            "\"identified_interfaces\": []"
-            "}, "
-            "\"functions\": [], "
-            "\"state_vars\": [], "
-            "\"external_calls\": [], "
-            "\"entry_points\": [], "
-            "\"risk_surface\": []"
-            "}. "
-            "Include all functions with visibility, all state variables, all external calls, "
-            "all modifiers, inheritance tree details, and identified interfaces."
+            "Analyze the provided Solidity sources and map the contract architecture. "
+            "Return ONLY this compact JSON, nothing else, no preamble:\n"
+            "{\n"
+            "  \"contracts\": [\"ContractName1\", \"ContractName2\", ...],\n"
+            "  \"risk_contracts\": [\"HighRiskContract1\", ...],\n"
+            "  \"entry_points\": {\"ContractName\": [\"func1\", \"func2\"]},\n"
+            "  \"external_calls\": [\"Contract.function\", ...],\n"
+            "  \"access_control\": [\"modifier1\", \"modifier2\"]\n"
+            "}\n"
+            "Keep it minimal. No inheritance trees. No descriptions. Just the data above."
             f"{system_prompt_addition}"
         )
         user_prompt = (
@@ -99,9 +92,11 @@ class ReconAgent(BaseAgent):
             },
         )
 
+        print(f"CALLING LLM WITH MAX TOKENS: 4096")
         llm_output = await self.call_llm(
             system_extra=system_prompt, messages=messages, max_tokens=4096
         )
+        print(f"RESPONSE LENGTH: {len(llm_output)}")
         self.log_step("recon_llm_response_received", {"response_preview": llm_output[:1000]})
 
         try:
@@ -207,44 +202,33 @@ class ReconAgent(BaseAgent):
         return parse_llm_json(llm_output)
 
     def _normalize_recon_result(self, parsed: dict) -> dict:
-        contract_map = parsed.get("contract_map", {})
-        if not isinstance(contract_map, dict):
-            contract_map = {}
-
-        functions = self._normalize_list(parsed.get("functions", []))
-        state_vars = self._normalize_list(parsed.get("state_vars", []))
+        contracts = self._normalize_list(parsed.get("contracts", []))
+        risk_contracts = self._normalize_list(parsed.get("risk_contracts", []))
+        
+        entry_points = parsed.get("entry_points", {})
+        if not isinstance(entry_points, dict):
+            entry_points = {}
+            
         external_calls = self._normalize_list(parsed.get("external_calls", []))
-        entry_points = self._normalize_list(parsed.get("entry_points", []))
-        risk_surface = self._normalize_list(parsed.get("risk_surface", []))
+        access_control = self._normalize_list(parsed.get("access_control", []))
 
-        # Keep contract_map complete even if model places these keys at top-level.
-        modifiers = self._normalize_list(
-            contract_map.get("modifiers", parsed.get("modifiers", []))
-        )
-        inheritance_tree = self._normalize_list(
-            contract_map.get("inheritance_tree", parsed.get("inheritance_tree", []))
-        )
-        identified_interfaces = self._normalize_list(
-            contract_map.get(
-                "identified_interfaces", parsed.get("identified_interfaces", [])
-            )
-        )
-        contracts = self._normalize_list(contract_map.get("contracts", []))
-
+        # We still return the old dictionary structure minimally populated
+        # to avoid breaking downstream agents that might expect these keys,
+        # but we feed it with the new compact data.
         normalized_contract_map = {
             "contracts": contracts,
-            "modifiers": modifiers,
-            "inheritance_tree": inheritance_tree,
-            "identified_interfaces": identified_interfaces,
+            "risk_contracts": risk_contracts,
         }
 
         return {
             "contract_map": normalized_contract_map,
-            "functions": functions,
-            "state_vars": state_vars,
+            "entry_points": entry_points, # now a dict
             "external_calls": external_calls,
-            "entry_points": entry_points,
-            "risk_surface": risk_surface,
+            "access_control": access_control,
+            # Stub out legacy keys to prevent dict.get() failures in other agents
+            "functions": [],
+            "state_vars": [],
+            "risk_surface": risk_contracts,
         }
 
     def _normalize_list(self, value: Any) -> list:

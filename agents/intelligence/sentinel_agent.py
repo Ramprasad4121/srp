@@ -17,7 +17,7 @@ class SentinelAgent(BaseAgent):
             name="SentinelAgent",
             role="24/7 transaction anomaly triage",
             skill_keys=["solidity-auditor", "ethskills-concepts"],
-            model="claude-haiku-4-5-20251001",
+            model="deepseek-ai/deepseek-v3.2",
         )
         self.monitored_contracts: list[str] = []
 

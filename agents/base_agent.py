@@ -71,6 +71,7 @@ class BaseAgent(ABC):
         api_key: str | None = None,
         budget_tokens: int | None = None,
         max_tokens: int = 4096,
+        model: str | None = None,
     ) -> str:
         from core.guardrails import SRPGuardrails
         import json
@@ -104,40 +105,74 @@ class BaseAgent(ABC):
             system_prompt += "---\n\n# CURRENT TASK\n\n"
             system_prompt += system_extra
 
+        resolved_model = model or self.model
+
         self.log_step(
             "llm_call_started",
             {
-                "model": self.model,
+                "model": resolved_model,
                 "message_count": len(messages),
                 "system_preview": system_prompt[:400],
                 "budget_tokens": budget_tokens,
             },
         )
-
-        client = AsyncOpenAI(
-            base_url="https://integrate.api.nvidia.com/v1",
-            api_key=resolved_key
-        )
-
         # OpenAI format requires system prompt as a message
         oai_messages = [{"role": "system", "content": system_prompt}] + messages
 
-        kwargs: dict = {
-            "model": self.model,
-            "max_tokens": max_tokens,
-            "messages": oai_messages,
-            "temperature": 0.2,
-            "top_p": 0.7,
-        }
+        import httpx
 
-        # Handle budget_tokens (NVIDIA/Llama might not support thinking budget natively yet,
-        # but we can scale up max_tokens if explicitly requested)
-        if budget_tokens and budget_tokens > 0:
-            kwargs["max_tokens"] = max(max_tokens, budget_tokens + 1000)
+        # Kimi K2.5 — uses direct HTTP request due to different API shape
+        if "kimi" in resolved_model.lower():
+            headers = {
+                "Authorization": f"Bearer {resolved_key}",
+                "Accept": "application/json"
+            }
+            payload = {
+                "model": resolved_model,
+                "messages": oai_messages,
+                "max_tokens": max_tokens,
+                "temperature": 1.00,
+                "top_p": 1.00,
+                "stream": False,
+                "chat_template_kwargs": {"thinking": True}
+            }
+            async with httpx.AsyncClient(timeout=300.0) as http_client:
+                resp = await http_client.post(
+                    "https://integrate.api.nvidia.com/v1/chat/completions",
+                    headers=headers,
+                    json=payload
+                )
+                resp.raise_for_status()
+                response_text = resp.json()["choices"][0]["message"]["content"]
+        else:
+            # DeepSeek V3.2 and Llama — use OpenAI client
+            client = AsyncOpenAI(
+                base_url="https://integrate.api.nvidia.com/v1",
+                api_key=resolved_key,
+                timeout=300.0,
+            )
 
-        response = await client.chat.completions.create(**kwargs)
+            extra = {}
+            # Disabled "thinking: True" for deepseek because it causes 7-minute passes
+            # if "deepseek" in resolved_model.lower():
+            #     extra["extra_body"] = {"chat_template_kwargs": {"thinking": True}}
 
-        response_text = response.choices[0].message.content or ""
+            kwargs: dict = {
+                "model": resolved_model,
+                "max_tokens": max_tokens,
+                "messages": oai_messages,
+                "temperature": 1 if "deepseek" in resolved_model.lower() else 0.2,
+                "top_p": 0.95 if "deepseek" in resolved_model.lower() else 0.7,
+            }
+
+            if budget_tokens and budget_tokens > 0:
+                kwargs["max_tokens"] = max(max_tokens, budget_tokens + 1000)
+
+            response = await client.chat.completions.create(
+                **kwargs,
+                **extra
+            )
+            response_text = response.choices[0].message.content or ""
 
         self.log_step(
             "llm_call_completed",

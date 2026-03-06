@@ -29,6 +29,7 @@ class GraphAgent(BaseAgent):
             name="GraphAgent",
             role="Builds a protocol relationship graph for dependency and blast-radius analysis",
             skill_keys=["ethskills-standards", "ethskills-concepts"],
+            model="moonshotai/kimi-k2.5",
         )
         self.graph = nx.DiGraph()
         self.graph_path = Path("./data/contract_graph.json")
@@ -233,7 +234,22 @@ class GraphAgent(BaseAgent):
         exploit_address = str(context.get("exploit_address", "")).strip()
 
         if address and source_code:
-            return await self.map_contract(address=address, source_code=source_code)
+            result = await self.map_contract(address=address, source_code=source_code)
+            
+            from core.solodit import solodit
+
+            # After building contract map, enrich with historical context
+            solodit_context = []
+            for keyword in ["flash loan", "reentrancy", "oracle manipulation", "proxy storage"]:
+                results = await solodit.search(keyword, limit=3)
+                if results:
+                    solodit_context.append(f"## Historical {keyword} exploits:\n{results}")
+
+            self.log("solodit_context_loaded")
+            # Inject into recon context passed downstream
+            context["solodit_intel"] = "\n\n".join(solodit_context)
+            
+            return result
         if exploit_address:
             paths = await self.get_blast_path(exploit_address)
             return {"blast_paths": paths}

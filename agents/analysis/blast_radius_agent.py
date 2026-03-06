@@ -14,6 +14,7 @@ class BlastRadiusAgent(BaseAgent):
             name="BlastRadiusAgent",
             role="Assesses exploit blast radius by pattern-matching vulnerabilities across monitored contracts",
             skill_keys=["tob-variant-analysis"],
+            model="moonshotai/kimi-k2.5",
         )
         self.graph_path = Path("./data/contract_graph.json")
         self.alert_callback: Callable[[dict[str, Any]], Awaitable[None]] | None = None

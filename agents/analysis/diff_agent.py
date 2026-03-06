@@ -20,6 +20,7 @@ class DiffAgent(BaseAgent):
             name="DiffAgent",
             role="Runs security-focused differential review across revisions",
             skill_keys=["tob-differential-review", "audit-firm-1-solidity-auditor"],
+            model="moonshotai/kimi-k2.5",
         )
         self._watching = False
 

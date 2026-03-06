@@ -163,7 +163,7 @@ class SkillLoader:
     @staticmethod
     def _repo_folder_from_path(skill_path: str) -> str | None:
         if skill_path.startswith("skills/audit-firm-1/") or skill_path.startswith("skills/pashov/"):
-            return "audit-firm-1"
+            return "pashov"
         if skill_path.startswith("skills/quillai/"):
             return "quillai"
         if skill_path.startswith("skills/trailofbits/"):
