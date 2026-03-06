@@ -44,6 +44,25 @@ class ReconAgent(BaseAgent):
             },
         )
 
+        MAX_SOURCE_CHARS = 100000
+        if source_payload["total_source_chars"] > MAX_SOURCE_CHARS:
+            self.log_step(
+                "recon_using_summary",
+                {"reason": "source too large", "chars": source_payload["total_source_chars"]}
+            )
+            summarized_sources = []
+            for filepath in sol_files:
+                try:
+                    content = Path(filepath).read_text(encoding="utf-8")
+                    summarized_sources.append(f"File: {filepath}\n```sol\n{self._summarize_solidity(content)}\n```\n")
+                except OSError:
+                    pass
+            source_text_for_prompt = "\n".join(summarized_sources)
+            system_prompt_addition = " NOTE: Source code is summarized due to length. Infer architecture from function signatures and state variables."
+        else:
+            source_text_for_prompt = source_payload["sources_text"]
+            system_prompt_addition = ""
+
         system_prompt = (
             "You are a smart contract reconnaissance analyst. "
             "Analyze Solidity contracts and return ONLY valid JSON with this exact shape: "
@@ -62,12 +81,13 @@ class ReconAgent(BaseAgent):
             "}. "
             "Include all functions with visibility, all state variables, all external calls, "
             "all modifiers, inheritance tree details, and identified interfaces."
+            f"{system_prompt_addition}"
         )
         user_prompt = (
             "Contract paths:\n"
             f"{json.dumps(sol_files)}\n\n"
             "Solidity sources:\n"
-            f"{source_payload['sources_text']}"
+            f"{source_text_for_prompt}"
         )
         messages = [{"role": "user", "content": user_prompt}]
         self.log_step(
@@ -79,13 +99,17 @@ class ReconAgent(BaseAgent):
             },
         )
 
-        llm_output = await self.call_llm(system_extra=system_prompt, messages=messages)
+        llm_output = await self.call_llm(
+            system_extra=system_prompt, messages=messages, max_tokens=4096
+        )
         self.log_step("recon_llm_response_received", {"response_preview": llm_output[:1000]})
 
         try:
             parsed = self._parse_json_output(llm_output)
             self.log_step("recon_llm_response_parsed", {"parsed_keys": list(parsed.keys())})
         except json.JSONDecodeError as exc:
+            print("RECON RAW RESPONSE:", repr(llm_output[:2000]))
+            self.log(f"recon_raw_response_length — {len(llm_output)} chars")
             self.log_step(
                 "recon_llm_response_parse_failed",
                 {"error": str(exc), "raw_response_preview": llm_output[:1000]},
@@ -150,16 +174,37 @@ class ReconAgent(BaseAgent):
             "failed_files": failed_files,
         }
 
+    @staticmethod
+    def _summarize_solidity(content: str) -> str:
+        import re
+        content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+        lines = content.splitlines()
+        summary = []
+        depth = 0
+        
+        for line in lines:
+            line_str = line.strip()
+            if not line_str or line_str.startswith("//"):
+                continue
+                
+            if re.match(r'^(contract|interface|library|abstract\s+contract)\b', line_str):
+                summary.append(line_str)
+            elif depth == 1:
+                if re.match(r'^(function|modifier|event|error|constructor|fallback|receive)\b', line_str):
+                    summary.append("  " + line_str)
+                elif line_str.endswith(";") or ";" in line_str:
+                    if not line_str.startswith("return") and not line_str.startswith("require"):
+                        summary.append("  " + line_str)
+            
+            depth += line_str.count("{") - line_str.count("}")
+            if depth < 0:
+                depth = 0
+                
+        return "\n".join(summary)
+
     def _parse_json_output(self, llm_output: str) -> dict:
-        text = llm_output.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            if lines and lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].startswith("```"):
-                lines = lines[:-1]
-            text = "\n".join(lines).strip()
-        return json.loads(text)
+        from core.utils import parse_llm_json
+        return parse_llm_json(llm_output)
 
     def _normalize_recon_result(self, parsed: dict) -> dict:
         contract_map = parsed.get("contract_map", {})

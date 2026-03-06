@@ -323,34 +323,8 @@ class BlastRadiusAgent(BaseAgent):
 
     @staticmethod
     def _parse_json_output(raw: str) -> dict[str, Any]:
-        text = str(raw or "").strip()
-        if not text:
-            return {}
-        try:
-            parsed = json.loads(text)
-            return parsed if isinstance(parsed, dict) else {}
-        except json.JSONDecodeError:
-            pass
-
-        fenced = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", text, flags=re.DOTALL)
-        for block in fenced:
-            try:
-                parsed = json.loads(block)
-                if isinstance(parsed, dict):
-                    return parsed
-            except json.JSONDecodeError:
-                continue
-
-        start = text.find("{")
-        end = text.rfind("}")
-        if start != -1 and end != -1 and end > start:
-            candidate = text[start : end + 1]
-            try:
-                parsed = json.loads(candidate)
-                return parsed if isinstance(parsed, dict) else {}
-            except json.JSONDecodeError:
-                return {}
-        return {}
+        from core.utils import parse_llm_json
+        return parse_llm_json(raw)
 
     @staticmethod
     def _to_score(value: Any) -> int:

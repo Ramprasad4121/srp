@@ -59,9 +59,16 @@ class AttackAgent(BaseAgent):
             contract_map, entry_points, hypothesis_result
         )
 
-        vulnerabilities = self._normalize_vulnerabilities(
-            exploit_result.get("vulnerabilities", [])
+        ghost_result = await self._run_ghost_pass(contract_map)
+        zero_result = await self._run_zero_pass(contract_map)
+
+        merged_vulns = (
+            self._ensure_list(exploit_result.get("vulnerabilities", [])) +
+            self._ensure_list(ghost_result.get("vulnerabilities", [])) +
+            self._ensure_list(zero_result.get("vulnerabilities", []))
         )
+
+        vulnerabilities = self._normalize_vulnerabilities(merged_vulns)
         attack_summary = str(exploit_result.get("attack_summary", "")).strip()
         if not attack_summary:
             attack_summary = self._build_default_summary(vulnerabilities)
@@ -196,6 +203,66 @@ class AttackAgent(BaseAgent):
         )
         return result
 
+    async def _run_ghost_pass(
+        self, contract_map: dict
+    ) -> dict[str, Any]:
+        pass_name = "ghost"
+        self.log_step(f"{pass_name}_pass_started", {})
+
+        ghost_skill = self.sl.load_many(["quillai-reentrancy", "quillai-oracle-flashloan", "quillai-proxy-upgrade"])
+        self.log(f"ghost_skills_loaded — {len(ghost_skill)} chars")
+
+        system_prompt = (
+            "You are GHOST — specialist in reentrancy, oracle manipulation, and proxy storage collisions.\n"
+            "Focus ONLY on:\n"
+            "- Reentrancy (single and cross-function)\n"
+            "- Price oracle manipulation\n"
+            "- Proxy implementation slot collisions\n"
+            "- Delegatecall vulnerabilities\n\n"
+            f"{ghost_skill}\n\n"
+            "Return ONLY valid JSON with keys: vulnerabilities (array of objects with id, title, severity, affected_function, description, exploit_code, confidence)."
+        )
+        user_payload = {
+            "contract_map": contract_map,
+        }
+
+        result = await self._execute_json_pass(pass_name, system_prompt, user_payload)
+        vulnerabilities = self._ensure_list(result.get("vulnerabilities", []))
+        self.log_step(
+            f"{pass_name}_pass_completed", {"vulnerability_count": len(vulnerabilities)}
+        )
+        return result
+
+    async def _run_zero_pass(
+        self, contract_map: dict
+    ) -> dict[str, Any]:
+        pass_name = "zero"
+        self.log_step(f"{pass_name}_pass_started", {})
+
+        zero_skill = self.sl.load_many(["quillai-signature-replay", "quillai-dos-griefing", "quillai-input-arithmetic"])
+        self.log(f"zero_skills_loaded — {len(zero_skill)} chars")
+
+        system_prompt = (
+            "You are ZERO — specialist in signature replay, DoS vectors, and arithmetic exploits.\n"
+            "Focus ONLY on:\n"
+            "- Signature replay attacks (missing nonce/chainId)\n"
+            "- Block gas limit DoS\n"
+            "- Integer overflow/underflow edge cases\n"
+            "- Front-running and sandwich attacks\n\n"
+            f"{zero_skill}\n\n"
+            "Return ONLY valid JSON with keys: vulnerabilities (array of objects with id, title, severity, affected_function, description, exploit_code, confidence)."
+        )
+        user_payload = {
+            "contract_map": contract_map,
+        }
+
+        result = await self._execute_json_pass(pass_name, system_prompt, user_payload)
+        vulnerabilities = self._ensure_list(result.get("vulnerabilities", []))
+        self.log_step(
+            f"{pass_name}_pass_completed", {"vulnerability_count": len(vulnerabilities)}
+        )
+        return result
+
     async def _execute_json_pass(
         self, pass_name: str, system_prompt: str, payload: dict[str, Any]
     ) -> dict[str, Any]:
@@ -234,15 +301,8 @@ class AttackAgent(BaseAgent):
             return {}
 
     def _parse_json_output(self, llm_output: str) -> dict[str, Any]:
-        text = llm_output.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            if lines and lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].startswith("```"):
-                lines = lines[:-1]
-            text = "\n".join(lines).strip()
-        return json.loads(text)
+        from core.utils import parse_llm_json
+        return parse_llm_json(llm_output)
 
     def _normalize_vulnerabilities(self, vulnerabilities: Any) -> list[dict[str, Any]]:
         normalized: list[dict[str, Any]] = []

@@ -79,15 +79,8 @@ class IntentAgent(BaseAgent):
         return intent
 
     def _parse_json_output(self, llm_output: str) -> dict:
-        text = llm_output.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            if lines and lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].startswith("```"):
-                lines = lines[:-1]
-            text = "\n".join(lines).strip()
-        return json.loads(text)
+        from core.utils import parse_llm_json
+        return parse_llm_json(llm_output)
 
     def _normalize_intent(
         self, parsed: dict, raw_input: str, contract_paths: list

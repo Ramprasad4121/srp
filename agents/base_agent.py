@@ -16,13 +16,13 @@ class BaseAgent(ABC):
         self.trace_log: list[dict[str, Any]] = []
 
         from core.skill_loader import SkillLoader
-        sl = SkillLoader()
+        self.sl = SkillLoader()
 
         # Load soul first — identity before skills
-        self.soul_content = sl.load_soul(name)
+        self.soul_content = self.sl.load_soul(name)
 
         # Load skills — methodology after identity
-        self.skill_content = sl.load_many(skill_keys) if skill_keys else ""
+        self.skill_content = self.sl.load_many(skill_keys) if skill_keys else ""
 
         if self.soul_content:
             print(f"  \u2705 {name}: soul loaded ({len(self.soul_content)} chars)")
@@ -57,10 +57,21 @@ class BaseAgent(ABC):
             }
         )
 
+    def log(self, message: str) -> None:
+        """Generic logger for agents."""
+        self.log_step("agent_log", {"message": message})
+
     def get_trace(self) -> list:
         return self.trace_log
 
-    async def call_llm(self, system_extra: str, messages: list, api_key: str | None = None, budget_tokens: int | None = None) -> str:
+    async def call_llm(
+        self,
+        system_extra: str,
+        messages: list,
+        api_key: str | None = None,
+        budget_tokens: int | None = None,
+        max_tokens: int = 4096,
+    ) -> str:
         from core.guardrails import SRPGuardrails
         import json
         from openai import AsyncOpenAI
@@ -113,7 +124,7 @@ class BaseAgent(ABC):
 
         kwargs: dict = {
             "model": self.model,
-            "max_tokens": 4096,
+            "max_tokens": max_tokens,
             "messages": oai_messages,
             "temperature": 0.2,
             "top_p": 0.7,
@@ -122,7 +133,7 @@ class BaseAgent(ABC):
         # Handle budget_tokens (NVIDIA/Llama might not support thinking budget natively yet,
         # but we can scale up max_tokens if explicitly requested)
         if budget_tokens and budget_tokens > 0:
-            kwargs["max_tokens"] = max(4096, budget_tokens + 1000)
+            kwargs["max_tokens"] = max(max_tokens, budget_tokens + 1000)
 
         response = await client.chat.completions.create(**kwargs)
 

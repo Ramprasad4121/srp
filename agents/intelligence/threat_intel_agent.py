@@ -350,21 +350,11 @@ class ThreatIntelAgent(BaseAgent):
         return [value] if value else []
 
     def _parse_json_output(self, llm_output: str) -> dict[str, Any]:
-        text = llm_output.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            if lines and lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].startswith("```"):
-                lines = lines[:-1]
-            text = "\n".join(lines).strip()
-
-        try:
-            parsed = json.loads(text)
-            return parsed if isinstance(parsed, dict) else {}
-        except json.JSONDecodeError as exc:
+        from core.utils import parse_llm_json
+        parsed = parse_llm_json(llm_output)
+        if not parsed:
             self.log_step(
                 "threat_json_parse_failed",
-                {"error": str(exc), "raw_preview": llm_output[:1000]},
+                {"error": "parse error", "raw_preview": llm_output[:1000]},
             )
-            return {}
+        return parsed

@@ -47,7 +47,9 @@ class ReportAgent(BaseAgent):
             },
         )
 
-        report_md = (await self.call_llm(system_extra=system_prompt, messages=messages)).strip()
+        report_md = (
+            await self.call_llm(system_extra=system_prompt, messages=messages, max_tokens=4096)
+        ).strip()
         self.log_step(
             "report_llm_response_received",
             {
