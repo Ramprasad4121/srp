@@ -407,20 +407,73 @@ async function launchAudit() {
 }
 
 async function startAudit() {
-  try {
-    const response = await fetch('/api/audit/start', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    const data = await response.json();
-    console.log('Audit started:', data);
-    const agentPipeline = document.getElementById('agent-pipeline');
-    if (agentPipeline) {
-      agentPipeline.style.display = 'block';
+    const contractCode = document.getElementById('contract-code')?.value || '';
+    const description = document.getElementById('audit-description')?.value || '';
+
+    // Show pipeline section
+    const pipeline = document.getElementById('agent-pipeline');
+    if (pipeline) pipeline.style.display = 'block';
+    
+    const launchBtn = document.getElementById('launch-btn');
+    if (launchBtn) {
+        launchBtn.disabled = true;
+        launchBtn.textContent = 'AUDIT IN PROGRESS...';
     }
-  } catch (error) {
-    console.error('Failed to auto-start audit:', error);
-  }
+
+    try {
+        const response = await fetch('/api/audit/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contract_code: contractCode,
+                description: description
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            alert('Error: ' + data.error);
+            return;
+        }
+
+        // Connect WebSocket for live updates
+        connectWebSocket();
+
+    } catch(e) {
+        alert('Failed to start audit: ' + e.message);
+        if (launchBtn) {
+            launchBtn.disabled = false;
+            launchBtn.textContent = 'LAUNCH AUDIT';
+        }
+    }
+}
+
+function connectWebSocket() {
+    const ws = new WebSocket('ws://localhost:7337/ws');
+
+    ws.onmessage = function(event) {
+        const msg = JSON.parse(event.data);
+        appendLog(msg);
+
+        if (msg.type === 'phase_start') updatePhase(msg.phase);
+        if (msg.type === 'audit_complete') showResults(msg);
+        if (msg.type === 'emergency_alert') showEmergency(msg);
+    };
+
+    ws.onerror = function() {
+        appendLog({type: 'error', message: 'WebSocket connection failed'});
+    };
+}
+
+function appendLog(msg) {
+    const log = document.getElementById('live-log');
+    if (!log) return;
+    const line = document.createElement('div');
+    line.style.cssText = 'padding:4px 0;border-bottom:1px solid #111;font-family:monospace;font-size:13px';
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg.type}: ${msg.message || JSON.stringify(msg)}`;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
 }
 
 async function loadProject() {

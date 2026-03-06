@@ -8,7 +8,7 @@ from typing import Any, Awaitable, Callable
 from uuid import uuid4
 
 import uvicorn
-from fastapi import BackgroundTasks, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -338,13 +338,33 @@ async def get_all_contracts():
 
 
 @app.post("/api/audit/start")
-async def start_full_audit(background_tasks: BackgroundTasks):
+async def start_audit(request: Request, background_tasks: BackgroundTasks):
+    body = await request.json()
+    contract_code = body.get("contract_code", "")
+    
     project = get_project()
-    if not project.initialized:
-        return {"error": "Project not initialized"}
-    context = project.get_full_project_context()
+    
+    if contract_code:
+        # Single contract mode — user pasted code
+        context = {
+            "all_contracts": {"pasted_contract.sol": contract_code},
+            "project_name": "pasted_contract",
+            "entry_contracts": ["pasted_contract.sol"],
+            "dependency_graph": {},
+            "contracts_dir": ".",
+            "project_type": "unknown",
+            "compiler_version": "0.8.20",
+            "project_root": "."
+        }
+    elif project.initialized:
+        # Full project mode
+        project.load()
+        context = project.get_full_project_context()
+    else:
+        return {"error": "No contract provided and no project initialized"}
+
     background_tasks.add_task(run_audit_background, context, project)
-    return {"status": "started", "project": context["project_name"], "contracts": context["total_contracts"]}
+    return {"status": "started", "contracts": len(context["all_contracts"])}
 
 
 @app.get("/api/audits")
@@ -364,31 +384,14 @@ async def get_audit(trace_id: str):
     return json.loads(audit_path.read_text(encoding="utf-8"))
 
 
-@app.get("/audit")
-async def audit_page():
-    """Serve the main UI — audit page"""
-    ui_path = os.path.join(os.path.dirname(__file__), "ui", "index.html")
-    return FileResponse(ui_path)
-
+# Mount static files
+ui_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
+if os.path.exists(ui_dir):
+    app.mount("/ui", StaticFiles(directory=ui_dir), name="ui")
 
 @app.get("/")
 async def root():
-    """Serve the main UI"""
-    ui_path = os.path.join(os.path.dirname(__file__), "ui", "index.html")
-    return FileResponse(ui_path)
-
-
-@app.get("/{full_path:path}")
-async def catch_all(full_path: str):
-    """Catch-all — serve UI for any frontend route"""
-    ui_path = os.path.join(os.path.dirname(__file__), "ui", "index.html")
-    if os.path.exists(ui_path):
-        return FileResponse(ui_path)
-    return {"detail": "UI not found — check ui/index.html exists"}
-
-
-if UI_DIR.exists():
-    app.mount("/", StaticFiles(directory=str(UI_DIR), html=True), name="ui")
+    return FileResponse(os.path.join(ui_dir, "index.html"))
 
 
 if __name__ == "__main__":
