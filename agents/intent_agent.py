@@ -8,7 +8,7 @@ from .base_agent import BaseAgent
 
 
 class IntentAgent(BaseAgent):
-    def __init__(self, model: str = "claude-sonnet-4-20250514") -> None:
+    def __init__(self, model: str = "meta/llama-3.1-405b-instruct") -> None:
         super().__init__(
             name="IntentAgent",
             role="Parses user input and builds a structured execution intent",
@@ -17,6 +17,7 @@ class IntentAgent(BaseAgent):
     async def run(self, context: dict) -> dict:
         self.log_step("intent_run_started", {"context_keys": list(context.keys())})
 
+        api_key = context.get("api_key")
         raw_input = context.get("raw_input", "")
         contract_paths = context.get("contract_paths", [])
         self.log_step(
@@ -49,7 +50,7 @@ class IntentAgent(BaseAgent):
             },
         )
 
-        llm_output = await self.call_llm(system_extra=system_prompt, messages=messages)
+        llm_output = await self.call_llm(system_extra=system_prompt, messages=messages, api_key=api_key)
         self.log_step("intent_llm_response_received", {"response_preview": llm_output[:1000]})
 
         try:

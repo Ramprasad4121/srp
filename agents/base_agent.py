@@ -12,7 +12,7 @@ class BaseAgent(ABC):
     def __init__(self, name: str, role: str, skill_keys: list | None = None, model: str | None = None) -> None:
         self.name = name
         self.role = role
-        self.model = model or os.environ.get("SRP_MODEL", "claude-sonnet-4-20250514")
+        self.model = model or os.environ.get("SRP_MODEL", "meta/llama-3.1-405b-instruct")
         self.trace_log: list[dict[str, Any]] = []
 
         from core.skill_loader import SkillLoader
@@ -60,9 +60,10 @@ class BaseAgent(ABC):
     def get_trace(self) -> list:
         return self.trace_log
 
-    async def call_llm(self, system_extra: str, messages: list) -> str:
+    async def call_llm(self, system_extra: str, messages: list, api_key: str | None = None, budget_tokens: int | None = None) -> str:
         from core.guardrails import SRPGuardrails
         import json
+        from openai import AsyncOpenAI
 
         last_msg = messages[-1].get("content", "") if messages else ""
         if len(last_msg) > 100:
@@ -71,7 +72,10 @@ class BaseAgent(ABC):
                 self.log_step("guardrail_blocked", {"reason": reason})
                 return json.dumps({"error": "guardrail_blocked", "reason": reason})
 
-        api_key = os.environ["ANTHROPIC_API_KEY"]
+        # BYOK: prefer passed api_key, fallback to env
+        resolved_key = api_key or os.environ.get("NVIDIA_API_KEY", "")
+        if not resolved_key:
+            raise ValueError("No API key provided. Pass api_key or set NVIDIA_API_KEY env var.")
 
         # Soul first — this is WHO the agent is
         # Skills second — this is WHAT the agent knows
@@ -95,23 +99,34 @@ class BaseAgent(ABC):
                 "model": self.model,
                 "message_count": len(messages),
                 "system_preview": system_prompt[:400],
+                "budget_tokens": budget_tokens,
             },
         )
 
-        client = AsyncAnthropic(api_key=api_key)
-
-        response = await client.messages.create(
-            model=self.model,
-            max_tokens=4096,
-            system=system_prompt,
-            messages=messages,
+        client = AsyncOpenAI(
+            base_url="https://integrate.api.nvidia.com/v1",
+            api_key=resolved_key
         )
 
-        text_parts: list[str] = []
-        for block in response.content:
-            if getattr(block, "type", None) == "text":
-                text_parts.append(getattr(block, "text", ""))
-        response_text = "\n".join(part for part in text_parts if part).strip()
+        # OpenAI format requires system prompt as a message
+        oai_messages = [{"role": "system", "content": system_prompt}] + messages
+
+        kwargs: dict = {
+            "model": self.model,
+            "max_tokens": 4096,
+            "messages": oai_messages,
+            "temperature": 0.2,
+            "top_p": 0.7,
+        }
+
+        # Handle budget_tokens (NVIDIA/Llama might not support thinking budget natively yet,
+        # but we can scale up max_tokens if explicitly requested)
+        if budget_tokens and budget_tokens > 0:
+            kwargs["max_tokens"] = max(4096, budget_tokens + 1000)
+
+        response = await client.chat.completions.create(**kwargs)
+
+        response_text = response.choices[0].message.content or ""
 
         self.log_step(
             "llm_call_completed",
@@ -123,3 +138,4 @@ class BaseAgent(ABC):
         )
 
         return response_text
+

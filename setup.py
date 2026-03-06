@@ -12,6 +12,7 @@ setup(
         "fastapi",
         "uvicorn",
         "anthropic",
+        "openai",
         "web3",
         "python-dotenv",
         "aiohttp",

@@ -1,0 +1,19 @@
+Metadata-Version: 2.4
+Name: srp-protocol
+Version: 0.1.0
+Summary: Security Reasoning Protocol
+Requires-Python: >=3.10
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+Requires-Dist: anthropic
+Requires-Dist: openai
+Requires-Dist: web3
+Requires-Dist: python-dotenv
+Requires-Dist: aiohttp
+Requires-Dist: pydantic
+Requires-Dist: rich
+Requires-Dist: click
+Requires-Dist: networkx
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

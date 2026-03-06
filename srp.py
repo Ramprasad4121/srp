@@ -413,19 +413,19 @@ def status():
     except Exception as e:
         console.print(f"[red]❌ Skills error:[/red] {e}")
 
-    keys = {
-        "ANTHROPIC_API_KEY": "Anthropic (required)",
-        "SOLODIT_API_KEY":   "Solodit/claudit (optional)",
-        "RPC_URL":           "RPC for monitoring (optional)"
+    env_checks = {
+        "NVIDIA_API_KEY": "NVIDIA API Key (required)",
+        "SRP_WALLET_KEY": "Wallet Private Key (x402 payments)",
+        "COINBASE_API_KEY_NAME": "Coinbase API Name (optional)",
+        "COINBASE_API_KEY_PRIVATE_KEY": "Coinbase Private Key (optional)",
     }
-    console.print()
-    for k, label in keys.items():
-        val = os.environ.get(k, "")
-        if val:
-            console.print(f"[green]✅ {label}[/green]")
+    
+    for k, label in env_checks.items():
+        if os.environ.get(k):
+            console.print(f"[green]✅ {label}: set[/green]")
         else:
-            color = "red" if k == "ANTHROPIC_API_KEY" else "yellow"
-            console.print(f"[{color}]{'❌' if k == 'ANTHROPIC_API_KEY' else '⚠️ '} {label}: not set[/{color}]")
+            color = "red" if k == "NVIDIA_API_KEY" else "yellow"
+            console.print(f"[{color}]{'❌' if k == 'NVIDIA_API_KEY' else '⚠️ '} {label}: not set[/{color}]")
 
     console.print()
     for tool in ["slither", "aderyn", "echidna", "openclaw"]:

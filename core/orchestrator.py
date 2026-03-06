@@ -101,10 +101,11 @@ class SRPOrchestrator:
         return best_skill
 
     async def run_full_audit(
-        self, raw_input: str, contract_paths: list, budget_usd: float
+        self, raw_input: str, contract_paths: list, budget_usd: float, api_key: str | None = None
     ) -> dict:
         loaded_skills = self.load_skills()
         context: dict[str, Any] = {
+            "api_key": api_key,
             "raw_input": raw_input,
             "contract_paths": contract_paths,
             "budget_usd": budget_usd,

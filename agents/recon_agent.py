@@ -8,7 +8,7 @@ from .base_agent import BaseAgent
 
 
 class ReconAgent(BaseAgent):
-    def __init__(self, model: str = "claude-sonnet-4-20250514") -> None:
+    def __init__(self, model: str = "meta/llama-3.1-405b-instruct") -> None:
         super().__init__(
             name="ReconAgent",
             role="Maps contract architecture and identifies entry points",

@@ -1,0 +1,1168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SRP — Security Reasoning Protocol</title>
+    <meta
+      name="description"
+      content="AI agent army for smart contract security. 13 agents. One command. Zero vulnerabilities."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ═══════════════════════════════════════ */
+      /* RESET & BASE — x402 light default      */
+      /* ═══════════════════════════════════════ */
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --bg: #fafafa;
+        --bg-surface: #f5f5f5;
+        --bg-card: #ffffff;
+        --bg-hover: #f0f0f0;
+        --border: #e0e0e0;
+        --border-bright: #ccc;
+        --text: #111;
+        --text-dim: #666;
+        --text-muted: #999;
+        --accent: #0a8f4f;
+        --accent-dim: rgba(10, 143, 79, 0.1);
+        --red: #cc2222;
+        --red-dim: rgba(204, 34, 34, 0.08);
+        --amber: #b87a00;
+        --amber-dim: rgba(184, 122, 0, 0.08);
+        --blue: #2266cc;
+        --mono: "JetBrains Mono", monospace;
+        --sans: "Inter", -apple-system, sans-serif;
+      }
+
+      [data-theme="dark"] {
+        --bg: #050505;
+        --bg-surface: #0a0a0a;
+        --bg-card: #0f0f0f;
+        --bg-hover: #141414;
+        --border: #1a1a1a;
+        --border-bright: #2a2a2a;
+        --text: #e0e0e0;
+        --text-dim: #666;
+        --text-muted: #444;
+        --accent: #00ff88;
+        --accent-dim: rgba(0, 255, 136, 0.15);
+        --red: #ff4444;
+        --red-dim: rgba(255, 68, 68, 0.15);
+        --amber: #ffaa00;
+        --amber-dim: rgba(255, 170, 0, 0.15);
+        --blue: #4488ff;
+      }
+
+      html {
+        font-size: 15px;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        line-height: 1.6;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* HEADER                                 */
+      /* ═══════════════════════════════════════ */
+      .header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        padding: 0 48px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        backdrop-filter: blur(20px);
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .logo {
+        font-family: var(--mono);
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--accent);
+        letter-spacing: -1px;
+      }
+
+      .logo-sub {
+        font-family: var(--mono);
+        font-size: 0.73rem;
+        color: var(--text-dim);
+        letter-spacing: 3px;
+        text-transform: uppercase;
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .theme-toggle {
+        font-family: var(--mono);
+        font-size: 1.1rem;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-surface);
+        color: var(--text-dim);
+        border: 1px solid var(--border);
+        border-radius: 2px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .theme-toggle:hover {
+        color: var(--text);
+        border-color: var(--border-bright);
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* HERO STATS                             */
+      /* ═══════════════════════════════════════ */
+      .hero-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-bottom: 1px solid var(--border);
+        margin: 0 48px;
+      }
+
+      .stat-block {
+        padding: 32px 0;
+        border-right: 1px solid var(--border);
+      }
+      .stat-block:last-child {
+        border-right: none;
+      }
+
+      .stat-number {
+        font-family: var(--mono);
+        font-size: 3rem;
+        font-weight: 700;
+        color: var(--text);
+        letter-spacing: -2px;
+        line-height: 1;
+      }
+      .stat-number.accent {
+        color: var(--accent);
+      }
+      .stat-number.red {
+        color: var(--red);
+      }
+      .stat-number.amber {
+        color: var(--amber);
+      }
+
+      .stat-label {
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-top: 8px;
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* CONTENT                                */
+      /* ═══════════════════════════════════════ */
+      .content {
+        max-width: 100%;
+        padding: 0 48px;
+      }
+
+      .section-header {
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        padding: 32px 0 16px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* LAUNCH AUDIT FORM                      */
+      /* ═══════════════════════════════════════ */
+      .audit-form {
+        max-width: 680px;
+        margin: 40px auto;
+        padding: 40px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 2px;
+      }
+
+      .form-title {
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        margin-bottom: 32px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .form-group {
+        margin-bottom: 24px;
+      }
+
+      .form-label {
+        display: block;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        font-family: var(--mono);
+        font-size: 0.85rem;
+        color: var(--text);
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: 2px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .form-input:focus {
+        border-color: var(--accent);
+      }
+      .form-input::placeholder {
+        color: var(--text-muted);
+      }
+
+      .form-hint {
+        font-family: var(--mono);
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-top: 6px;
+        letter-spacing: 0.5px;
+      }
+
+      .launch-btn {
+        width: 100%;
+        padding: 14px 24px;
+        font-family: var(--mono);
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--bg);
+        background: var(--accent);
+        border: 1px solid var(--accent);
+        border-radius: 2px;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 8px;
+      }
+      .launch-btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+      .launch-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* STATUS DISPLAY                         */
+      /* ═══════════════════════════════════════ */
+      .status-bar {
+        margin-top: 24px;
+        padding: 12px 16px;
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        border-radius: 2px;
+        display: none;
+        align-items: center;
+        gap: 10px;
+      }
+      .status-bar.visible {
+        display: flex;
+      }
+      .status-bar.green {
+        color: var(--accent);
+        background: var(--accent-dim);
+        border: 1px solid var(--accent);
+      }
+      .status-bar.amber {
+        color: var(--amber);
+        background: var(--amber-dim);
+        border: 1px solid var(--amber);
+      }
+      .status-bar.error {
+        color: var(--red);
+        background: var(--red-dim);
+        border: 1px solid var(--red);
+      }
+
+      .status-dot-anim {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+        animation: pulse-dot 1.5s ease-in-out infinite;
+        flex-shrink: 0;
+      }
+      @keyframes pulse-dot {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* AGENT GRID                             */
+      /* ═══════════════════════════════════════ */
+      .agent-section {
+        display: none;
+      }
+      .agent-section.visible {
+        display: block;
+      }
+
+      .agent-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .agent-row-4 {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .attack-divider {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 10px 0;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--red);
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        background: var(--red-dim);
+        border-bottom: 1px solid rgba(204, 34, 34, 0.15);
+      }
+
+      .agent-card {
+        padding: 20px 24px;
+        border-right: 1px solid var(--border);
+        transition: background 0.15s;
+        min-height: 90px;
+      }
+      .agent-card:last-child {
+        border-right: none;
+      }
+      .agent-card:hover {
+        background: var(--bg-hover);
+      }
+
+      .agent-codename {
+        font-family: var(--mono);
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--accent);
+        letter-spacing: 1px;
+      }
+      .attack-agents .agent-codename {
+        color: var(--red);
+      }
+
+      .agent-role {
+        font-size: 0.72rem;
+        color: var(--text-dim);
+        margin-top: 2px;
+      }
+
+      .agent-status {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-top: 8px;
+        padding: 2px 8px;
+        border-radius: 2px;
+      }
+      .agent-status.standby {
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+      }
+      .agent-status.active {
+        color: var(--accent);
+        background: var(--accent-dim);
+        border: 1px solid var(--accent);
+      }
+      .agent-status.complete {
+        color: var(--accent);
+      }
+      .agent-status.failed {
+        color: var(--red);
+        background: var(--red-dim);
+      }
+
+      .agent-log-line {
+        font-family: var(--mono);
+        font-size: 0.65rem;
+        color: var(--text-dim);
+        margin-top: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 280px;
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* LOG STREAM                             */
+      /* ═══════════════════════════════════════ */
+      .log-stream {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-top: none;
+        max-height: 260px;
+        overflow-y: auto;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        line-height: 1.8;
+      }
+      .log-stream::-webkit-scrollbar {
+        width: 4px;
+      }
+      .log-stream::-webkit-scrollbar-track {
+        background: var(--bg);
+      }
+      .log-stream::-webkit-scrollbar-thumb {
+        background: var(--border-bright);
+      }
+
+      .log-line {
+        padding: 2px 24px;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.08);
+        display: flex;
+        gap: 12px;
+      }
+      .log-line:hover {
+        background: var(--bg-hover);
+      }
+      .log-time {
+        color: var(--text-muted);
+        flex-shrink: 0;
+      }
+      .log-agent {
+        color: var(--accent);
+        font-weight: 600;
+        flex-shrink: 0;
+        min-width: 90px;
+      }
+      .log-msg {
+        color: var(--text);
+      }
+      .log-line.error .log-msg {
+        color: var(--red);
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* RESULTS                                */
+      /* ═══════════════════════════════════════ */
+      .results-section {
+        display: none;
+        padding: 40px 0;
+      }
+      .results-section.visible {
+        display: block;
+        animation: slideIn 0.4s ease;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .score-display {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        padding-bottom: 32px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 32px;
+      }
+
+      .score-number {
+        font-family: var(--mono);
+        font-size: 5rem;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: -3px;
+      }
+      .score-number.safe {
+        color: var(--accent);
+      }
+      .score-number.warn {
+        color: var(--amber);
+      }
+      .score-number.danger {
+        color: var(--red);
+      }
+
+      .score-meta {
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        color: var(--text-dim);
+      }
+      .score-meta span {
+        display: block;
+        margin-top: 4px;
+      }
+
+      .finding-card {
+        padding: 24px;
+        border-bottom: 1px solid var(--border);
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 24px;
+      }
+      .finding-card:hover {
+        background: var(--bg-hover);
+      }
+
+      .finding-severity {
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 2px;
+        text-align: center;
+        height: fit-content;
+      }
+      .finding-severity.critical {
+        color: var(--red);
+        background: var(--red-dim);
+        border: 1px solid var(--red);
+      }
+      .finding-severity.high {
+        color: #e05533;
+        background: rgba(224, 85, 51, 0.08);
+        border: 1px solid #e05533;
+      }
+      .finding-severity.medium {
+        color: var(--amber);
+        background: var(--amber-dim);
+        border: 1px solid var(--amber);
+      }
+      .finding-severity.low {
+        color: var(--blue);
+        background: rgba(34, 102, 204, 0.08);
+        border: 1px solid var(--blue);
+      }
+
+      .finding-content h3 {
+        font-family: var(--mono);
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .finding-description {
+        font-size: 0.78rem;
+        color: var(--text-dim);
+        line-height: 1.6;
+      }
+      .finding-code {
+        margin-top: 10px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        padding: 14px;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--text);
+        overflow-x: auto;
+        white-space: pre;
+        border-radius: 2px;
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* FOOTER                                 */
+      /* ═══════════════════════════════════════ */
+      .footer {
+        border-top: 1px solid var(--border);
+        margin: 60px 48px 0;
+        padding: 24px 0;
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--mono);
+        font-size: 0.65rem;
+        color: var(--text-muted);
+      }
+      .footer a {
+        color: var(--text-dim);
+        text-decoration: none;
+      }
+      .footer a:hover {
+        color: var(--accent);
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* RESPONSIVE                             */
+      /* ═══════════════════════════════════════ */
+      @media (max-width: 900px) {
+        .header,
+        .content,
+        .footer {
+          padding-left: 20px;
+          padding-right: 20px;
+        }
+        .hero-stats {
+          margin: 0 20px;
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .agent-row,
+        .agent-row-4 {
+          grid-template-columns: 1fr;
+        }
+        .audit-form {
+          margin: 24px auto;
+          padding: 24px;
+        }
+        .finding-card {
+          grid-template-columns: 1fr;
+        }
+        .score-number {
+          font-size: 3.5rem;
+        }
+        .stat-number {
+          font-size: 2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ═══ HEADER ═══ -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">SRP</div>
+        <div class="logo-sub">Security Reasoning Protocol</div>
+      </div>
+      <div class="header-right">
+        <button
+          class="theme-toggle"
+          id="theme-toggle"
+          onclick="toggleTheme()"
+          title="Toggle dark/light mode"
+        >
+          <span id="theme-icon">◐</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ═══ HERO STATS ═══ -->
+    <div class="hero-stats">
+      <div class="stat-block">
+        <div class="stat-number" id="stat-contracts">—</div>
+        <div class="stat-label">Contracts</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-number" id="stat-agents">13</div>
+        <div class="stat-label">Agents</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-number" id="stat-findings">0</div>
+        <div class="stat-label">Findings</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-number accent" id="stat-score">—</div>
+        <div class="stat-label">Score</div>
+      </div>
+    </div>
+
+    <!-- ═══ MAIN CONTENT ═══ -->
+    <div class="content">
+      <!-- LAUNCH AUDIT FORM -->
+      <div class="audit-form" id="audit-form">
+        <div class="form-title">Launch Audit</div>
+
+        <div class="form-group">
+          <label class="form-label" for="contract-path">Contract Path</label>
+          <input
+            class="form-input"
+            type="text"
+            id="contract-path"
+            placeholder="./contracts/Vault.sol"
+            autocomplete="off"
+          />
+          <div class="form-hint">
+            Absolute or relative path to your .sol file or directory
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="api-key">NVIDIA API Key (BYOK)</label>
+          <input
+            class="form-input"
+            type="password"
+            id="api-key"
+            placeholder="nvapi-..."
+            autocomplete="off"
+          />
+          <div class="form-hint">
+            Your key is sent per-request and never stored
+          </div>
+        </div>
+
+        <button class="launch-btn" id="launch-audit">LAUNCH AUDIT</button>
+
+        <!-- Status Display -->
+        <div class="status-bar" id="status-bar">
+          <div class="status-dot-anim"></div>
+          <span id="status-msg"></span>
+        </div>
+      </div>
+
+      <!-- AGENT PIPELINE (hidden until audit starts) -->
+      <div class="agent-section" id="agent-section">
+        <div class="section-header">Agent Pipeline — 13 Units</div>
+
+        <!-- Recon -->
+        <div class="agent-row" id="row-recon"></div>
+
+        <!-- Attack Divider -->
+        <div class="attack-divider">
+          <span>⚔</span> <span>Simultaneous Attack</span> <span>⚔</span>
+        </div>
+
+        <!-- Attack -->
+        <div class="agent-row attack-agents" id="row-attack"></div>
+
+        <!-- Defense -->
+        <div class="agent-row agent-row-4" id="row-defense"></div>
+
+        <!-- Trace -->
+        <div class="agent-row" id="row-trace"></div>
+
+        <!-- Log Stream -->
+        <div class="section-header">Live Log Stream</div>
+        <div class="log-stream" id="log-stream"></div>
+      </div>
+
+      <!-- RESULTS (slides in when complete) -->
+      <div class="results-section" id="results-section">
+        <div class="section-header">Mission Results</div>
+        <div class="score-display">
+          <div class="score-number" id="final-score">—</div>
+          <div class="score-meta">
+            <span>/ 100</span>
+            <span id="score-label">Security Score</span>
+          </div>
+        </div>
+        <div id="findings-grid"></div>
+      </div>
+    </div>
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer class="footer">
+      <div>SRP v2026.1 — Open Source</div>
+      <div>
+        <a href="https://github.com/Ramprasad4121/srp" target="_blank"
+          >GitHub ↗</a
+        >
+      </div>
+    </footer>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- JAVASCRIPT                             -->
+    <!-- ═══════════════════════════════════════ -->
+    <script>
+      /* ═══════════════════════════════════════ */
+      /* AGENTS                                 */
+      /* ═══════════════════════════════════════ */
+      const AGENTS = {
+        recon: [
+          { id: "WATCHDOG", role: "Triage & threat classification" },
+          { id: "ORACLE", role: "Threat intelligence & patterns" },
+          { id: "SPIDER", role: "Dependency mapping & call graph" },
+        ],
+        attack: [
+          { id: "VIPER", role: "Business logic & invariant attacks" },
+          { id: "GHOST", role: "Reentrancy, oracle & proxy attacks" },
+          { id: "ZERO", role: "Signature, DoS & arithmetic attacks" },
+        ],
+        defense: [
+          { id: "SHIELD", role: "Blue team validation" },
+          { id: "FORGE", role: "Remediation & fix generation" },
+          { id: "SHOCKWAVE", role: "Impact & blast radius" },
+          { id: "MIRROR", role: "Fork detection & comparison" },
+        ],
+        trace: [
+          { id: "DELTA", role: "Differential review" },
+          { id: "COMMAND", role: "Pipeline orchestration" },
+          { id: "LEDGER", role: "Cryptographic trace" },
+        ],
+      };
+
+      let lastLogCount = 0;
+      let pollInterval = null;
+
+      /* ═══════════════════════════════════════ */
+      /* RENDER AGENTS                          */
+      /* ═══════════════════════════════════════ */
+      function renderRow(id, agents) {
+        document.getElementById(id).innerHTML = agents
+          .map(
+            (a) => `
+    <div class="agent-card" id="card-${a.id}">
+      <div class="agent-codename">${a.id}</div>
+      <div class="agent-role">${a.role}</div>
+      <div class="agent-status standby" id="status-${a.id}">STANDBY</div>
+      <div class="agent-log-line" id="log-${a.id}"></div>
+    </div>
+  `,
+          )
+          .join("");
+      }
+
+      function initGrid() {
+        renderRow("row-recon", AGENTS.recon);
+        renderRow("row-attack", AGENTS.attack);
+        renderRow("row-defense", AGENTS.defense);
+        renderRow("row-trace", AGENTS.trace);
+      }
+
+      function setAgentStatus(id, status) {
+        const el = document.getElementById(`status-${id}`);
+        if (el) {
+          el.className = `agent-status ${status}`;
+          el.textContent = status.toUpperCase();
+        }
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* STATUS DISPLAY                         */
+      /* ═══════════════════════════════════════ */
+      function showStatus(msg, level) {
+        const bar = document.getElementById("status-bar");
+        const txt = document.getElementById("status-msg");
+        bar.className = `status-bar visible ${level}`;
+        txt.textContent = msg;
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* LOG STREAM                             */
+      /* ═══════════════════════════════════════ */
+      function addLog(text) {
+        const stream = document.getElementById("log-stream");
+        const now = new Date().toLocaleTimeString("en-US", { hour12: false });
+        let agent = "SYSTEM",
+          msg = text,
+          cls = "";
+        const m = text.match(/\[([A-Z]+(?:Agent)?)\]/);
+        if (m) {
+          const map = {
+            IntentAgent: "WATCHDOG",
+            ReconAgent: "SPIDER",
+            AttackAgent: "VIPER",
+            DefenseAgent: "SHIELD",
+            TraceAgent: "LEDGER",
+            ReportAgent: "COMMAND",
+          };
+          agent = map[m[1]] || m[1];
+          msg = text.replace(/\[[A-Z]+(?:Agent)?\]\s*/, "");
+        }
+        if (text.includes("Error") || text.includes("❌")) cls = "error";
+        const line = document.createElement("div");
+        line.className = `log-line ${cls}`;
+        line.innerHTML = `<span class="log-time">${now}</span><span class="log-agent">${agent}</span><span class="log-msg">${esc(msg)}</span>`;
+        stream.appendChild(line);
+        stream.scrollTop = stream.scrollHeight;
+        if (agent !== "SYSTEM") {
+          const logEl = document.getElementById(`log-${agent}`);
+          if (logEl) logEl.textContent = msg.substring(0, 55);
+        }
+      }
+
+      function esc(s) {
+        const d = document.createElement("div");
+        d.textContent = s;
+        return d.innerHTML;
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* UPDATE UI FROM POLL DATA               */
+      /* ═══════════════════════════════════════ */
+      function updateUI(data) {
+        // Contracts
+        if (data.contracts_total !== undefined)
+          document.getElementById("stat-contracts").textContent =
+            data.contracts_total;
+
+        // Agent statuses
+        if (data.agent_statuses) {
+          Object.entries(data.agent_statuses).forEach(([id, st]) =>
+            setAgentStatus(id, st),
+          );
+        }
+
+        // Logs
+        if (data.logs && data.logs.length > lastLogCount) {
+          data.logs.slice(lastLogCount).forEach((l) => addLog(l));
+          lastLogCount = data.logs.length;
+        }
+
+        // Infer agent activity from logs
+        if (data.logs) {
+          data.logs.forEach((l) => {
+            if (l.includes("Starting")) {
+              const x = l.match(/\[(\w+)\]/);
+              if (x) setAgentStatus(mapAgent(x[1]), "active");
+            }
+            if (l.includes("Complete") || l.includes("✅")) {
+              const x = l.match(/\[(\w+)\]/);
+              if (x) setAgentStatus(mapAgent(x[1]), "complete");
+            }
+          });
+        }
+
+        // Findings count
+        if (data.findings) {
+          document.getElementById("stat-findings").textContent =
+            data.findings.length;
+          if (data.findings.length > 0)
+            document.getElementById("stat-findings").className =
+              "stat-number red";
+        }
+
+        // Score
+        if (data.score !== undefined && data.status === "complete") {
+          const s = data.score;
+          document.getElementById("stat-score").textContent = s;
+          document.getElementById("final-score").textContent = s;
+          const cls = s >= 90 ? "safe" : s >= 70 ? "warn" : "danger";
+          document.getElementById("final-score").className =
+            `score-number ${cls}`;
+          document.getElementById("stat-score").className =
+            `stat-number ${cls === "safe" ? "accent" : cls === "warn" ? "amber" : "red"}`;
+          document.getElementById("score-label").textContent =
+            s >= 90
+              ? "Secure"
+              : s >= 70
+                ? "Needs Attention"
+                : "Critical Issues";
+
+          // Mark all complete
+          Object.values(AGENTS)
+            .flat()
+            .forEach((a) => setAgentStatus(a.id, "complete"));
+
+          // Render findings
+          renderFindings(data.findings || []);
+          document.getElementById("results-section").classList.add("visible");
+        }
+      }
+
+      function mapAgent(raw) {
+        return (
+          {
+            IntentAgent: "WATCHDOG",
+            ReconAgent: "SPIDER",
+            AttackAgent: "VIPER",
+            DefenseAgent: "SHIELD",
+            TraceAgent: "LEDGER",
+            ReportAgent: "COMMAND",
+          }[raw] || raw
+        );
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* RENDER FINDINGS                        */
+      /* ═══════════════════════════════════════ */
+      function renderFindings(findings) {
+        const grid = document.getElementById("findings-grid");
+        if (!findings.length) {
+          grid.innerHTML = `<div style="padding:24px;color:var(--text-dim);font-family:var(--mono);font-size:0.8rem;">No confirmed vulnerabilities. Contract appears secure.</div>`;
+          return;
+        }
+        grid.innerHTML = findings
+          .map((f, i) => {
+            const sev = (f.severity || "medium").toLowerCase();
+            return `<div class="finding-card">
+      <div class="finding-severity ${sev}">${(f.severity || "medium").toUpperCase()}</div>
+      <div class="finding-content">
+        <h3>${esc(f.title || "Finding " + (i + 1))}</h3>
+        <div class="finding-description">${esc(f.description || "")}</div>
+        ${f.exploit_code ? `<div class="finding-code">${esc(f.exploit_code)}</div>` : ""}
+        ${f.fix_code ? `<div class="finding-code" style="border-color:var(--accent);">// FIX →\n${esc(f.fix_code)}</div>` : ""}
+      </div>
+    </div>`;
+          })
+          .join("");
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* LAUNCH AUDIT                           */
+      /* ═══════════════════════════════════════ */
+      document
+        .getElementById("launch-audit")
+        .addEventListener("click", async () => {
+          const contractPath = document
+            .getElementById("contract-path")
+            .value.trim();
+          const apiKey = document.getElementById("api-key").value.trim();
+
+          if (!contractPath || !apiKey) {
+            showStatus("ERROR: Contract path and API key required", "error");
+            return;
+          }
+
+          showStatus("INITIATING AUDIT SEQUENCE...", "amber");
+          document.getElementById("launch-audit").disabled = true;
+          document.getElementById("launch-audit").textContent =
+            "AUDIT IN PROGRESS...";
+
+          // Show agent grid
+          document.getElementById("agent-section").classList.add("visible");
+
+          try {
+            const response = await fetch("/api/audit/start", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contract_code: contractPath,
+                api_key: apiKey,
+              }),
+            });
+
+            const data = await response.json();
+
+            if (data.status === "started") {
+              showStatus(`AUDIT LAUNCHED`, "green");
+              startPolling();
+            } else {
+              showStatus(`ERROR: ${data.error || "Unknown error"}`, "error");
+              resetBtn();
+            }
+          } catch (err) {
+            showStatus(`CONNECTION FAILED: ${err.message}`, "error");
+            resetBtn();
+          }
+        });
+
+      function startPolling() {
+        pollInterval = setInterval(async () => {
+          try {
+            const res = await fetch(`/api/audit/status`);
+            const data = await res.json();
+            updateUI(data);
+            if (data.status === "complete" || data.status === "idle") {
+              clearInterval(pollInterval);
+              showStatus(
+                `AUDIT ${data.status.toUpperCase()}`,
+                data.status === "complete" ? "green" : "error",
+              );
+              resetBtn();
+            }
+          } catch (e) {
+            console.error("Poll error:", e);
+          }
+        }, 3000);
+      }
+
+      function resetBtn() {
+        const btn = document.getElementById("launch-audit");
+        btn.disabled = false;
+        btn.textContent = "LAUNCH AUDIT";
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* THEME                                  */
+      /* ═══════════════════════════════════════ */
+      function toggleTheme() {
+        const html = document.documentElement;
+        const isDark = html.getAttribute("data-theme") === "dark";
+        if (isDark) {
+          html.removeAttribute("data-theme");
+          document.getElementById("theme-icon").textContent = "◐";
+          localStorage.setItem("srp-theme", "light");
+        } else {
+          html.setAttribute("data-theme", "dark");
+          document.getElementById("theme-icon").textContent = "◑";
+          localStorage.setItem("srp-theme", "dark");
+        }
+      }
+
+      /* ═══════════════════════════════════════ */
+      /* INIT                                   */
+      /* ═══════════════════════════════════════ */
+      document.addEventListener("DOMContentLoaded", () => {
+        // Restore theme
+        if (localStorage.getItem("srp-theme") === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark");
+          document.getElementById("theme-icon").textContent = "◑";
+        }
+        // Check if an auto-audit is already running
+        checkExistingAudit();
+
+        initGrid();
+      });
+
+      async function checkExistingAudit() {
+        try {
+          const res = await fetch('/api/audit/status');
+          const data = await res.json();
+          if (data.status === 'running' || (data.status === 'complete' && (data.findings.length > 0 || data.logs.length > 0))) {
+            // Hide form, show dashboard
+            document.getElementById('audit-form').style.display = 'none';
+            document.getElementById('agent-section').classList.add('visible');
+            updateUI(data);
+            if (data.status === 'running') {
+              startPolling();
+            }
+          }
+        } catch (e) {
+          console.error('Failed to check existing audit', e);
+        }
+      }
+    </script>
+  </body>
+</html>

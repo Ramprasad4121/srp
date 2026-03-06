@@ -34,6 +34,7 @@ class AuditRequest(BaseModel):
     raw_input: str
     contract_code: str
     budget_usd: float = Field(..., ge=0)
+    api_key: str | None = None
 
 
 app = FastAPI(title="SRP API", version="srp-2026.1")
@@ -165,6 +166,7 @@ async def _run_audit(
         raw_input=request.raw_input,
         contract_paths=contract_paths,
         budget_usd=request.budget_usd,
+        api_key=request.api_key,
     )
     return _json_safe(result)
 
@@ -414,19 +416,20 @@ async def start_audit(request: Request, background_tasks: BackgroundTasks):
     body = await request.json()
     contract_code = body.get("contract_code", "")
     description = body.get("description", "")
+    api_key = body.get("api_key", "")
     
     if not contract_code:
         return {"error": "No contract code provided"}
     
     audit_state = {"status": "running", "logs": ["🚀 Audit started — deploying 13 agents..."], "findings": [], "score": 100}
-    background_tasks.add_task(run_audit, contract_code, description)
+    background_tasks.add_task(run_audit, contract_code, description, api_key)
     return {"status": "started"}
 
 @app.get("/api/audit/status")  
 async def get_audit_status():
     return audit_state
 
-async def run_audit(contract_code: str, description: str = ""):
+async def run_audit(contract_code: str, description: str = "", api_key: str | None = None):
     global audit_state
     
     try:
@@ -436,6 +439,7 @@ async def run_audit(contract_code: str, description: str = ""):
             raw_input=raw_input,
             contract_code=contract_code,
             budget_usd=50.0,
+            api_key=api_key,
         )
         
         # Create emit callback that populates audit_state for polling
@@ -550,11 +554,19 @@ async def get_audit(trace_id: str):
 
 # Mount static files
 ui_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
+static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+
 if os.path.exists(ui_dir):
     app.mount("/ui", StaticFiles(directory=ui_dir), name="ui")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.get("/")
 async def root():
+    # Serve static/index.html (BYOK launch form) as default
+    static_index = os.path.join(static_dir, "index.html")
+    if os.path.exists(static_index):
+        return FileResponse(static_index)
     return FileResponse(os.path.join(ui_dir, "index.html"))
 
 
