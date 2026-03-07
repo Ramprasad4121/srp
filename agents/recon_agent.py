@@ -58,9 +58,13 @@ class ReconAgent(BaseAgent):
                 except OSError:
                     pass
             source_text_for_prompt = "\n".join(summarized_sources)
+            if len(source_text_for_prompt) > 15000:
+                source_text_for_prompt = source_text_for_prompt[:15000] + "\n...[TRUNCATED_DUE_TO_LENGTH]..."
             system_prompt_addition = " NOTE: Source code is summarized due to length. Infer architecture from function signatures and state variables."
         else:
             source_text_for_prompt = source_payload["sources_text"]
+            if len(source_text_for_prompt) > 15000:
+                source_text_for_prompt = source_text_for_prompt[:15000] + "\n...[TRUNCATED_DUE_TO_LENGTH]..."
             system_prompt_addition = ""
 
         system_prompt = (
@@ -92,18 +96,16 @@ class ReconAgent(BaseAgent):
             },
         )
 
-        print(f"CALLING LLM WITH MAX TOKENS: 4096")
         llm_output = await self.call_llm(
             system_extra=system_prompt, messages=messages, max_tokens=4096
         )
-        print(f"RESPONSE LENGTH: {len(llm_output)}")
         self.log_step("recon_llm_response_received", {"response_preview": llm_output[:1000]})
 
         try:
             parsed = self._parse_json_output(llm_output)
             self.log_step("recon_llm_response_parsed", {"parsed_keys": list(parsed.keys())})
         except json.JSONDecodeError as exc:
-            print("RECON RAW RESPONSE:", repr(llm_output[:2000]))
+            self.log_step("recon_llm_response_parse_failed", {"error": str(exc), "raw": llm_output[:1000]})
             self.log(f"recon_raw_response_length — {len(llm_output)} chars")
             self.log_step(
                 "recon_llm_response_parse_failed",
@@ -116,6 +118,8 @@ class ReconAgent(BaseAgent):
         return result
 
     def _collect_sol_files(self, contract_paths: list[Any]) -> list[str]:
+        import os
+        import glob
         discovered: list[str] = []
         seen: set[str] = set()
 
@@ -123,23 +127,24 @@ class ReconAgent(BaseAgent):
             if raw_path is None:
                 continue
 
-            path = Path(str(raw_path)).expanduser()
-            if not path.is_absolute():
-                path = Path.cwd() / path
+            path_str = str(raw_path)
+            if not os.path.isabs(path_str):
+                path_str = os.path.abspath(os.path.join(os.getcwd(), path_str))
 
-            if path.is_file() and path.suffix == ".sol":
-                key = str(path.resolve())
-                if key not in seen:
-                    seen.add(key)
-                    discovered.append(key)
+            if os.path.isfile(path_str) and path_str.endswith(".sol"):
+                if path_str not in seen:
+                    seen.add(path_str)
+                    discovered.append(path_str)
                 continue
 
-            if path.is_dir():
-                for sol_file in sorted(path.rglob("*.sol")):
-                    key = str(sol_file.resolve())
-                    if key not in seen:
-                        seen.add(key)
-                        discovered.append(key)
+            if os.path.isdir(path_str):
+                # Use glob as requested by user for scoped discovery
+                pattern = os.path.join(path_str, "**/*.sol")
+                for sol_file in sorted(glob.glob(pattern, recursive=True)):
+                    abs_sol = os.path.abspath(sol_file)
+                    if abs_sol not in seen:
+                        seen.add(abs_sol)
+                        discovered.append(abs_sol)
 
         return discovered
 

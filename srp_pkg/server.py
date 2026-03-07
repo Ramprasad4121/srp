@@ -80,7 +80,7 @@ class SRPHandler(BaseHTTPRequestHandler):
             "erc8004": "local-mode",
             "x402": "local-mode",
             "agent": "openclaw",
-            "model": "moonshotai/kimi-k2.5",
+            "model": "meta/llama-3.1-405b-instruct",
             "traces": len(list(TRACES_DIR.glob("*.json"))) if TRACES_DIR.exists() else 0,
         }
         self._respond(200, json.dumps(status).encode(), "application/json")

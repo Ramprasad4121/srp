@@ -11,6 +11,9 @@ from agents.intent_agent import IntentAgent
 from agents.recon_agent import ReconAgent
 from agents.report_agent import ReportAgent
 from agents.trace_agent import TraceAgent
+from core.debate import run_debate
+from core.poc_verifier import run_all_pocs
+import os
 
 
 class SRPOrchestrator:
@@ -178,10 +181,35 @@ class SRPOrchestrator:
         try:
             attack = await self.attack_agent.run(context)
             results["attack"] = attack
+            all_vulns = attack.get("vulnerabilities", [])
+
+            # --- DynaDebate Phase ---
+            contract_map = context.get("contract_map", {})
+            contract_summary = "\n".join([f"- {name}: {len(code)} chars" for name, code in contract_map.items()])
+
+            await self._emit_status("DynaDebate", "started", {"finding_count": len(all_vulns)})
+            # We pass the attack_agent.call_llm which is already bound to the agent instance
+            all_vulns = await run_debate(all_vulns, contract_summary, api_key, self.attack_agent.call_llm)
+            self.log_orchestrator(f"debate_complete — {len(all_vulns)} findings survived debate")
+            await self._emit_status("DynaDebate", "completed", {"surviving_count": len(all_vulns)})
+
+            # --- PoC Verifier Phase ---
+            contract_paths = context.get("contract_paths", [])
+            # derive project_root from first contract path if available: os.path.dirname(os.path.dirname(path))
+            if contract_paths and isinstance(contract_paths, list):
+                project_root = os.path.dirname(os.path.dirname(str(contract_paths[0])))
+            else:
+                project_root = os.getcwd()
+                
+            await self._emit_status("PoCVerifier", "started", {"finding_count": len(all_vulns)})
+            all_vulns = run_all_pocs(all_vulns, project_root)
+            self.log_orchestrator(f"poc_verification_complete — {sum(1 for v in all_vulns if v.get('poc_result', {}).get('status') == 'passed')} passed")
+            await self._emit_status("PoCVerifier", "completed", {"finding_count": len(all_vulns)})
+
             context["attack_output"] = attack
             context.update(
                 {
-                    "vulnerabilities": attack.get("vulnerabilities", []),
+                    "vulnerabilities": all_vulns,
                     "attack_summary": attack.get("attack_summary", ""),
                 }
             )
@@ -249,3 +277,7 @@ class SRPOrchestrator:
         callback_result = self.status_callback(step_name, status, data)
         if inspect.isawaitable(callback_result):
             await callback_result
+
+    def log_orchestrator(self, msg: str):
+        """Helper to log from orchestrator"""
+        print(f"[SRP] [Orchestrator] {msg}")

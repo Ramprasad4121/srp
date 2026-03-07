@@ -125,6 +125,23 @@ class ReportAgent(BaseAgent):
                 "output_hash": context.get("output_hash"),
                 "timestamp": context.get("timestamp"),
             }
+            
+        # User requested explicitly overriding whatever scoring logic exists with this
+        def calculate_score(findings: list) -> int:
+            deductions = 0
+            for f in findings:
+                sev = f.get("severity", "").lower() if isinstance(f, dict) else ""
+                if sev == "critical":   deductions += 20
+                elif sev == "high":     deductions += 10
+                elif sev == "medium":   deductions += 5
+                elif sev == "low":      deductions += 2
+            return max(0, 100 - min(deductions, 85))  # floor of 15 for any non-zero findings
+
+        # Force the defense output to use our calculated score
+        vulnerabilities = attack.get("vulnerabilities", [])
+        calculated_score = calculate_score(vulnerabilities if isinstance(vulnerabilities, list) else [])
+        defense["overall_security_score"] = calculated_score
+        defense["security_score"] = calculated_score
 
         return {
             "intent": intent,
@@ -204,7 +221,18 @@ class ReportAgent(BaseAgent):
         trace = report_inputs.get("trace", {})
         vulnerabilities = attack.get("vulnerabilities", [])
         vuln_count = len(vulnerabilities) if isinstance(vulnerabilities, list) else 0
-        security_score = defense.get("overall_security_score", "N/A")
+
+        # Dedicated logic: Calculate score manually as a fallback
+        deductions = 0
+        if isinstance(vulnerabilities, list):
+            for f in vulnerabilities:
+                sev = f.get("severity", "").lower() if isinstance(f, dict) else ""
+                if sev == "critical": deductions += 25
+                elif sev == "high":   deductions += 10
+                elif sev == "medium": deductions += 5
+                elif sev == "low":    deductions += 1
+        security_score = max(0, 100 - deductions)
+        
         reasoning_hash = trace.get("output_hash") or trace.get("input_hash") or "unavailable"
 
         return (

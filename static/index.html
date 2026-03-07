@@ -15,6 +15,20 @@
       rel="stylesheet"
     />
     <style>
+    #log-pulse {
+      animation: blink 1s ease-in-out infinite;
+    }
+    #log-pulse.done {
+      animation: none;
+      background: #333 !important;
+      box-shadow: none !important;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.15; transform: scale(0.65); }
+    }
+    </style>
+    <style>
       /* ═══════════════════════════════════════ */
       /* RESET & BASE — x402 light default      */
       /* ═══════════════════════════════════════ */
@@ -499,6 +513,12 @@
         color: var(--red);
       }
 
+      /* ═══ PULSE INDICATOR ═══ */
+      @keyframes srpulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.2; transform: scale(0.6); }
+      }
+
       /* ═══════════════════════════════════════ */
       /* RESULTS                                */
       /* ═══════════════════════════════════════ */
@@ -783,7 +803,10 @@
         <div class="agent-row" id="row-trace"></div>
 
         <!-- Log Stream -->
-        <div class="section-header">Live Log Stream</div>
+        <div class="log-title">
+          Live Log Stream
+          <span id="log-pulse" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#00ff88;margin-left:10px;vertical-align:middle;box-shadow:0 0 6px #00ff88;"></span>
+        </div>
         <div class="log-stream" id="log-stream"></div>
       </div>
 
@@ -998,6 +1021,11 @@
           // Render findings
           renderFindings(data.findings || []);
           document.getElementById("results-section").classList.add("visible");
+
+          // Stop log pulse when complete
+          if (document.getElementById('log-pulse')) {
+              document.getElementById('log-pulse').classList.add('done');
+          }
         }
       }
 
@@ -1077,6 +1105,11 @@
 
             if (data.status === "started") {
               showStatus(`AUDIT LAUNCHED`, "green");
+              // Start log pulse
+              const pulse = document.getElementById('log-pulse');
+              if (pulse) {
+                  pulse.classList.remove('done');
+              }
               startPolling();
             } else {
               showStatus(`ERROR: ${data.error || "Unknown error"}`, "error");
@@ -1100,6 +1133,10 @@
                 `AUDIT ${data.status.toUpperCase()}`,
                 data.status === "complete" ? "green" : "error",
               );
+              // Stop log pulse
+              if (document.getElementById('log-pulse')) {
+                  document.getElementById('log-pulse').classList.add('done');
+              }
               resetBtn();
             }
           } catch (e) {
@@ -1148,19 +1185,23 @@
 
       async function checkExistingAudit() {
         try {
-          const res = await fetch('/api/audit/status');
+          const res = await fetch("/api/audit/status");
           const data = await res.json();
-          if (data.status === 'running' || (data.status === 'complete' && (data.findings.length > 0 || data.logs.length > 0))) {
+          if (
+            data.status === "running" ||
+            (data.status === "complete" &&
+              (data.findings.length > 0 || data.logs.length > 0))
+          ) {
             // Hide form, show dashboard
-            document.getElementById('audit-form').style.display = 'none';
-            document.getElementById('agent-section').classList.add('visible');
+            document.getElementById("audit-form").style.display = "none";
+            document.getElementById("agent-section").classList.add("visible");
             updateUI(data);
-            if (data.status === 'running') {
+            if (data.status === "running") {
               startPolling();
             }
           }
         } catch (e) {
-          console.error('Failed to check existing audit', e);
+          console.error("Failed to check existing audit", e);
         }
       }
     </script>

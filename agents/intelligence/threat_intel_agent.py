@@ -18,10 +18,9 @@ class ThreatIntelAgent(BaseAgent):
 
     def __init__(self) -> None:
         super().__init__(
-            name="ThreatIntelAgent",
-            role="Tracks latest DeFi exploit intelligence and maps known exploit patterns to contracts",
+            name="ThreatIntel",
+            role="threat_intel",
             skill_keys=["ethskills-concepts"],
-            model="moonshotai/kimi-k2.5",
         )
         self.threat_db_path = "./data/threat_intel.json"
 

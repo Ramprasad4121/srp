@@ -110,8 +110,8 @@ class SkillLoader:
             try:
                 content = self.load(key)
                 blocks.append(f"# === SKILL: {key} ===\n\n{content}")
-            except SkillNotFoundError as exc:
-                print(f"  ⚠️  Skipping missing skill '{key}': {exc}")
+            except SkillNotFoundError:
+                continue
         return "\n\n".join(blocks)
 
     def list_all(self) -> list[str]:

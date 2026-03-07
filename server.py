@@ -134,7 +134,11 @@ async def _run_audit(
     request: AuditRequest,
     emit: Callable[[dict], Awaitable[None]] | None = None,
 ) -> dict:
-    contract_paths = _write_contract_source(request.contract_code)
+    # If contract_code is a valid path, use it directly as the scope
+    if os.path.exists(request.contract_code):
+        contract_paths = [request.contract_code]
+    else:
+        contract_paths = _write_contract_source(request.contract_code)
     orchestrator = SRPOrchestrator()
 
     if emit is not None:
@@ -187,11 +191,12 @@ async def startup_event() -> None:
     # Auto-start audit if triggered by `srp audit`
     if os.environ.get("SRP_AUTOSTART") == "true":
         project_root = os.environ.get("SRP_PROJECT_ROOT", os.getcwd())
-        print(f"  → Auto-starting audit on: {project_root}")
-        asyncio.create_task(run_audit_on_project(project_root))
+        target_path = os.environ.get("SRP_TARGET_PATH", project_root)
+        print(f"  → Auto-starting audit on target: {target_path}")
+        asyncio.create_task(run_audit_on_project(project_root, target_path))
 
 
-async def run_audit_on_project(project_root: str) -> None:
+async def run_audit_on_project(project_root: str, target_path: str = None) -> None:
     """Auto-triggered when `srp audit` is run. Reads project contracts and runs the full pipeline."""
     global audit_state
     from core.project import SRPProject
@@ -206,41 +211,22 @@ async def run_audit_on_project(project_root: str) -> None:
         except Exception:
             pass
 
-    # Read all contract source code
-    sources = {}
-    exclude = {"node_modules", ".git", "lib", "cache", "out", "artifacts", ".srp"}
-    for sol_file in Path(project_root).rglob("*.sol"):
-        skip = False
-        for part in sol_file.parts:
-            if part in exclude:
-                skip = True
-                break
-        if skip:
-            continue
-        try:
-            rel = sol_file.relative_to(project_root)
-            sources[str(rel)] = sol_file.read_text(encoding="utf-8")
-        except Exception:
-            continue
+    if target_path is None:
+        target_path = project_root
 
-    if not sources:
-        audit_state = {"status": "complete", "logs": ["❌ No Solidity contracts found."], "findings": [], "score": 0,
-                       "project": Path(project_root).name, "contracts_total": 0}
-        return
-
-    # Merge all contract code into a single string for the audit
-    merged_code = "\n\n".join(
-        f"// --- {name} ---\n{code}" for name, code in sources.items()
-    )
+    # Count actual sol files for UI
+    import glob
+    sol_files = glob.glob(os.path.join(target_path, "**/*.sol"), recursive=True)
+    contract_count = len(sol_files)
 
     project_name = Path(project_root).name
     audit_state = {
         "status": "running",
-        "logs": [f"🚀 Audit started — {len(sources)} contracts detected in {project_name}"],
+        "logs": [f"🚀 Audit started — targeting {target_path} in {project_name}"],
         "findings": [],
         "score": 100,
         "project": project_name,
-        "contracts_total": len(sources),
+        "contracts_total": contract_count,
         "contracts_done": 0,
         "current_agent": "WATCHDOG",
         "agent_statuses": {
@@ -251,7 +237,9 @@ async def run_audit_on_project(project_root: str) -> None:
         },
     }
 
-    await run_audit(merged_code, f"Audit all {len(sources)} contracts in {project_name}. Focus on reentrancy, access control, invariant violations, oracle manipulation.")
+    # Skip merging code — pass the target_path directly as a scope
+    # This allows ReconAgent to discover files within the scoped folder
+    await run_audit(target_path, f"Audit all contracts in {target_path}. Focus on reentrancy, access control, invariant violations, oracle manipulation.")
 
 
 

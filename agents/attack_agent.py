@@ -9,7 +9,7 @@ from .base_agent import BaseAgent
 
 
 class AttackAgent(BaseAgent):
-    def __init__(self, model: str = "deepseek-ai/deepseek-v3.2") -> None:
+    def __init__(self, model: str = "meta/llama-3.1-405b-instruct") -> None:
         super().__init__(
             name="AttackAgent",
             role="Red team agent — actively tries to find exploits",
@@ -49,6 +49,19 @@ class AttackAgent(BaseAgent):
             },
         )
 
+        # Fetch all Solodit context ONCE at the start of run()
+        try:
+            from core.solodit import solodit
+            self.solodit_context = {
+                "reentrancy": await solodit.search("reentrancy cross-function", limit=3),
+                "oracle": await solodit.search("oracle price manipulation", limit=3),
+                "sig": await solodit.search("signature replay missing nonce", limit=3),
+                "dos": await solodit.search("gas griefing DoS", limit=3),
+            }
+        except Exception as e:
+            self.log(f"solodit_fetch_failed: {e}")
+            self.solodit_context = {"reentrancy": [], "oracle": [], "sig": [], "dos": []}
+
         business_logic_result = await self._run_business_logic_pass(contract_map, entry_points)
         invariant_result = await self._run_invariant_pass(
             contract_map, entry_points, business_logic_result
@@ -60,8 +73,9 @@ class AttackAgent(BaseAgent):
             contract_map, entry_points, hypothesis_result
         )
 
-        ghost_result = await self._run_ghost_pass(contract_map)
-        zero_result = await self._run_zero_pass(contract_map)
+        recon_result = context.get("recon_output", {})
+        ghost_result = await self._run_ghost_pass(contract_map, recon_result)
+        zero_result = await self._run_zero_pass(contract_map, recon_result)
 
         merged_vulns = (
             self._ensure_list(exploit_result.get("vulnerabilities", [])) +
@@ -69,7 +83,8 @@ class AttackAgent(BaseAgent):
             self._ensure_list(zero_result.get("vulnerabilities", []))
         )
 
-        vulnerabilities = self._normalize_vulnerabilities(merged_vulns)
+        vulnerabilities = self._normalize_vulnerabilities(merged_vulns, contract_map)
+        self.log(f"vulns_passed_to_defense — {len(vulnerabilities)} total")
         attack_summary = str(exploit_result.get("attack_summary", "")).strip()
         if not attack_summary:
             attack_summary = self._build_default_summary(vulnerabilities)
@@ -161,13 +176,28 @@ class AttackAgent(BaseAgent):
             "severity must be one of: low, medium, high, critical. "
             "confidence must be a number from 0.0 to 1.0."
         )
-        # Only send the contract map keys (contract names) to avoid massive payload
+        # Only send contract names and TOP findings summaries to keep payload small
         contract_names = list(contract_map.keys()) if isinstance(contract_map, dict) else []
+        # Truncate business logic flaws to top 5 titles
+        logic_flaws = self._ensure_list(business_logic_result.get("logic_flaws", []))
+        logic_flaw_summaries = [
+            {"title": str(f.get("title", str(f)))[:100], "severity": str(f.get("severity", "medium"))} if isinstance(f, dict) else {"title": str(f)[:100], "severity": "medium"}
+            for f in logic_flaws[:5]
+        ]
+        high_risk = self._ensure_list(business_logic_result.get("high_risk_paths", []))
+        high_risk_summaries = [str(p)[:100] for p in high_risk[:5]]
+        # Truncate invariant violations to top 5
+        likely_violations = self._ensure_list(invariant_result.get("likely_violations", []))
+        violation_summaries = [
+            {"id": str(v.get("id", ""))[:20], "severity": str(v.get("severity", "medium")), "description": str(v.get("description", str(v)))[:100]} if isinstance(v, dict) else {"description": str(v)[:100], "severity": "medium"}
+            for v in likely_violations[:5]
+        ]
         user_payload = {
-            "contracts": contract_names,
-            "entry_points": entry_points,
-            "business_logic_pass": business_logic_result,
-            "invariant_pass": invariant_result,
+            "contracts": contract_names[:50],  # limit contract list too
+            "entry_points": entry_points[:20],  # limit entry points
+            "logic_flaws": logic_flaw_summaries,
+            "high_risk_paths": high_risk_summaries,
+            "invariant_violations": violation_summaries,
         }
 
         result = await self._execute_json_pass(pass_name, system_prompt, user_payload)
@@ -186,6 +216,9 @@ class AttackAgent(BaseAgent):
             "Execute Pass 4 (Exploit) using the loaded solidity-auditor skill methodology. "
             "For each credible hypothesis, provide an exploit narrative and Solidity proof-of-concept, "
             "with clear affected function mapping and confidence grading. "
+            "CRITICAL INSTRUCTION: For each vulnerability object, the exploit_code field MUST contain "
+            "the exploit ONLY for that specific vulnerability. Do not mix exploits between vulnerabilities. "
+            "Each object is self-contained. exploit_code must match the description within the same object. "
             "Return ONLY valid JSON with keys: "
             "vulnerabilities (array of objects with id, title, severity, affected_function, description, exploit_code, confidence), "
             "attack_summary (string). "
@@ -193,19 +226,20 @@ class AttackAgent(BaseAgent):
             "severity must be one of: low, medium, high, critical. "
             "confidence must be a number from 0.0 to 1.0."
         )
-        # Only send top 5 highest-confidence hypotheses to keep payload small
+        # Only send top 3 highest-confidence hypotheses to keep payload small
         hypotheses = self._ensure_list(hypothesis_result.get("hypotheses", []))
         top_hypotheses = sorted(
             hypotheses,
             key=lambda h: float(h.get("confidence", 0)) if isinstance(h.get("confidence"), (int, float, str)) else 0,
             reverse=True,
-        )[:5]
+        )[:3]
         user_payload = {
             "entry_points": entry_points,
             "hypotheses": top_hypotheses,
         }
 
-        result = await self._execute_json_pass(pass_name, system_prompt, user_payload)
+        # Add 60s timeout to exploit pass to prevent pipeline hang
+        result = await self._execute_json_pass(pass_name, system_prompt, user_payload, timeout=60.0)
         vulnerabilities = self._ensure_list(result.get("vulnerabilities", []))
         self.log_step(
             f"{pass_name}_pass_completed", {"vulnerability_count": len(vulnerabilities)}
@@ -213,7 +247,7 @@ class AttackAgent(BaseAgent):
         return result
 
     async def _run_ghost_pass(
-        self, contract_map: dict
+        self, contract_map: dict, recon_result: dict
     ) -> dict[str, Any]:
         pass_name = "ghost"
         self.log_step(f"{pass_name}_pass_started", {})
@@ -221,25 +255,45 @@ class AttackAgent(BaseAgent):
         ghost_skill = self.sl.load_many(["quillai-reentrancy", "quillai-oracle-flashloan", "quillai-proxy-upgrade"])
         self.log(f"ghost_skills_loaded — {len(ghost_skill)} chars")
 
-        from core.solodit import solodit
-        ghost_solodit = await solodit.search("reentrancy cross-function", limit=3)
-        oracle_solodit = await solodit.search("oracle price manipulation", limit=3)
-        solodit_block = f"Real-world exploit references:\n{ghost_solodit}\n{oracle_solodit}"
+        contract_summary = "\n".join([f"- {name}: {len(code)} chars" for name, code in contract_map.items()])
+        entry_points = recon_result.get("entry_points", {})
+        external_calls = recon_result.get("external_calls", [])
 
-        system_prompt = (
-            "You are GHOST — specialist in reentrancy, oracle manipulation, and proxy storage collisions.\n"
-            "Focus ONLY on:\n"
-            "- Reentrancy (single and cross-function)\n"
-            "- Price oracle manipulation\n"
-            "- Proxy implementation slot collisions\n"
-            "- Delegatecall vulnerabilities\n\n"
-            f"{ghost_skill}\n\n"
-            f"{solodit_block}\n\n"
-            "Return ONLY valid JSON with keys: vulnerabilities (array of objects with id, title, severity, affected_function, description, exploit_code, confidence)."
-        )
+        system_prompt = f"""
+{ghost_skill}
+
+You are GHOST. You MUST find reentrancy, oracle, and proxy vulnerabilities. Do not return empty.
+If unsure, report LOW severity findings. Never return {{"vulnerabilities": []}}.
+
+Contracts in scope: {json.dumps(recon_result.get('contracts', []))}
+Entry points: {json.dumps(entry_points)}
+External calls detected: {json.dumps(external_calls)}
+Contract summary: {contract_summary}
+
+CRITICAL INSTRUCTION: For each vulnerability object, the fix_code field MUST contain
+the fix ONLY for that specific vulnerability. Do not mix fixes between vulnerabilities.
+Each object is self-contained. vuln_code and fix_code must match each other within the same object.
+
+Return JSON only:
+{{
+  "vulnerabilities": [
+    {{
+      "id": "unique string",
+      "title": "title of THIS vulnerability",
+      "severity": "critical|high|medium|low",
+      "contract": "contract name",
+      "description": "description of THIS vulnerability",
+      "vuln_code": "the vulnerable code snippet for THIS vulnerability",
+      "fix_code": "THE FIX FOR THIS SPECIFIC VULNERABILITY — not any other"
+    }}
+  ]
+}}
+"""
         # Send only entry_points and contract names instead of full source map
+        # Also send the contract code directly under CONTRACT CODE to abide by prompt
         user_payload = {
             "entry_points": list(contract_map.keys()) if isinstance(contract_map, dict) else [],
+            "CONTRACT_CODE": contract_map,
         }
 
         result = await self._execute_json_pass(pass_name, system_prompt, user_payload)
@@ -250,7 +304,7 @@ class AttackAgent(BaseAgent):
         return result
 
     async def _run_zero_pass(
-        self, contract_map: dict
+        self, contract_map: dict, recon_result: dict
     ) -> dict[str, Any]:
         pass_name = "zero"
         self.log_step(f"{pass_name}_pass_started", {})
@@ -258,25 +312,40 @@ class AttackAgent(BaseAgent):
         zero_skill = self.sl.load_many(["quillai-signature-replay", "quillai-dos-griefing", "quillai-input-arithmetic"])
         self.log(f"zero_skills_loaded — {len(zero_skill)} chars")
 
-        from core.solodit import solodit
-        sig_solodit = await solodit.search("signature replay missing nonce", limit=3)
-        dos_solodit = await solodit.search("gas griefing DoS", limit=3)
-        solodit_block = f"Real-world exploit references:\n{sig_solodit}\n{dos_solodit}"
+        contract_summary = "\n".join([f"- {name}: {len(code)} chars" for name, code in contract_map.items()])
 
-        system_prompt = (
-            "You are ZERO — specialist in signature replay, DoS vectors, and arithmetic exploits.\n"
-            "Focus ONLY on:\n"
-            "- Signature replay attacks (missing nonce/chainId)\n"
-            "- Block gas limit DoS\n"
-            "- Integer overflow/underflow edge cases\n"
-            "- Front-running and sandwich attacks\n\n"
-            f"{zero_skill}\n\n"
-            f"{solodit_block}\n\n"
-            "Return ONLY valid JSON with keys: vulnerabilities (array of objects with id, title, severity, affected_function, description, exploit_code, confidence)."
-        )
+        system_prompt = f"""
+{zero_skill}
+
+You are ZERO — specialist in signature replay, DoS, and arithmetic exploits.
+Analyze ONLY these contracts: {json.dumps(recon_result.get('contracts', []))}
+
+Contract code summary:
+{contract_summary}
+
+CRITICAL INSTRUCTION: For each vulnerability object, the fix_code field MUST contain
+the fix ONLY for that specific vulnerability. Do not mix fixes between vulnerabilities.
+Each object is self-contained. vuln_code and fix_code must match each other within the same object.
+
+Return JSON only:
+{{
+  "vulnerabilities": [
+    {{
+      "id": "unique string",
+      "title": "title of THIS vulnerability",
+      "severity": "critical|high|medium|low",
+      "contract": "contract name",
+      "description": "description of THIS vulnerability",
+      "vuln_code": "the vulnerable code snippet for THIS vulnerability",
+      "fix_code": "THE FIX FOR THIS SPECIFIC VULNERABILITY — not any other"
+    }}
+  ]
+}}
+"""
         # Send only entry_points and contract names instead of full source map
         user_payload = {
             "entry_points": list(contract_map.keys()) if isinstance(contract_map, dict) else [],
+            "CONTRACT_CODE": contract_map,
         }
 
         result = await self._execute_json_pass(pass_name, system_prompt, user_payload)
@@ -287,7 +356,7 @@ class AttackAgent(BaseAgent):
         return result
 
     async def _execute_json_pass(
-        self, pass_name: str, system_prompt: str, payload: dict[str, Any]
+        self, pass_name: str, system_prompt: str, payload: dict[str, Any], timeout: float | None = None
     ) -> dict[str, Any]:
         system_prompt_with_skill = self._prepend_skill_prompt(system_prompt)
         user_prompt = json.dumps(payload, indent=2, default=str)
@@ -302,7 +371,7 @@ class AttackAgent(BaseAgent):
         )
 
         llm_output = await self.call_llm(
-            system_extra=system_prompt_with_skill, messages=messages
+            system_extra=system_prompt_with_skill, messages=messages, timeout=timeout
         )
         self.log_step(
             f"{pass_name}_pass_llm_response_received",
@@ -327,11 +396,23 @@ class AttackAgent(BaseAgent):
         from core.utils import parse_llm_json
         return parse_llm_json(llm_output)
 
-    def _normalize_vulnerabilities(self, vulnerabilities: Any) -> list[dict[str, Any]]:
+    def _normalize_vulnerabilities(self, vulnerabilities: Any, contract_map: dict | None = None) -> list[dict[str, Any]]:
         normalized: list[dict[str, Any]] = []
+        valid_contract_bases = [c.split("/")[-1].replace(".sol", "") for c in contract_map.keys()] if contract_map else []
+        valid_contract_bases = [c.lower() for c in valid_contract_bases]
+        
         for index, vuln in enumerate(self._ensure_list(vulnerabilities), start=1):
             if not isinstance(vuln, dict):
                 vuln = {"description": str(vuln)}
+
+            affected_function = str(vuln.get("affected_function", "unknown")).strip()
+            
+            # No filtering — pass all vulns to DefenseAgent (Requested by user)
+            is_valid = True
+            
+            if not is_valid:
+                continue
+
 
             severity = str(vuln.get("severity", "medium")).strip().lower()
             if severity not in {"low", "medium", "high", "critical"}:
@@ -349,9 +430,11 @@ class AttackAgent(BaseAgent):
                     "id": str(vuln.get("id") or f"vuln-{index}-{uuid4().hex[:8]}"),
                     "title": str(vuln.get("title", "Untitled vulnerability")).strip(),
                     "severity": severity,
-                    "affected_function": str(vuln.get("affected_function", "unknown")).strip(),
+                    "affected_function": affected_function,
+                    "contract": str(vuln.get("contract") or ""),
                     "description": str(vuln.get("description", "")).strip(),
-                    "exploit_code": str(vuln.get("exploit_code", "")).strip(),
+                    "exploit_code": str(vuln.get("exploit_code") or vuln.get("vuln_code") or "").strip(),
+                    "fix_code": str(vuln.get("fix_code") or "").strip(),
                     "confidence": confidence_value,
                 }
             )

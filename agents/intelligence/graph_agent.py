@@ -29,7 +29,6 @@ class GraphAgent(BaseAgent):
             name="GraphAgent",
             role="Builds a protocol relationship graph for dependency and blast-radius analysis",
             skill_keys=["ethskills-standards", "ethskills-concepts"],
-            model="moonshotai/kimi-k2.5",
         )
         self.graph = nx.DiGraph()
         self.graph_path = Path("./data/contract_graph.json")

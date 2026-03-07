@@ -14,10 +14,9 @@ class SentinelAgent(BaseAgent):
 
     def __init__(self) -> None:
         super().__init__(
-            name="SentinelAgent",
-            role="24/7 transaction anomaly triage",
+            name="Sentinel",
+            role="sentinel",
             skill_keys=["solidity-auditor", "ethskills-concepts"],
-            model="deepseek-ai/deepseek-v3.2",
         )
         self.monitored_contracts: list[str] = []
 

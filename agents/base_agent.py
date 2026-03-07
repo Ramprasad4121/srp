@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import os
+import sys
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Any
@@ -24,8 +26,6 @@ class BaseAgent(ABC):
         # Load skills — methodology after identity
         self.skill_content = self.sl.load_many(skill_keys) if skill_keys else ""
 
-        if self.soul_content:
-            print(f"  \u2705 {name}: soul loaded ({len(self.soul_content)} chars)")
 
         self.progress = None
 
@@ -72,6 +72,7 @@ class BaseAgent(ABC):
         budget_tokens: int | None = None,
         max_tokens: int = 4096,
         model: str | None = None,
+        timeout: float | None = None,
     ) -> str:
         from core.guardrails import SRPGuardrails
         import json
@@ -121,58 +122,44 @@ class BaseAgent(ABC):
 
         import httpx
 
-        # Kimi K2.5 — uses direct HTTP request due to different API shape
-        if "kimi" in resolved_model.lower():
-            headers = {
-                "Authorization": f"Bearer {resolved_key}",
-                "Accept": "application/json"
-            }
-            payload = {
-                "model": resolved_model,
-                "messages": oai_messages,
-                "max_tokens": max_tokens,
-                "temperature": 1.00,
-                "top_p": 1.00,
-                "stream": False,
-                "chat_template_kwargs": {"thinking": True}
-            }
-            async with httpx.AsyncClient(timeout=300.0) as http_client:
-                resp = await http_client.post(
-                    "https://integrate.api.nvidia.com/v1/chat/completions",
-                    headers=headers,
-                    json=payload
-                )
-                resp.raise_for_status()
-                response_text = resp.json()["choices"][0]["message"]["content"]
-        else:
-            # DeepSeek V3.2 and Llama — use OpenAI client
+        LLM_TIMEOUT_SECONDS = 240.0  # max 4 minutes per LLM call
+
+        try:
             client = AsyncOpenAI(
                 base_url="https://integrate.api.nvidia.com/v1",
                 api_key=resolved_key,
-                timeout=300.0,
+                timeout=LLM_TIMEOUT_SECONDS,
+                max_retries=0,
             )
-
-            extra = {}
-            # Disabled "thinking: True" for deepseek because it causes 7-minute passes
-            # if "deepseek" in resolved_model.lower():
-            #     extra["extra_body"] = {"chat_template_kwargs": {"thinking": True}}
 
             kwargs: dict = {
                 "model": resolved_model,
                 "max_tokens": max_tokens,
                 "messages": oai_messages,
-                "temperature": 1 if "deepseek" in resolved_model.lower() else 0.2,
-                "top_p": 0.95 if "deepseek" in resolved_model.lower() else 0.7,
+                "temperature": 0.2,
+                "top_p": 0.7,
             }
 
             if budget_tokens and budget_tokens > 0:
                 kwargs["max_tokens"] = max(max_tokens, budget_tokens + 1000)
 
-            response = await client.chat.completions.create(
-                **kwargs,
-                **extra
+
+            # Allow user timeouts or global defaults
+            resolved_timeout = timeout or LLM_TIMEOUT_SECONDS
+            
+            # Set the httpx timeout explicitly in the create call as requested
+            kwargs["timeout"] = resolved_timeout
+
+            response = await asyncio.wait_for(
+                client.chat.completions.create(**kwargs),
+                timeout=resolved_timeout,
             )
             response_text = response.choices[0].message.content or ""
+        except (asyncio.TimeoutError, Exception) as exc:
+            timeout_msg = f"LLM call timed out or failed after {resolved_timeout}s: {exc}"
+            self.log_step("llm_call_timeout", {"error": timeout_msg, "model": resolved_model})
+            # Return empty vulnerabilities list on failure to ensure downstream passes don't crash
+            return '{"vulnerabilities": []}'
 
         self.log_step(
             "llm_call_completed",

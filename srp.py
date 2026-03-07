@@ -128,13 +128,14 @@ def start(no_browser, port):
 
 
 @cli.command()
+@click.argument("target", default=".")
 @click.option("--no-browser", is_flag=True, help="Run audit without opening browser")
 @click.option("--port", default=7337, help="Port to run on (default: 7337)")
-def audit(no_browser, port):
-    """Scan current directory and launch full audit with live UI.
+def audit(target, no_browser, port):
+    """Scan current directory or target and launch full audit with live UI.
 
     One command does everything:
-    1. Scans current directory for Solidity contracts
+    1. Scans target directory for Solidity contracts
     2. Starts server at localhost:7337
     3. Opens browser automatically
     4. Audit begins immediately in the background
@@ -155,21 +156,59 @@ def audit(no_browser, port):
         except Exception:
             pass
 
+    def detect_scope(base_dir: str) -> str:
+        # Priority order — check these folders first
+        priority_folders = ["src", "contracts", "contract", "sources"]
+        
+        for folder in priority_folders:
+            candidate = os.path.join(base_dir, folder)
+            if os.path.isdir(candidate):
+                sol_files = [f for f in os.listdir(candidate) if f.endswith(".sol")]
+                if sol_files:
+                    console.print(f"  [green]✅ Scope detected:[/green] {candidate} ({len(sol_files)} contracts direct in folder)")
+                    return candidate
+        
+        # No known scope folder found — ask user
+        console.print("\n  [yellow]⚠️  Could not auto-detect scope folder.[/yellow]")
+        console.print("  [dim]Common scope folders (src, contracts) not found.[/dim]\n")
+        user_path = click.prompt("  Enter path to audit scope", type=str).strip()
+        
+        if not os.path.isdir(user_path):
+            console.print(f"  [red]❌ Path not found:[/red] {user_path}")
+            sys.exit(1)
+        
+        sol_files = [f for f in os.listdir(user_path) if f.endswith(".sol")]
+        if not sol_files:
+            console.print(f"  [red]❌ No .sol files found directly in:[/red] {user_path}")
+            sys.exit(1)
+        
+        console.print(f"  [green]✅ Scope set:[/green] {user_path} ({len(sol_files)} contracts direct in folder)")
+        return user_path
+
+    target_path = Path(target).resolve()
+
     # Find contracts even without init
-    sol_files = list(Path(os.getcwd()).rglob("*.sol"))
+    if target_path.is_file():
+        sol_files = [target_path]
+    else:
+        scope_path = detect_scope(str(target_path))
+        target_path = Path(scope_path)
+        sol_files = list(target_path.rglob("*.sol"))
+        
     sol_files = [f for f in sol_files if not any(
         p in str(f) for p in ["node_modules", ".git", "lib/", "cache/", "out/", "artifacts/", ".srp/"]
     )]
 
     if not sol_files:
-        console.print("[red]❌ No Solidity contracts found in current directory.[/red]")
-        console.print("[dim]   cd into a project with .sol files and try again.[/dim]")
+        console.print(f"[red]❌ No Solidity contracts found in {target_path}.[/red]")
+        console.print("[dim]   Try pointing to a specific folder or file.[/dim]")
         sys.exit(1)
 
     project_name = Path(os.getcwd()).name
     console.print(Panel(
         f"[bold green]SRP AUDIT[/bold green]\n\n"
         f"  Project:   [cyan]{project_name}[/cyan]\n"
+        f"  Target:    [cyan]{target}[/cyan]\n"
         f"  Contracts: [cyan]{len(sol_files)} Solidity files[/cyan]\n"
         f"  Agents:    [cyan]13 deploying...[/cyan]\n"
         f"  Dashboard: [bold]http://localhost:{port}[/bold]",
@@ -180,6 +219,7 @@ def audit(no_browser, port):
     # 2. Set environment for auto-start
     os.environ["SRP_AUTOSTART"] = "true"
     os.environ["SRP_PROJECT_ROOT"] = os.getcwd()
+    os.environ["SRP_TARGET_PATH"] = str(target_path)
 
     # 3. Open browser after short delay
     if not no_browser:

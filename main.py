@@ -79,7 +79,7 @@ def cmd_init(args):
         "agent": {
             "runtime": "openclaw",
             "binary": "openclaw",
-            "model": "moonshotai/kimi-k2.5",
+            "model": "meta/llama-3.1-405b-instruct",
         },
         "policy": {
             "mode": "local",
@@ -296,7 +296,7 @@ def cmd_analyze(args):
     trace = ReasoningTrace(
         intent_hash=intent.intent_hash,
         agent_runtime="openclaw",
-        agent_version=config["agent"].get("model", "moonshotai/kimi-k2.5"),
+        agent_version=config["agent"].get("model", "meta/llama-3.1-405b-instruct"),
         model=config["agent"]["model"],
         erc8004_agent_id=config["policy"].get("erc8004_agent_id"),
     )
@@ -544,7 +544,7 @@ def cmd_status(args):
     print(f"  ERC-8004      : local mode (mainnet: Jan 29, 2026)")
     print(f"  x402          : local mode (V2 live)")
     print(f"  Agent         : openclaw 2026.2.16")
-    print(f"  Model         : moonshotai/kimi-k2.5 (NVIDIA)")
+    print(f"  Model         : meta/llama-3.1-405b-instruct (NVIDIA)")
 
 
 # ─────────────────────────────────────────────────────────
