@@ -333,18 +333,22 @@ async function launchAudit() {
       state.ws = null;
     }
 
-    const ws = new WebSocket(WS_URL);
+    const ws = new EventSource("/stream");
     state.ws = ws;
 
     ws.onopen = () => {
-      appendGlobalLog("Connected to mission WebSocket.");
-      ws.send(
-        JSON.stringify({
+      appendGlobalLog("Connected to mission stream.");
+      
+      // Fire the POST request to start the audit since SSE is one-way
+      fetch("/api/audit/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           raw_input: rawInput,
           contract_code: contractCode,
           budget_usd: budgetUsd,
         })
-      );
+      });
       appendGlobalLog("Audit payload sent. Awaiting agent execution.");
     };
 
@@ -390,8 +394,8 @@ async function launchAudit() {
       }
     };
 
-    ws.onerror = () => {
-      appendGlobalLog("WebSocket transport error.", "error");
+    ws.onerror = (err) => {
+      console.warn("SSE EventSource error:", err);
     };
 
     ws.onclose = () => {
@@ -752,6 +756,8 @@ function mergeVulnerabilities(vulnerabilities, reviewedVulnerabilities) {
     const review = reviewMap.get(vulnerability.id) || {};
     const severity = (review.final_severity || vulnerability.severity || "medium").toLowerCase();
 
+    const pocStatus = vulnerability.poc_result?.status || review.poc_result?.status || "unproven";
+
     return {
       id: vulnerability.id || `v-${index + 1}`,
       title: vulnerability.title || `Vulnerability ${index + 1}`,
@@ -763,6 +769,7 @@ function mergeVulnerabilities(vulnerabilities, reviewedVulnerabilities) {
       defenseNotes: review.defense_notes || "No defense notes provided.",
       status: review.status || "needs_more_info",
       confidence: Number(vulnerability.confidence || 0),
+      pocStatus,
     };
   });
 }
@@ -787,7 +794,12 @@ function renderVulnerabilityList(vulnerabilities) {
         <div class="vuln-title">${escapeHtml(vulnerability.title)}</div>
         <div class="vuln-sub">${escapeHtml(vulnerability.affectedFunction)} - status: ${escapeHtml(vulnerability.status)} - confidence ${vulnerability.confidence.toFixed(2)}</div>
       </div>
-      <span class="severity-badge">${escapeHtml(vulnerability.severity)}</span>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <span style="font-size:11px; font-weight:bold; padding:3px 8px; border-radius:4px; letter-spacing:0.5px; ${vulnerability.pocStatus === 'proven' ? 'background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71;' : 'background: rgba(149, 165, 166, 0.1); color: #95a5a6; border: 1px solid #95a5a6;'}">
+          ${escapeHtml(vulnerability.pocStatus).toUpperCase()}
+        </span>
+        <span class="severity-badge">${escapeHtml(vulnerability.severity)}</span>
+      </div>
     `;
 
     const body = document.createElement("div");

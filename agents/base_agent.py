@@ -80,10 +80,14 @@ class BaseAgent(ABC):
 
         last_msg = messages[-1].get("content", "") if messages else ""
         if len(last_msg) > 100:
-            injected, reason = SRPGuardrails.is_prompt_injection(str(last_msg)[:2000])
-            if injected:
-                self.log_step("guardrail_blocked", {"reason": reason})
-                return json.dumps({"error": "guardrail_blocked", "reason": reason})
+            whitelist_tags = ["CONTRACT_CODE", "vuln_code", "fix_code", "exploit_code"]
+            is_whitelisted = any(tag in last_msg for tag in whitelist_tags)
+            
+            if not is_whitelisted:
+                injected, reason = SRPGuardrails.is_prompt_injection(str(last_msg)[:2000])
+                if injected:
+                    self.log_step("guardrail_blocked", {"reason": reason})
+                    return json.dumps({"error": "guardrail_blocked", "reason": reason})
 
         # BYOK: prefer passed api_key, fallback to env
         resolved_key = api_key or os.environ.get("NVIDIA_API_KEY", "")

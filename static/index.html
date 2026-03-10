@@ -16,6 +16,8 @@
     />
     <style>
     #log-pulse {
+      background: #00ff88;
+      box-shadow: 0 0 8px #00ff88, 0 0 16px #00ff88;
       animation: blink 1s ease-in-out infinite;
     }
     #log-pulse.done {
@@ -1054,6 +1056,11 @@
         grid.innerHTML = findings
           .map((f, i) => {
             const sev = (f.severity || "medium").toLowerCase();
+            const poc = f.poc_result || {};
+            const pocStatus = poc.status || "skipped";
+            const badgeColor = pocStatus === "proven" ? "#00ff88" : pocStatus === "unproven" ? "#ffaa00" : "#444";
+            const badgeText = pocStatus === "proven" ? "✅ PROVEN ON FORK" : pocStatus === "unproven" ? "⚠️ UNPROVEN" : "— POC SKIPPED";
+            
             return `<div class="finding-card">
       <div class="finding-severity ${sev}">${(f.severity || "medium").toUpperCase()}</div>
       <div class="finding-content">
@@ -1061,6 +1068,7 @@
         <div class="finding-description">${esc(f.description || "")}</div>
         ${f.exploit_code ? `<div class="finding-code">${esc(f.exploit_code)}</div>` : ""}
         ${f.fix_code ? `<div class="finding-code" style="border-color:var(--accent);">// FIX →\n${esc(f.fix_code)}</div>` : ""}
+        <div style="margin-top:8px;font-size:11px;color:${badgeColor};font-family:monospace;">${badgeText}</div>
       </div>
     </div>`;
           })

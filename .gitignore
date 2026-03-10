@@ -1,4 +1,31 @@
 # SRP Security Reasoning Protocol
 .srp/
 .env
-.env
+thoughts.md
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local Data/Artifacts
+reports/*.md
+traces/*.json
+
+# Node
+node_modules/
+dist/
+artifacts/
+cache/
+typechain/
+typechain-types/
+
+# Virtual Environment
+venv/
+.venv/
+env/
+.env/

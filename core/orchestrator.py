@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import inspect
+import json
 from pathlib import Path
 from collections.abc import Callable
 from typing import Any
@@ -13,7 +15,52 @@ from agents.report_agent import ReportAgent
 from agents.trace_agent import TraceAgent
 from core.debate import run_debate
 from core.poc_verifier import run_all_pocs
+from core.anvil import start_anvil, stop_anvil
 import os
+
+
+# ─────────────────────────────────────────────────────────
+# Domain Detection Keywords
+# ─────────────────────────────────────────────────────────
+
+DOMAIN_KEYWORDS: dict[str, set[str]] = {
+    "lending": {
+        "liquidate", "liquidation", "collateralfactor", "collateral", "borrow",
+        "repay", "repayment", "healthfactor", "health_factor", "accrueinterest",
+        "accrue_interest", "borrowrate", "supplyrate", "lendingpool", "lending_pool",
+        "ctoken", "atoken", "debt", "reserve", "reservefactor", "borrowindex",
+        "supplyindex", "collateralratio", "borrowbalance", "supplycap", "borrowcap",
+        "flashloan", "flash_loan",
+    },
+    "amm": {
+        "swap", "getreserves", "get_reserves", "addliquidity", "add_liquidity",
+        "removeliquidity", "remove_liquidity", "mint", "burn", "tick", "sqrtprice",
+        "sqrt_price", "pool", "pair", "twap", "fee", "slippage", "k_constant",
+        "router", "factory", "quoter", "pricecumulativelast", "observe",
+    },
+    "bridge": {
+        "sendmessage", "send_message", "receivemessage", "receive_message",
+        "bridge", "relay", "relayer", "messenger", "crosschain", "cross_chain",
+        "finality", "nonce", "guardian", "validator", "attestation", "deposit",
+        "withdrawal", "message_hash", "messagehash", "chainid", "sourced_chain",
+    },
+    "staking": {
+        "stake", "unstake", "slash", "slashing", "delegate", "delegation",
+        "undelegate", "validator", "epoch", "reward", "rewardrate", "staking_pool",
+        "staking_contract", "withdrawal_delay", "cooldown", "penalize",
+    },
+    "governance": {
+        "propose", "proposal", "vote", "voting", "timelock", "execute",
+        "quorum", "governor", "governance", "veto", "delegate", "ballot",
+        "votingperiod", "voting_period", "proposalthreshold", "cancel",
+    },
+    "perpetuals": {
+        "perpetual", "perp", "funding", "fundingrate", "funding_rate",
+        "margin", "leverage", "position", "openposition", "closeposition",
+        "markprice", "indexprice", "adl", "insurance_fund", "insurancefund",
+        "liquidation_engine", "maxleverage",
+    },
+}
 
 
 class SRPOrchestrator:
@@ -103,6 +150,90 @@ class SRPOrchestrator:
             return "solidity-auditor"
         return best_skill
 
+    # ─────────────────────────────────────────────────────────
+    # Domain Detection
+    # ─────────────────────────────────────────────────────────
+
+    def detect_domain(self, recon_output: dict, contract_map: dict) -> str:
+        """Detect the protocol domain from recon output and contract source code.
+
+        Scans entry points, contract names, function names, and raw source code against
+        domain keyword sets. Returns the domain with the highest match score.
+
+        Args:
+            recon_output: Output from ReconAgent with contracts, entry_points, external_calls.
+            contract_map: Dict mapping contract name/path to source code.
+
+        Returns:
+            One of: lending, amm, bridge, staking, governance, perpetuals, generic.
+        """
+        # Build a search corpus from all available data
+        corpus_parts: list[str] = []
+
+        # Contract names
+        contracts = recon_output.get("contracts", recon_output.get("contract_map", {}).get("contracts", []))
+        if isinstance(contracts, list):
+            corpus_parts.extend(str(c).lower() for c in contracts)
+
+        # Entry points (function names)
+        entry_points = recon_output.get("entry_points", {})
+        if isinstance(entry_points, dict):
+            for contract_name, functions in entry_points.items():
+                corpus_parts.append(str(contract_name).lower())
+                if isinstance(functions, list):
+                    corpus_parts.extend(str(f).lower() for f in functions)
+        elif isinstance(entry_points, list):
+            corpus_parts.extend(str(ep).lower() for ep in entry_points)
+
+        # External calls
+        external_calls = recon_output.get("external_calls", [])
+        if isinstance(external_calls, list):
+            corpus_parts.extend(str(ec).lower() for ec in external_calls)
+
+        # Contract source code — scan function names from actual code
+        if isinstance(contract_map, dict):
+            for name, code in contract_map.items():
+                corpus_parts.append(str(name).lower())
+                if isinstance(code, str):
+                    # Extract function signatures from source
+                    import re
+                    func_matches = re.findall(r'function\s+(\w+)', code)
+                    corpus_parts.extend(f.lower() for f in func_matches)
+                    # Also add raw identifiers from the code
+                    identifiers = re.findall(r'\b[a-zA-Z_]\w+\b', code)
+                    corpus_parts.extend(i.lower() for i in identifiers)
+
+        # Build single search string
+        corpus = " ".join(corpus_parts)
+
+        # Score each domain
+        domain_scores: dict[str, int] = {}
+        for domain, keywords in DOMAIN_KEYWORDS.items():
+            score = sum(1 for kw in keywords if kw in corpus)
+            domain_scores[domain] = score
+
+        # Find best match
+        if not domain_scores:
+            return "generic"
+
+        best_domain = max(domain_scores, key=lambda d: domain_scores[d])
+        best_score = domain_scores[best_domain]
+
+        # Require minimum threshold to avoid false positives
+        # Score of 5+ required — prevents misclassifying generic protocols
+        if best_score < 5:
+            return "generic"
+
+        self.log_orchestrator(
+            f"domain_detected — {best_domain} (score: {best_score}, "
+            f"scores: {json.dumps(domain_scores)})"
+        )
+        return best_domain
+
+    # ─────────────────────────────────────────────────────────
+    # Main Pipeline
+    # ─────────────────────────────────────────────────────────
+
     async def run_full_audit(
         self, raw_input: str, contract_paths: list, budget_usd: float, api_key: str | None = None
     ) -> dict:
@@ -116,11 +247,18 @@ class SRPOrchestrator:
         }
         results: dict[str, Any] = {}
 
+        anvil_running = start_anvil()
+        self.log_orchestrator("anvil_started" if anvil_running else "anvil_skipped")
+
         try:
             intent = await self.intent_agent.run(context)
             results["intent"] = intent
             context["intent_output"] = intent
             context.update(intent)
+
+            # Inject protocol intent into context for all downstream agents
+            protocol_intent = intent.get("protocol_intent", {})
+            context["protocol_intent"] = protocol_intent
 
             skill_selector_input = {
                 "skills_needed": intent.get("skills", intent.get("skills_needed", [])),
@@ -178,12 +316,55 @@ class SRPOrchestrator:
             await self._emit_status("ReconAgent", "failed", {"error": str(exc)})
             raise
 
+        # ── Domain Detection ──────────────────────────────────
+        detected_domain = self.detect_domain(recon, context.get("contract_map", {}))
+        context["detected_domain"] = detected_domain
+        await self._emit_status(
+            "DomainDetector",
+            "completed",
+            {"detected_domain": detected_domain},
+        )
+        self.log_orchestrator(f"domain_detection_complete — {detected_domain}")
+
         try:
             attack = await self.attack_agent.run(context)
             results["attack"] = attack
             all_vulns = attack.get("vulnerabilities", [])
 
-            # --- DynaDebate Phase ---
+            # ── Domain Agent Army Phase ───────────────────────
+            if detected_domain == "lending":
+                await self._emit_status(
+                    "LendingArmy",
+                    "started",
+                    {"domain": "lending", "agents": 5},
+                )
+                try:
+                    from agents.audit.lending import run_lending_army
+                    lending_findings = await run_lending_army(context)
+                    if isinstance(lending_findings, list):
+                        all_vulns = all_vulns + lending_findings
+                        self.log_orchestrator(
+                            f"lending_army_complete — {len(lending_findings)} additional findings, "
+                            f"{len(all_vulns)} total"
+                        )
+                    await self._emit_status(
+                        "LendingArmy",
+                        "completed",
+                        {
+                            "lending_findings": len(lending_findings),
+                            "total_findings": len(all_vulns),
+                        },
+                    )
+                except Exception as lending_exc:
+                    self.log_orchestrator(f"lending_army_failed — {lending_exc}")
+                    await self._emit_status(
+                        "LendingArmy",
+                        "failed",
+                        {"error": str(lending_exc)},
+                    )
+                    # Don't crash pipeline — continue with generic findings only
+
+            # ── DynaDebate Phase ──────────────────────────────
             contract_map = context.get("contract_map", {})
             contract_summary = "\n".join([f"- {name}: {len(code)} chars" for name, code in contract_map.items()])
 
@@ -193,13 +374,18 @@ class SRPOrchestrator:
             self.log_orchestrator(f"debate_complete — {len(all_vulns)} findings survived debate")
             await self._emit_status("DynaDebate", "completed", {"surviving_count": len(all_vulns)})
 
-            # --- PoC Verifier Phase ---
-            contract_paths = context.get("contract_paths", [])
-            # derive project_root from first contract path if available: os.path.dirname(os.path.dirname(path))
-            if contract_paths and isinstance(contract_paths, list):
-                project_root = os.path.dirname(os.path.dirname(str(contract_paths[0])))
-            else:
-                project_root = os.getcwd()
+            # ── PoC Verifier Phase ────────────────────────────
+            # derive project_root from environment or first contract path
+            project_root = os.environ.get("SRP_PROJECT_ROOT")
+            if not project_root:
+                if contract_paths and isinstance(contract_paths, list):
+                    path = str(contract_paths[0])
+                    if os.path.isfile(path):
+                        project_root = os.path.dirname(os.path.dirname(path))
+                    else:
+                        project_root = os.path.dirname(path)
+                else:
+                    project_root = os.getcwd()
                 
             await self._emit_status("PoCVerifier", "started", {"finding_count": len(all_vulns)})
             all_vulns = run_all_pocs(all_vulns, project_root)
@@ -267,6 +453,8 @@ class SRPOrchestrator:
         except Exception as exc:
             await self._emit_status("ReportAgent", "failed", {"error": str(exc)})
             raise
+        finally:
+            stop_anvil()
 
         return results
 
@@ -279,5 +467,5 @@ class SRPOrchestrator:
             await callback_result
 
     def log_orchestrator(self, msg: str):
-        """Helper to log from orchestrator"""
+        """Helper to log from orchestrator."""
         print(f"[SRP] [Orchestrator] {msg}")

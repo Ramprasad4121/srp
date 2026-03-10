@@ -10,9 +10,9 @@ from typing import Any, Awaitable, Callable
 from uuid import uuid4
 
 import uvicorn
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse, HTMLResponse, FileResponse
+from fastapi.responses import PlainTextResponse, HTMLResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError
 
@@ -178,6 +178,7 @@ async def _run_audit(
 async def startup_event() -> None:
     TRACES_DIR.mkdir(parents=True, exist_ok=True)
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    
     skill_count = len(SKILL_LOADER.list_all())
     banner = (
         "╔═══════════════════════════════════════╗\n"
@@ -193,6 +194,7 @@ async def startup_event() -> None:
         project_root = os.environ.get("SRP_PROJECT_ROOT", os.getcwd())
         target_path = os.environ.get("SRP_TARGET_PATH", project_root)
         print(f"  → Auto-starting audit on target: {target_path}")
+        import asyncio
         asyncio.create_task(run_audit_on_project(project_root, target_path))
 
 
@@ -243,42 +245,7 @@ async def run_audit_on_project(project_root: str, target_path: str = None) -> No
 
 
 
-@app.websocket("/ws/audit")
-async def websocket_audit(websocket: WebSocket) -> None:
-    await websocket.accept()
-
-    async def emit(payload: dict) -> None:
-        await websocket.send_json(_json_safe(payload))
-
-    while True:
-        try:
-            incoming = await websocket.receive_json()
-        except WebSocketDisconnect:
-            break
-
-        try:
-            request = AuditRequest.model_validate(incoming)
-            result = await _run_audit(request, emit=emit)
-            await emit({"event": "complete", "result": result})
-        except ValidationError as exc:
-            await emit(
-                {
-                    "event": "step",
-                    "agent": "server",
-                    "data": {
-                        "error": "invalid_payload",
-                        "details": exc.errors(include_url=False),
-                    },
-                }
-            )
-        except Exception as exc:
-            await emit(
-                {
-                    "event": "step",
-                    "agent": "server",
-                    "data": {"error": "audit_failed", "details": str(exc)},
-                }
-            )
+# WebSockets removed in favor of Server-Sent Events (SSE) at /stream
 
 
 @app.post("/api/audit")
@@ -452,6 +419,9 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
                     if preview:
                         log_msg += f" — {preview}"
                     audit_state["logs"].append(log_msg)
+            
+            for q in sse_queues:
+                await q.put(payload)
         
         audit_state["logs"].append("🕷️  [SPIDER] Mapping contract dependencies...")
         audit_state["logs"].append("🔍 [WATCHDOG] Classifying threat surface...")
@@ -508,6 +478,8 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
         if trace_id and report_md:
             report_path = REPORTS_DIR / f"{trace_id}.md"
             report_path.write_text(report_md, encoding="utf-8")
+        # Send final complete payload to UI through SSE
+        await emit({"event": "complete", "result": result})
         
         audit_state["logs"].append(f"✅ Audit complete. Score: {score}/100. {len(findings)} findings.")
         audit_state["status"] = "complete"
@@ -548,6 +520,30 @@ if os.path.exists(ui_dir):
     app.mount("/ui", StaticFiles(directory=ui_dir), name="ui")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    app.mount("/reports", StaticFiles(directory=REPORTS_DIR), name="reports")
+
+sse_queues = []
+
+@app.get("/stream")
+async def stream_audit(request: Request):
+    async def event_generator():
+        q = asyncio.Queue()
+        sse_queues.append(q)
+        try:
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    payload = await asyncio.wait_for(q.get(), timeout=1.0)
+                    yield f"data: {json.dumps(payload, default=str)}\n\n"
+                except asyncio.TimeoutError:
+                    pass
+        except asyncio.CancelledError:
+            pass
+        finally:
+            if q in sse_queues:
+                sse_queues.remove(q)
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @app.get("/")
 async def root():

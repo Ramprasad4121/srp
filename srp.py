@@ -159,7 +159,12 @@ def audit(target, no_browser, port):
     def detect_scope(base_dir: str) -> str:
         # Priority order — check these folders first
         priority_folders = ["src", "contracts", "contract", "sources"]
-        
+
+        # First, check if base_dir itself looks like a direct scope folder (e.g. user passed `src` directly)
+        base_name = os.path.basename(os.path.abspath(base_dir))
+        if base_name in priority_folders and os.path.isdir(base_dir):
+            return base_dir
+            
         for folder in priority_folders:
             candidate = os.path.join(base_dir, folder)
             if os.path.isdir(candidate):
