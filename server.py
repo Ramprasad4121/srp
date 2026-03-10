@@ -419,6 +419,12 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
                     if preview:
                         log_msg += f" — {preview}"
                     audit_state["logs"].append(log_msg)
+                
+                # Capture PDF report path
+                if data.get("status") == "pdf_ready":
+                    pdf_path = data.get("details", {}).get("pdf_path")
+                    if pdf_path:
+                        audit_state["pdf_report"] = os.path.basename(pdf_path)
             
             for q in sse_queues:
                 await q.put(payload)
@@ -438,10 +444,11 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
         attack = result.get("attack", {})
         raw_vulns = attack.get("vulnerabilities", [])
         
-        # Merge attack findings with defense reviews
         findings = []
         for i, rv in enumerate(reviewed):
             original_vuln = raw_vulns[i] if i < len(raw_vulns) else {}
+            # Preserve poc_result
+            poc_res = original_vuln.get("poc_result") or rv.get("poc_result") or {"status": "skipped", "reason": "not run"}
             findings.append({
                 "title": original_vuln.get("title", rv.get("original_id", f"Finding {i+1}")),
                 "severity": rv.get("final_severity", original_vuln.get("severity", "medium")),
@@ -452,18 +459,25 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
                 "fix_code": rv.get("fix_code", ""),
                 "status": rv.get("status", "needs_more_info"),
                 "defense_notes": rv.get("defense_notes", ""),
+                "poc_result": poc_res,
+                "id": original_vuln.get("id"),
             })
         
         if not findings and raw_vulns:
-            findings = [{
-                "title": v.get("title", f"Finding {j+1}"),
-                "severity": v.get("severity", "medium"),
-                "description": v.get("description", ""),
-                "affected_function": v.get("affected_function", ""),
-                "location": v.get("affected_function", ""),
-                "exploit_code": v.get("exploit_code", ""),
-                "fix_code": "",
-            } for j, v in enumerate(raw_vulns)]
+            findings = []
+            for j, v in enumerate(raw_vulns):
+                poc_res = v.get("poc_result") or {"status": "skipped", "reason": "not run"}
+                findings.append({
+                    "title": v.get("title", f"Finding {j+1}"),
+                    "severity": v.get("severity", "medium"),
+                    "description": v.get("description", ""),
+                    "affected_function": v.get("affected_function", ""),
+                    "location": v.get("affected_function", ""),
+                    "exploit_code": v.get("exploit_code", ""),
+                    "fix_code": "",
+                    "poc_result": poc_res,
+                    "id": v.get("id"),
+                })
         
         # Save trace
         trace = result.get("trace", {})
@@ -510,6 +524,15 @@ async def get_audit(trace_id: str):
     if not audit_path.exists():
         return {"error": "Audit not found"}
     return json.loads(audit_path.read_text(encoding="utf-8"))
+
+
+@app.get("/api/reports/{filename}")
+async def get_report(filename: str):
+    project = get_project()
+    report_path = project.root / ".srp" / "reports" / filename
+    if not report_path.exists():
+        raise HTTPException(status_code=404, detail="Report not found")
+    return FileResponse(report_path)
 
 
 # Mount static files

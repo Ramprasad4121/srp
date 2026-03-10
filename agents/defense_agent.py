@@ -81,7 +81,8 @@ class DefenseAgent(BaseAgent):
             "Return ONLY valid JSON with keys: "
             "status, final_severity, severity_reasoning, fix_code, test_code, defense_notes. "
             "status must be one of: validated, false_positive, needs_more_info. "
-            "final_severity must be one of: low, medium, high, critical. "
+            "final_severity must be one of: high, medium, low — no critical, no informational. "
+            "Use Cyfrin severity matrix: https://support.cyfrin.io/codehawks/findings-severity "
             "fix_code must be Solidity code. "
             "test_code should be a Solidity or Foundry-style test snippet."
         )
@@ -137,8 +138,18 @@ class DefenseAgent(BaseAgent):
             fallback_severity = "medium"
 
         final_severity = str(parsed.get("final_severity", fallback_severity)).strip().lower()
-        if final_severity not in {"low", "medium", "high", "critical"}:
-            final_severity = fallback_severity
+        
+        # Remap to Cyfrin 3-tier system
+        SEVERITY_MAP = {
+            "critical": "high",
+            "informational": "low",
+            "info": "low",
+            "gas": "low",
+            "qa": "low",
+        }
+        final_severity = SEVERITY_MAP.get(final_severity, final_severity)
+        if final_severity not in {"high", "medium", "low"}:
+            final_severity = "medium"
 
         severity_reasoning = str(parsed.get("severity_reasoning", "")).strip()
         base_notes = str(parsed.get("defense_notes", "")).strip()
@@ -157,11 +168,12 @@ class DefenseAgent(BaseAgent):
             "fix_code": str(parsed.get("fix_code", "")).strip(),
             "test_code": str(parsed.get("test_code", "")).strip(),
             "defense_notes": defense_notes,
+            "poc_result": vulnerability.get("poc_result"),
         }
 
     def _calculate_overall_security_score(self, reviews: list[dict[str, Any]]) -> int:
         score = 100.0
-        severity_penalty = {"critical": 40.0, "high": 25.0, "medium": 12.0, "low": 5.0}
+        severity_penalty = {"high": 30.0, "medium": 10.0, "low": 3.0}
         status_multiplier = {"validated": 1.0, "needs_more_info": 0.5, "false_positive": 0.0}
 
         for review in reviews:

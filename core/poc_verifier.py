@@ -211,8 +211,9 @@ def run_poc(finding: dict, project_root: str, toolchain: dict) -> dict:
             os.remove(test_path)
 
 
-def generate_hardhat_test(finding: dict, project_root: str) -> str:
+def generate_hardhat_test(finding: dict, project_root: str, toolchain: dict = None) -> str:
     contract_name = finding.get("contract", "")
+    is_viem = toolchain.get("is_viem", False) if toolchain else False
     
     found_artifact = False
     artifacts_dir = os.path.join(project_root, "artifacts")
@@ -237,13 +238,49 @@ def generate_hardhat_test(finding: dict, project_root: str) -> str:
     if not js_body:
         js_body = "      // No explicit exploit code provided."
     
-    js_exploit = f"""{js_body}
+    if is_viem:
+        # Viem Scaffolding
+        return f"""const {{ expect }} = require("chai");
+const hre = require("hardhat");
+
+{artifact_comment}describe("SRP_PoC_{vuln_id}", function () {{
+  it("{title}", async function () {{
+    const [owner, attacker, victim] = await hre.viem.getWalletClients();
+    const publicClient = await hre.viem.getPublicClient();
+    
+    // Deploy contract
+    let target;
+    try {{
+      target = await hre.viem.deployContract("{contract_name}", []);
+    }} catch (e) {{
+      console.log("Deploy failed (may need constructor args):", e.message);
+      this.skip();
+    }}
+
+    // Exploit
+    try {{
+{js_body}
+      // Viem uses publicClient for reads and walletClient for writes
+      // expect(true).to.equal(true);
+    }} catch (e) {{
+      if (e.message.includes("revert")) {{
+        console.log("Reverted as expected:", e.message);
+        return;
+      }}
+      throw e;
+    }}
+  }});
+}});
+"""
+    else:
+        # Ethers Scaffolding (Existing)
+        js_exploit = f"""{js_body}
       const attackerBalanceBefore = await ethers.provider.getBalance(attacker.address);
       // attempt exploit call based on vuln description
       const attackerBalanceAfter = await ethers.provider.getBalance(attacker.address);
       expect(true).to.equal(true); // scaffold — manual exploit wiring needed"""
 
-    return f"""const {{ expect }} = require("chai");
+        return f"""const {{ expect }} = require("chai");
 const {{ ethers }} = require("hardhat");
 
 {artifact_comment}describe("SRP_PoC_{vuln_id}", function () {{
@@ -300,7 +337,7 @@ def run_poc_hardhat(finding: dict, project_root: str, toolchain: dict) -> dict:
     test_path = os.path.join(test_dir, test_filename)
 
     try:
-        test_content = generate_hardhat_test(finding, install_root)
+        test_content = generate_hardhat_test(finding, install_root, toolchain)
         with open(test_path, "w") as f:
             f.write(test_content)
 

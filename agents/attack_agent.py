@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -113,6 +114,7 @@ class AttackAgent(BaseAgent):
         )
         user_payload = {"contract_map": contract_map, "entry_points": entry_points}
         result = await self._execute_json_pass(pass_name, system_prompt, user_payload)
+        if not isinstance(result, dict): result = {}
         self.log_step(
             f"{pass_name}_pass_completed",
             {"logic_flaw_count": len(self._ensure_list(result.get("logic_flaws", [])))},
@@ -138,6 +140,7 @@ class AttackAgent(BaseAgent):
             "business_logic_pass": business_logic_result,
         }
         result = await self._execute_json_pass(pass_name, system_prompt, user_payload)
+        if not isinstance(result, dict): result = {}
         self.log_step(
             f"{pass_name}_pass_completed",
             {"invariant_count": len(self._ensure_list(result.get("invariants", [])))},
@@ -161,7 +164,12 @@ class AttackAgent(BaseAgent):
             "Return ONLY valid JSON with keys: "
             "hypotheses (array of objects with title, severity, affected_function, description, confidence), "
             "ranking_rationale (string). "
-            "severity must be one of: low, medium, high, critical. "
+            "severity must be one of: high, medium, low — determined by Cyfrin's Impact × Likelihood matrix: "
+            "High Impact + High Likelihood = high; "
+            "High Impact + Medium/Low Likelihood = medium; "
+            "Medium Impact + any Likelihood = medium; "
+            "Low Impact + any Likelihood = low. "
+            "Never use 'critical' or 'informational'. Follow https://support.cyfrin.io/codehawks/findings-severity "
             "confidence must be a number from 0.0 to 1.0."
         )
         contract_names = list(contract_map.keys()) if isinstance(contract_map, dict) else []
@@ -188,6 +196,7 @@ class AttackAgent(BaseAgent):
         }
 
         result = await self._execute_json_pass(pass_name, system_prompt, user_payload)
+        if not isinstance(result, dict): result = {}
         hypotheses = self._ensure_list(result.get("hypotheses", []))
         self.log_step(f"{pass_name}_pass_completed", {"hypothesis_count": len(hypotheses)})
         return result
@@ -205,9 +214,15 @@ class AttackAgent(BaseAgent):
             "with clear affected function mapping and confidence grading. "
             f"CRITICAL INSTRUCTION: {EXPLOIT_CODE_INSTRUCTION} "
             "Return ONLY valid JSON with keys: "
-            "vulnerabilities (array of objects with id, title, severity, affected_function, description, exploit_code, confidence), "
+            "vulnerabilities (array of objects with id, title, severity, contract, affected_function, description, exploit_code, confidence), "
             "attack_summary (string). "
-            "severity must be one of: low, medium, high, critical. "
+            "contract: the exact contract name from the source (e.g. 'SecondSwap_Marketplace') — REQUIRED, never empty string. "
+            "severity must be one of: high, medium, low — determined by Cyfrin's Impact × Likelihood matrix: "
+            "High Impact + High Likelihood = high; "
+            "High Impact + Medium/Low Likelihood = medium; "
+            "Medium Impact + any Likelihood = medium; "
+            "Low Impact + any Likelihood = low. "
+            "Never use 'critical' or 'informational'. Follow https://support.cyfrin.io/codehawks/findings-severity "
             "confidence must be a number from 0.0 to 1.0."
         )
         top_hypotheses = sorted(
@@ -221,6 +236,7 @@ class AttackAgent(BaseAgent):
         }
 
         result = await self._execute_json_pass(pass_name, system_prompt, user_payload, timeout=60.0)
+        if not isinstance(result, dict): result = {}
         vulnerabilities = self._ensure_list(result.get("vulnerabilities", []))
         self.log_step(
             f"{pass_name}_pass_completed", {"vulnerability_count": len(vulnerabilities)}
@@ -261,7 +277,7 @@ Return JSON only:
     {{
       "id": "unique string",
       "title": "title of THIS vulnerability",
-      "severity": "critical|high|medium|low",
+      "severity": "high|medium|low",
       "contract": "contract name",
       "description": "description of THIS vulnerability",
       "vuln_code": "the vulnerable code snippet for THIS vulnerability",
@@ -277,6 +293,7 @@ Return JSON only:
         }
 
         result = await self._execute_json_pass(pass_name, system_prompt, user_payload)
+        if not isinstance(result, dict): result = {}
         vulnerabilities = self._ensure_list(result.get("vulnerabilities", []))
         self.log_step(
             f"{pass_name}_pass_completed", {"vulnerability_count": len(vulnerabilities)}
@@ -313,7 +330,7 @@ Return JSON only:
     {{
       "id": "unique string",
       "title": "title of THIS vulnerability",
-      "severity": "critical|high|medium|low",
+      "severity": "high|medium|low",
       "contract": "contract name",
       "description": "description of THIS vulnerability",
       "vuln_code": "the vulnerable code snippet for THIS vulnerability",
@@ -329,6 +346,7 @@ Return JSON only:
         }
 
         result = await self._execute_json_pass(pass_name, system_prompt, user_payload)
+        if not isinstance(result, dict): result = {}
         vulnerabilities = self._ensure_list(result.get("vulnerabilities", []))
         self.log_step(
             f"{pass_name}_pass_completed", {"vulnerability_count": len(vulnerabilities)}
@@ -369,7 +387,16 @@ Return JSON only:
                 continue
 
             severity = str(vuln.get("severity", "medium")).strip().lower()
-            if severity not in {"low", "medium", "high", "critical"}:
+            # Remap to Cyfrin 3-tier system
+            SEVERITY_MAP = {
+                "critical": "high",
+                "informational": "low",
+                "info": "low",
+                "gas": "low",
+                "qa": "low",
+            }
+            severity = SEVERITY_MAP.get(severity, severity)
+            if severity not in {"high", "medium", "low"}:
                 severity = "medium"
 
             confidence = vuln.get("confidence", 0.0)
@@ -378,6 +405,13 @@ Return JSON only:
             except (TypeError, ValueError):
                 confidence_value = 0.0
             confidence_value = max(0.0, min(1.0, confidence_value))
+            
+            contract = str(vuln.get("contract") or "")
+            if not contract:
+                # Try to extract from title e.g. "Reentrancy in SecondSwap_Marketplace"
+                m = re.search(r'\bin\s+(\w+)', str(vuln.get("title", "")))
+                if m:
+                    contract = m.group(1)
 
             normalized.append(
                 {
@@ -385,7 +419,7 @@ Return JSON only:
                     "title": str(vuln.get("title", "Untitled vulnerability")).strip(),
                     "severity": severity,
                     "affected_function": str(vuln.get("affected_function", "unknown")),
-                    "contract": str(vuln.get("contract") or ""),
+                    "contract": contract,
                     "description": str(vuln.get("description", "")).strip(),
                     "exploit_code": str(vuln.get("exploit_code") or vuln.get("vuln_code") or "").strip(),
                     "fix_code": str(vuln.get("fix_code") or "").strip(),
@@ -398,7 +432,7 @@ Return JSON only:
         if not vulnerabilities:
             return "No exploit hypotheses were confirmed into actionable vulnerabilities."
 
-        counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+        counts = {"high": 0, "medium": 0, "low": 0}
         for vuln in vulnerabilities:
             severity = str(vuln.get("severity", "medium")).lower()
             if severity in counts:
@@ -407,7 +441,7 @@ Return JSON only:
         return (
             "Attack analysis completed with "
             f"{len(vulnerabilities)} vulnerabilities: "
-            f"{counts['critical']} critical, {counts['high']} high, "
+            f"{counts['high']} high, "
             f"{counts['medium']} medium, {counts['low']} low."
         )
 

@@ -128,14 +128,25 @@ class ReportAgent(BaseAgent):
             
         # User requested explicitly overriding whatever scoring logic exists with this
         def calculate_score(findings: list) -> int:
+            """
+            Security Score — based on Cyfrin severity tiers + on-chain proof rate.
+            High: -25 base (-50 if PROVEN)
+            Medium: -10 base (-20 if PROVEN)
+            Low: -3 base (-6 if PROVEN)
+            Floor: 15. Ceiling: 100.
+            """
             deductions = 0
             for f in findings:
-                sev = f.get("severity", "").lower() if isinstance(f, dict) else ""
-                if sev == "critical":   deductions += 20
-                elif sev == "high":     deductions += 10
-                elif sev == "medium":   deductions += 5
-                elif sev == "low":      deductions += 2
-            return max(0, 100 - min(deductions, 85))  # floor of 15 for any non-zero findings
+                sev = str(f.get("severity", "low")).lower()
+                # Cyfrin 3-tier remapping
+                if sev == "critical":
+                    sev = "high"
+                weight = {"high": 25, "medium": 10, "low": 3}.get(sev, 5)
+                # Double if PROVEN on fork — confirmed exploitable
+                if f.get("poc_result", {}).get("status") == "proven":
+                    weight *= 2
+                deductions += weight
+            return max(15, 100 - min(deductions, 85))
 
         # Force the defense output to use our calculated score
         vulnerabilities = attack.get("vulnerabilities", [])
@@ -158,7 +169,7 @@ class ReportAgent(BaseAgent):
         required_sections = [
             "Executive Summary",
             "Scope & Methodology",
-            "Critical Findings (from AttackAgent, validated by DefenseAgent)",
+            "High-Impact Findings (from AttackAgent, validated by DefenseAgent)",
             "Risk Matrix Table (severity × likelihood)",
             "Detailed Vulnerability Breakdown (per finding with code snippets and fix)",
             "Security Score (from DefenseAgent)",
@@ -172,7 +183,7 @@ class ReportAgent(BaseAgent):
             "Requirements:\n"
             f"{sections_text}\n"
             "Use markdown headings and include code fences for exploit/fix/test snippets.\n"
-            "For Critical Findings, cross-reference attack and defense outputs.\n"
+            "For High-Impact Findings, cross-reference attack and defense outputs.\n"
             "Include a markdown risk matrix table (severity x likelihood).\n"
             "Use the trace output hash in the appendix as the reasoning trace hash.\n\n"
             "Agent outputs and context:\n"
@@ -183,7 +194,7 @@ class ReportAgent(BaseAgent):
         required_sections = [
             "Executive Summary",
             "Scope & Methodology",
-            "Critical Findings (from AttackAgent, validated by DefenseAgent)",
+            "High-Impact Findings (from AttackAgent, validated by DefenseAgent)",
             "Risk Matrix Table (severity × likelihood)",
             "Detailed Vulnerability Breakdown (per finding with code snippets and fix)",
             "Security Score (from DefenseAgent)",
@@ -223,15 +234,19 @@ class ReportAgent(BaseAgent):
         vuln_count = len(vulnerabilities) if isinstance(vulnerabilities, list) else 0
 
         # Dedicated logic: Calculate score manually as a fallback
-        deductions = 0
-        if isinstance(vulnerabilities, list):
-            for f in vulnerabilities:
-                sev = f.get("severity", "").lower() if isinstance(f, dict) else ""
-                if sev == "critical": deductions += 25
-                elif sev == "high":   deductions += 10
-                elif sev == "medium": deductions += 5
-                elif sev == "low":    deductions += 1
-        security_score = max(0, 100 - deductions)
+        vulnerabilities_list = vulnerabilities if isinstance(vulnerabilities, list) else []
+        def calculate_score_fallback(findings: list) -> int:
+            deductions = 0
+            for f in findings:
+                sev = str(f.get("severity", "low")).lower()
+                if sev == "critical": sev = "high"
+                weight = {"high": 25, "medium": 10, "low": 3}.get(sev, 5)
+                if f.get("poc_result", {}).get("status") == "proven":
+                    weight *= 2
+                deductions += weight
+            return max(15, 100 - min(deductions, 85))
+
+        security_score = calculate_score_fallback(vulnerabilities_list)
         
         reasoning_hash = trace.get("output_hash") or trace.get("input_hash") or "unavailable"
 

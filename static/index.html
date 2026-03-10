@@ -82,6 +82,23 @@
         --blue: #4488ff;
       }
 
+      /* New Scoring UI */
+      .score-block { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+      .score-label-new { font-size: 11px; letter-spacing: 3px; color: #888; text-transform: uppercase; }
+      .score-value { font-size: 64px; font-weight: 900; color: #00ff88; line-height: 1; font-family: monospace; }
+      .score-sublabel { font-size: 11px; color: #666; font-style: italic; margin-bottom: 8px; }
+      .score-formula { background: #111; border: 1px solid #222; border-radius: 6px; padding: 10px 16px; font-size: 10px; color: #888; min-width: 280px; }
+      .formula-title { font-size: 10px; color: #555; letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 6px; }
+      .formula-rows { display: flex; flex-direction: column; gap: 4px; }
+      .formula-row { display: flex; align-items: center; gap: 4px; color: #777; }
+      .formula-note { color: #444; font-size: 9px; margin-top: 4px; border-top: 1px solid #222; padding-top: 4px; }
+      .formula-note a { color: #00ff88; text-decoration: none; }
+      .score-sev { padding: 1px 6px; border-radius: 3px; font-weight: bold; font-size: 9px; }
+      .score-sev.high { background: #ff444422; color: #ff4444; }
+      .score-sev.medium { background: #ffaa0022; color: #ffaa00; }
+      .score-sev.low { background: #00ff8822; color: #00ff88; }
+      .proven-tag { background: #00ff8811; color: #00ff88; border: 1px solid #00ff8844; padding: 1px 5px; border-radius: 3px; font-size: 9px; }
+
       html {
         font-size: 15px;
       }
@@ -646,6 +663,27 @@
         border-radius: 2px;
       }
 
+      /* ═══ DOWNLOAD BUTTON ═══ */
+      .download-btn {
+        display: inline-block;
+        padding: 10px 20px;
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-dim);
+        border: 1px solid var(--accent);
+        border-radius: 2px;
+        text-decoration: none;
+        transition: all 0.2s;
+      }
+      .download-btn:hover {
+        background: var(--accent);
+        color: var(--bg);
+      }
+
       /* ═══════════════════════════════════════ */
       /* FOOTER                                 */
       /* ═══════════════════════════════════════ */
@@ -815,14 +853,30 @@
       <!-- RESULTS (slides in when complete) -->
       <div class="results-section" id="results-section">
         <div class="section-header">Mission Results</div>
-        <div class="score-display">
-          <div class="score-number" id="final-score">—</div>
-          <div class="score-meta">
-            <span>/ 100</span>
-            <span id="score-label">Security Score</span>
+        <div class="score-block">
+          <div class="score-label-new">SECURITY SCORE</div>
+          <div class="score-value" id="score-value">-- / 100</div>
+          <div class="score-sublabel">Based on finding severity and on-chain proof rate</div>
+          <div class="score-formula">
+            <span class="formula-title">How it's calculated:</span>
+            <div class="formula-rows">
+              <span class="formula-row"><span class="score-sev high">High</span> = −25 pts &nbsp;|&nbsp; <span class="proven-tag">PROVEN</span> = −50 pts</span>
+              <span class="formula-row"><span class="score-sev medium">Medium</span> = −10 pts &nbsp;|&nbsp; <span class="proven-tag">PROVEN</span> = −20 pts</span>
+              <span class="formula-row"><span class="score-sev low">Low</span> = −3 pts &nbsp;|&nbsp; <span class="proven-tag">PROVEN</span> = −6 pts</span>
+              <span class="formula-row formula-note">Starts at 100 · floor 15 · <a href="https://support.cyfrin.io/codehawks/findings-severity" target="_blank">Cyfrin severity framework</a></span>
+            </div>
+          </div>
+          <div id="pdf-container" style="margin-top: 12px; display: none;">
+            <a id="pdf-download-link" href="#" target="_blank" class="download-btn">DOWNLOAD PDF REPORT</a>
           </div>
         </div>
         <div id="findings-grid"></div>
+        <div style="font-size:11px; color:#888; margin-top:16px; font-family:var(--mono);">
+          Severity rated per 
+          <a href="https://support.cyfrin.io/codehawks/findings-severity" target="_blank" style="color:var(--accent);">
+            Cyfrin CodeHawks Severity Framework
+          </a> — High / Medium / Low
+        </div>
       </div>
     </div>
 
@@ -1002,10 +1056,14 @@
         if (data.score !== undefined && data.status === "complete") {
           const s = data.score;
           document.getElementById("stat-score").textContent = s;
-          document.getElementById("final-score").textContent = s;
+          if (document.getElementById("score-value")) {
+            document.getElementById("score-value").textContent = `${s} / 100`;
+          }
           const cls = s >= 90 ? "safe" : s >= 70 ? "warn" : "danger";
-          document.getElementById("final-score").className =
-            `score-number ${cls}`;
+          if (document.getElementById("score-value")) {
+              document.getElementById("score-value").style.color = 
+                  cls === "safe" ? "var(--accent)" : cls === "warn" ? "var(--amber)" : "var(--red)";
+          }
           document.getElementById("stat-score").className =
             `stat-number ${cls === "safe" ? "accent" : cls === "warn" ? "amber" : "red"}`;
           document.getElementById("score-label").textContent =
@@ -1028,6 +1086,16 @@
           if (document.getElementById('log-pulse')) {
               document.getElementById('log-pulse').classList.add('done');
           }
+        }
+
+        // Update PDF link
+        if (data.pdf_report) {
+            const pdfContainer = document.getElementById("pdf-container");
+            const pdfLink = document.getElementById("pdf-download-link");
+            if (pdfContainer && pdfLink) {
+                pdfLink.href = `/api/reports/${data.pdf_report}`;
+                pdfContainer.style.display = "block";
+            }
         }
       }
 
@@ -1057,7 +1125,7 @@
           .map((f, i) => {
             const sev = (f.severity || "medium").toLowerCase();
             const poc = f.poc_result || {};
-            const pocStatus = poc.status || "skipped";
+            const pocStatus = poc.status || poc.poc_result?.status || "skipped";
             const badgeColor = pocStatus === "proven" ? "#00ff88" : pocStatus === "unproven" ? "#ffaa00" : "#444";
             const badgeText = pocStatus === "proven" ? "✅ PROVEN ON FORK" : pocStatus === "unproven" ? "⚠️ UNPROVEN" : "— POC SKIPPED";
             

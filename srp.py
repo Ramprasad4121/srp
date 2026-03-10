@@ -222,8 +222,15 @@ def audit(target, no_browser, port):
     ))
 
     # 2. Set environment for auto-start
+    # If target is a file, project root is its parent. If directory, it is the parent if we are in contracts/ src/ etc.
+    actual_project_root = target_path if target_path.is_dir() else target_path.parent
+    
+    # Check if we should go one level up (if target is contracts/ etc)
+    if actual_project_root.name in ["contracts", "src", "contract", "test"]:
+        actual_project_root = actual_project_root.parent
+
     os.environ["SRP_AUTOSTART"] = "true"
-    os.environ["SRP_PROJECT_ROOT"] = os.getcwd()
+    os.environ["SRP_PROJECT_ROOT"] = str(actual_project_root)
     os.environ["SRP_TARGET_PATH"] = str(target_path)
 
     # 3. Open browser after short delay

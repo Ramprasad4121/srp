@@ -245,10 +245,11 @@ class SRPOrchestrator:
             "budget_usd": budget_usd,
             "available_skills": sorted(loaded_skills.keys()),
         }
-        results: dict[str, Any] = {}
 
         anvil_running = start_anvil()
         self.log_orchestrator("anvil_started" if anvil_running else "anvil_skipped")
+
+        results: dict[str, Any] = {}
 
         try:
             intent = await self.intent_agent.run(context)
@@ -389,9 +390,20 @@ class SRPOrchestrator:
                 
             await self._emit_status("PoCVerifier", "started", {"finding_count": len(all_vulns)})
             all_vulns = run_all_pocs(all_vulns, project_root)
-            self.log_orchestrator(f"poc_verification_complete — {sum(1 for v in all_vulns if v.get('poc_result', {}).get('status') == 'passed')} passed")
-            await self._emit_status("PoCVerifier", "completed", {"finding_count": len(all_vulns)})
+            proven = sum(1 for f in all_vulns if f.get("poc_result", {}).get("status") == "proven")
+            self.log_orchestrator(f"poc_verification_complete — {proven} passed")
+            await self._emit_status("PoCVerifier", "completed", {"finding_count": len(all_vulns), "proven": proven})
 
+            # Safety merge: Ensure poc_result is preserved across all finding objects.
+            # Build poc lookup by id from the list returned by run_all_pocs
+            poc_map = {v.get("id"): v.get("poc_result", {}) for v in all_vulns}
+            # Re-attach to any findings list used downstream, ensuring consistency
+            for v in all_vulns:
+                if "poc_result" not in v or not v["poc_result"]:
+                    v["poc_result"] = poc_map.get(v.get("id"), {"status": "skipped", "reason": "not run"})
+            
+            # Update attack object so server.py's raw_vulns contains the PoC results
+            attack["vulnerabilities"] = all_vulns
             context["attack_output"] = attack
             context.update(
                 {
@@ -450,6 +462,22 @@ class SRPOrchestrator:
             results["report"] = report
             context["report_output"] = report
             await self._emit_status("ReportAgent", "completed", report)
+
+            # PDF Report Export
+            try:
+                from core.pdf_exporter import export_pdf
+                pdf_path = export_pdf(
+                    findings=all_vulns,
+                    report_summary=context.get("report_summary", ""),
+                    project_name=context.get("project_name", "unknown"),
+                    score=context.get("score", 0),
+                    output_dir=os.path.join(project_root, ".srp", "reports"),
+                )
+                if pdf_path:
+                    self.log_orchestrator(f"pdf_exported — {pdf_path}")
+                    await self._emit_status("ReportAgent", "pdf_ready", {"pdf_path": pdf_path})
+            except Exception as e:
+                self.log_orchestrator(f"pdf_export_failed — {e}")
         except Exception as exc:
             await self._emit_status("ReportAgent", "failed", {"error": str(exc)})
             raise

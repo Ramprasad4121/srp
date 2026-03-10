@@ -127,10 +127,21 @@ def _hardhat(project_root: str, roots_to_check: list, readme_text: str) -> dict:
 
     # Find the actual project root (where node_modules lives) for install
     install_root = project_root
+    is_viem = False
     for r in roots_to_check:
         if os.path.isdir(os.path.join(r, "node_modules")):
             install_root = r
-            break
+        
+        # Check config and package.json for viem
+        for fname in ["hardhat.config.ts", "hardhat.config.js", "package.json"]:
+            p = os.path.join(r, fname)
+            if os.path.isfile(p):
+                try:
+                    content = open(p, encoding="utf-8").read()
+                    if "hardhat-toolbox-viem" in content or "hardhat-viem" in content:
+                        is_viem = True
+                except Exception:
+                    pass
 
     return {
         "type": "hardhat",
@@ -140,4 +151,5 @@ def _hardhat(project_root: str, roots_to_check: list, readme_text: str) -> dict:
         "test_file_ext": ".js",
         "test_dir": "test",
         "install_root": install_root,
+        "is_viem": is_viem,
     }
