@@ -104,14 +104,19 @@ Return JSON only:
 
 async def run_debate(findings: list, contract_summary: str, api_key: str, call_llm) -> list:
     """
-    Run debate on all findings. Drop confirmed false positives.
+    Run debate on all findings in parallel. Drop confirmed false positives.
     Returns only confirmed or needs_more_info findings.
     """
+    import asyncio
+    tasks = [debate_finding(f, contract_summary, api_key, call_llm) for f in findings]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
     debated = []
-    for finding in findings:
-        result = await debate_finding(finding, contract_summary, api_key, call_llm)
-        if result["debate_verdict"] != "false_positive":
-            debated.append(result)
+    for r in results:
+        if isinstance(r, Exception):
+            continue
+        if r.get("debate_verdict") != "false_positive":
+            debated.append(r)
     return debated
 
 

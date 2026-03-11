@@ -752,10 +752,15 @@ function mergeVulnerabilities(vulnerabilities, reviewedVulnerabilities) {
     reviewedVulnerabilities.map((item) => [item.original_id, item])
   );
 
-  return vulnerabilities.map((vulnerability, index) => {
-    const review = reviewMap.get(vulnerability.id) || {};
-    const severity = (review.final_severity || vulnerability.severity || "medium").toLowerCase();
+  // Track which review items have been matched
+  const matchedReviewIds = new Set();
 
+  // First pass: map over vulnerabilities and merge with reviews
+  const merged = vulnerabilities.map((vulnerability, index) => {
+    const review = reviewMap.get(vulnerability.id) || {};
+    if (vulnerability.id) matchedReviewIds.add(vulnerability.id);
+
+    const severity = (review.final_severity || vulnerability.severity || "medium").toLowerCase();
     const pocStatus = vulnerability.poc_result?.status || review.poc_result?.status || "unproven";
 
     return {
@@ -772,9 +777,31 @@ function mergeVulnerabilities(vulnerabilities, reviewedVulnerabilities) {
       pocStatus,
     };
   });
+
+  // Second pass: add review items that don't have matching vulnerabilities
+  reviewedVulnerabilities.forEach((review, index) => {
+    if (!matchedReviewIds.has(review.original_id)) {
+      merged.push({
+        id: review.original_id || `v-${merged.length + 1}`,
+        title: review.defense_notes?.split('\n')[0] || `Finding ${merged.length + 1}`,
+        severity: (review.final_severity || "medium").toLowerCase(),
+        affectedFunction: "unknown",
+        description: review.defense_notes || "No description provided.",
+        exploitCode: "// No exploit code provided",
+        fixCode: review.fix_code || "// No fix code provided",
+        defenseNotes: review.defense_notes || "No defense notes provided.",
+        status: review.status || "needs_more_info",
+        confidence: 0,
+        pocStatus: review.poc_result?.status || "unproven",
+      });
+    }
+  });
+
+  return merged;
 }
 
 function renderVulnerabilityList(vulnerabilities) {
+  console.log('[ARGUS] Rendering findings:', vulnerabilities.length, vulnerabilities);
   el.vulnerabilityList.innerHTML = "";
 
   if (!vulnerabilities.length) {

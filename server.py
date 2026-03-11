@@ -57,6 +57,7 @@ def _write_contract_source(contract_code: str) -> list[str]:
     contract_path.write_text(contract_code, encoding="utf-8")
     return [str(contract_path)]
 
+
 def get_project() -> SRPProject:
     global _project
     if _project is None:
@@ -65,6 +66,7 @@ def get_project() -> SRPProject:
         if _project.initialized:
             _project.load()
     return _project
+
 
 def run_audit_background(context: dict, project: SRPProject) -> None:
     orchestrator = SRPOrchestrator()
@@ -134,7 +136,6 @@ async def _run_audit(
     request: AuditRequest,
     emit: Callable[[dict], Awaitable[None]] | None = None,
 ) -> dict:
-    # If contract_code is a valid path, use it directly as the scope
     if os.path.exists(request.contract_code):
         contract_paths = [request.contract_code]
     else:
@@ -146,23 +147,19 @@ async def _run_audit(
 
         async def status_callback(step_name: str, status: str, data: dict) -> None:
             if status == "completed":
-                await emit(
-                    {
-                        "event": "agent_complete",
-                        "agent": step_name,
-                        "data": _json_safe(data),
-                    }
-                )
+                await emit({
+                    "event": "agent_complete",
+                    "agent": step_name,
+                    "data": _json_safe(data),
+                })
             elif status == "broadcast":
                 await emit({"event": "broadcast", "type": step_name, "data": _json_safe(data)})
             else:
-                await emit(
-                    {
-                        "event": "step",
-                        "agent": step_name,
-                        "data": {"status": status, "details": _json_safe(data)},
-                    }
-                )
+                await emit({
+                    "event": "step",
+                    "agent": step_name,
+                    "data": {"status": status, "details": _json_safe(data)},
+                })
 
         orchestrator.set_status_callback(status_callback)
 
@@ -174,11 +171,12 @@ async def _run_audit(
     )
     return _json_safe(result)
 
+
 @app.on_event("startup")
 async def startup_event() -> None:
     TRACES_DIR.mkdir(parents=True, exist_ok=True)
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     skill_count = len(SKILL_LOADER.list_all())
     banner = (
         "╔═══════════════════════════════════════╗\n"
@@ -189,17 +187,15 @@ async def startup_event() -> None:
     )
     print(banner)
 
-    # Auto-start audit if triggered by `srp audit`
     if os.environ.get("SRP_AUTOSTART") == "true":
         project_root = os.environ.get("SRP_PROJECT_ROOT", os.getcwd())
         target_path = os.environ.get("SRP_TARGET_PATH", project_root)
         print(f"  → Auto-starting audit on target: {target_path}")
-        import asyncio
         asyncio.create_task(run_audit_on_project(project_root, target_path))
 
 
 async def run_audit_on_project(project_root: str, target_path: str = None) -> None:
-    """Auto-triggered when `srp audit` is run. Reads project contracts and runs the full pipeline."""
+    """Auto-triggered when `srp audit` is run."""
     global audit_state
     from core.project import SRPProject
 
@@ -207,7 +203,6 @@ async def run_audit_on_project(project_root: str, target_path: str = None) -> No
     try:
         project.load()
     except RuntimeError:
-        # Not initialized — try to auto-init
         try:
             project.initialize()
         except Exception:
@@ -216,7 +211,6 @@ async def run_audit_on_project(project_root: str, target_path: str = None) -> No
     if target_path is None:
         target_path = project_root
 
-    # Count actual sol files for UI
     import glob
     sol_files = glob.glob(os.path.join(target_path, "**/*.sol"), recursive=True)
     contract_count = len(sol_files)
@@ -239,14 +233,13 @@ async def run_audit_on_project(project_root: str, target_path: str = None) -> No
         },
     }
 
-    # Skip merging code — pass the target_path directly as a scope
-    # This allows ReconAgent to discover files within the scoped folder
-    await run_audit(target_path, f"Audit all contracts in {target_path}. Focus on reentrancy, access control, invariant violations, oracle manipulation.")
+    await run_audit(
+        target_path,
+        f"Audit all contracts in {target_path}. Focus on reentrancy, access control, invariant violations, oracle manipulation.",
+    )
 
 
-
-# WebSockets removed in favor of Server-Sent Events (SSE) at /stream
-
+# ─── API ROUTES ───────────────────────────────────────────────────────────────
 
 @app.post("/api/audit")
 async def api_audit(request: AuditRequest) -> dict:
@@ -257,11 +250,22 @@ async def api_audit(request: AuditRequest) -> dict:
 
 
 @app.get("/api/skills")
-async def api_skills() -> dict:
+async def api_skills() -> list:
+    """Return skills as a flat array for the UI skills panel."""
     try:
-        return SKILL_LOADER.get_manifest()
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to load skills manifest: {exc}") from exc
+        manifest = SKILL_LOADER.get_manifest()
+        if isinstance(manifest, list):
+            return manifest
+        if isinstance(manifest, dict):
+            # Try common keys
+            for key in ("skills", "items", "data"):
+                if key in manifest and isinstance(manifest[key], list):
+                    return manifest[key]
+            # Fallback: turn the registry keys into name objects
+            return [{"name": k} for k in manifest.keys()]
+        return []
+    except Exception:
+        return []
 
 
 @app.get("/api/skills/{skill_key}")
@@ -274,11 +278,7 @@ async def api_skill_by_key(skill_key: str) -> dict:
         raise HTTPException(status_code=500, detail=f"Failed to load skill '{skill_key}': {exc}") from exc
 
     skill_path = SKILL_LOADER.SKILL_REGISTRY.get(skill_key, "")
-    return {
-        "skill_key": skill_key,
-        "path": skill_path,
-        "content": content,
-    }
+    return {"skill_key": skill_key, "path": skill_path, "content": content}
 
 
 @app.get("/api/traces")
@@ -305,11 +305,9 @@ async def api_traces() -> list[dict]:
 async def api_trace_by_id(trace_id: str) -> dict:
     if "/" in trace_id or ".." in trace_id:
         raise HTTPException(status_code=400, detail="Invalid trace_id")
-
     trace_path = TRACES_DIR / f"{trace_id}.json"
     if not trace_path.exists():
         raise HTTPException(status_code=404, detail="Trace not found")
-
     try:
         return json.loads(trace_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
@@ -320,11 +318,9 @@ async def api_trace_by_id(trace_id: str) -> dict:
 async def api_report_by_trace_id(trace_id: str) -> PlainTextResponse:
     if "/" in trace_id or ".." in trace_id:
         raise HTTPException(status_code=400, detail="Invalid trace_id")
-
     report_path = REPORTS_DIR / f"{trace_id}.md"
     if not report_path.exists():
         raise HTTPException(status_code=404, detail="Report not found")
-
     return PlainTextResponse(report_path.read_text(encoding="utf-8"), media_type="text/markdown")
 
 
@@ -335,12 +331,10 @@ async def api_status() -> dict:
 
 @app.get("/api/audit/emergency")
 async def get_emergency():
-    """Returns emergency state if audit was halted."""
     project = get_project()
     if not project.initialized:
         return {}
     from core.audit_progress import AuditProgress
-
     progress = AuditProgress(str(project.root))
     if progress.is_emergency():
         return progress.data.get("emergency", {})
@@ -363,7 +357,10 @@ async def get_all_contracts():
     return project.read_all_contracts()
 
 
-audit_state = {"status": "idle", "logs": [], "findings": [], "score": 100}
+# ─── AUDIT STATE ──────────────────────────────────────────────────────────────
+
+audit_state: dict = {"status": "idle", "logs": [], "findings": [], "score": 100}
+
 
 @app.post("/api/audit/start")
 async def start_audit(request: Request, background_tasks: BackgroundTasks):
@@ -372,23 +369,29 @@ async def start_audit(request: Request, background_tasks: BackgroundTasks):
     contract_code = body.get("contract_code", "")
     description = body.get("description", "")
     api_key = body.get("api_key", "")
-    
+
     if not contract_code:
         return {"error": "No contract code provided"}
-    
-    audit_state = {"status": "running", "logs": ["🚀 Audit started — deploying 13 agents..."], "findings": [], "score": 100}
+
+    audit_state = {
+        "status": "running",
+        "logs": ["🚀 Audit started — deploying 13 agents..."],
+        "findings": [],
+        "score": 100,
+    }
     background_tasks.add_task(run_audit, contract_code, description, api_key)
     return {"status": "started"}
 
-@app.get("/api/audit/status")  
+
+@app.get("/api/audit/status")
 async def get_audit_status():
     return audit_state
 
+
 async def run_audit(contract_code: str, description: str = "", api_key: str | None = None):
     global audit_state
-    
+
     try:
-        # Build the AuditRequest for the real orchestrator
         raw_input = description or "Audit this Solidity contract for security vulnerabilities."
         audit_req = AuditRequest(
             raw_input=raw_input,
@@ -396,13 +399,12 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
             budget_usd=50.0,
             api_key=api_key,
         )
-        
-        # Create emit callback that populates audit_state for polling
+
         async def emit(payload: dict) -> None:
             event = payload.get("event", "")
             agent = payload.get("agent", "")
             data = payload.get("data", {})
-            
+
             if event == "agent_start":
                 audit_state["logs"].append(f"🔄 [{agent}] Starting...")
             elif event == "agent_complete":
@@ -419,36 +421,35 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
                     if preview:
                         log_msg += f" — {preview}"
                     audit_state["logs"].append(log_msg)
-                
-                # Capture PDF report path
-                if data.get("status") == "pdf_ready":
+
+                if isinstance(data, dict) and data.get("status") == "pdf_ready":
                     pdf_path = data.get("details", {}).get("pdf_path")
                     if pdf_path:
                         audit_state["pdf_report"] = os.path.basename(pdf_path)
-            
+
             for q in sse_queues:
                 await q.put(payload)
-        
+
         audit_state["logs"].append("🕷️  [SPIDER] Mapping contract dependencies...")
         audit_state["logs"].append("🔍 [WATCHDOG] Classifying threat surface...")
-        
-        # Run the REAL orchestrator pipeline
+
         result = await _run_audit(audit_req, emit=emit)
-        
-        # Extract findings from the defense output
+
         defense = result.get("defense", {})
         reviewed = defense.get("reviewed_vulnerabilities", [])
         score = defense.get("overall_security_score", 100)
-        
-        # Also grab attack findings for context
+
         attack = result.get("attack", {})
         raw_vulns = attack.get("vulnerabilities", [])
-        
+
         findings = []
         for i, rv in enumerate(reviewed):
             original_vuln = raw_vulns[i] if i < len(raw_vulns) else {}
-            # Preserve poc_result
-            poc_res = original_vuln.get("poc_result") or rv.get("poc_result") or {"status": "skipped", "reason": "not run"}
+            poc_res = (
+                original_vuln.get("poc_result")
+                or rv.get("poc_result")
+                or {"status": "skipped", "reason": "not run"}
+            )
             findings.append({
                 "title": original_vuln.get("title", rv.get("original_id", f"Finding {i+1}")),
                 "severity": rv.get("final_severity", original_vuln.get("severity", "medium")),
@@ -462,9 +463,9 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
                 "poc_result": poc_res,
                 "id": original_vuln.get("id"),
             })
-        
+
+        # Fallback: use raw attack findings if defense produced nothing
         if not findings and raw_vulns:
-            findings = []
             for j, v in enumerate(raw_vulns):
                 poc_res = v.get("poc_result") or {"status": "skipped", "reason": "not run"}
                 findings.append({
@@ -478,28 +479,27 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
                     "poc_result": poc_res,
                     "id": v.get("id"),
                 })
-        
+
         # Save trace
         trace = result.get("trace", {})
         trace_id = trace.get("trace_id")
         if trace_id:
             trace_path = TRACES_DIR / f"{trace_id}.json"
             trace_path.write_text(json.dumps(trace, indent=2, default=str), encoding="utf-8")
-        
-        # Save report
+
+        # Save markdown report
         report = result.get("report", {})
-        report_md = report.get("markdown", report.get("report_markdown", ""))
+        report_md = report.get("report_md", report.get("markdown", report.get("report_markdown", "")))
         if trace_id and report_md:
             report_path = REPORTS_DIR / f"{trace_id}.md"
             report_path.write_text(report_md, encoding="utf-8")
-        # Send final complete payload to UI through SSE
-        await emit({"event": "complete", "result": result})
-        
-        audit_state["logs"].append(f"✅ Audit complete. Score: {score}/100. {len(findings)} findings.")
+
         audit_state["status"] = "complete"
         audit_state["findings"] = findings
         audit_state["score"] = score
-        
+        await emit({"event": "complete", "result": result})
+        audit_state["logs"].append(f"✅ Audit complete. Score: {score}/100. {len(findings)} findings.")
+
     except Exception as e:
         audit_state["logs"].append(f"❌ Error: {str(e)}")
         audit_state["status"] = "complete"
@@ -508,6 +508,8 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
         import traceback
         traceback.print_exc()
 
+
+# ─── AUDIT HISTORY ────────────────────────────────────────────────────────────
 
 @app.get("/api/audits")
 async def list_audits():
@@ -535,7 +537,8 @@ async def get_report(filename: str):
     return FileResponse(report_path)
 
 
-# Mount static files
+# ─── STATIC FILES ─────────────────────────────────────────────────────────────
+
 ui_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
 static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
@@ -545,12 +548,16 @@ if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
     app.mount("/reports", StaticFiles(directory=REPORTS_DIR), name="reports")
 
-sse_queues = []
+
+# ─── SSE STREAM ───────────────────────────────────────────────────────────────
+
+sse_queues: list[asyncio.Queue] = []
+
 
 @app.get("/stream")
 async def stream_audit(request: Request):
     async def event_generator():
-        q = asyncio.Queue()
+        q: asyncio.Queue = asyncio.Queue()
         sse_queues.append(q)
         try:
             while True:
@@ -568,13 +575,18 @@ async def stream_audit(request: Request):
                 sse_queues.remove(q)
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
+
+# ─── ROOT ─────────────────────────────────────────────────────────────────────
+
 @app.get("/")
 async def root():
-    # Serve static/index.html (BYOK launch form) as default
     static_index = os.path.join(static_dir, "index.html")
     if os.path.exists(static_index):
         return FileResponse(static_index)
-    return FileResponse(os.path.join(ui_dir, "index.html"))
+    ui_index = os.path.join(ui_dir, "index.html")
+    if os.path.exists(ui_index):
+        return FileResponse(ui_index)
+    raise HTTPException(status_code=404, detail="UI not found — place index.html in static/")
 
 
 if __name__ == "__main__":

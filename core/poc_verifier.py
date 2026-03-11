@@ -371,26 +371,51 @@ def run_poc_hardhat(finding: dict, project_root: str, toolchain: dict) -> dict:
             os.remove(test_path)
 
 
-def run_all_pocs(findings: list, project_root: str) -> list:
+async def run_all_pocs(findings: list, project_root: str) -> list:
+    """
+    Run all PoC tests in parallel using a ThreadPoolExecutor for subprocess calls.
+    Returns findings with 'poc_result' attached.
+    """
+    import asyncio
+    from concurrent.futures import ThreadPoolExecutor
     from core.toolchain import detect_toolchain
+    
     toolchain = detect_toolchain(project_root)
     print(f"[PoC Verifier] Toolchain detected: {toolchain['type']}")
 
-    for finding in findings:
-        if toolchain["type"] == "forge":
-            if not toolchain.get("forge_std_present"):
-                finding["poc_result"] = {"status": "skipped",
-                    "reason": "forge-std not installed — run forge install", "output": ""}
-            else:
+    loop = asyncio.get_event_loop()
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        tasks = []
+        for finding in findings:
+            if toolchain["type"] == "forge":
+                if not toolchain.get("forge_std_present"):
+                    finding["poc_result"] = {"status": "skipped", "reason": "forge-std not installed", "output": ""}
+                    continue
                 if not check_forge_available():
                     finding["poc_result"] = {"status": "skipped", "reason": "forge not found", "output": ""}
-                else:
-                    finding["poc_result"] = run_poc(finding, project_root, toolchain)
-        elif toolchain["type"] == "hardhat":
-            finding["poc_result"] = run_poc_hardhat(finding, project_root, toolchain)
-        else:
-            finding["poc_result"] = {"status": "skipped",
-                "reason": f"{toolchain['type']} PoC not yet supported", "output": ""}
+                    continue
+                
+                # Wrap synchronous run_poc in executor
+                tasks.append(loop.run_in_executor(executor, run_poc, finding, project_root, toolchain))
+                
+            elif toolchain["type"] == "hardhat":
+                # Wrap synchronous run_poc_hardhat in executor
+                tasks.append(loop.run_in_executor(executor, run_poc_hardhat, finding, project_root, toolchain))
+            else:
+                finding["poc_result"] = {"status": "skipped", "reason": f"{toolchain['type']} not supported", "output": ""}
+
+        if tasks:
+            results = await asyncio.gather(*tasks)
+            # Match results back to findings that were added to tasks
+            # Since we iterate in order, we can zip or just track indices
+            # Better: match by finding ID or just assign in order of tasks list
+            task_idx = 0
+            for finding in findings:
+                if toolchain["type"] in ["forge", "hardhat"] and "poc_result" not in finding:
+                     # Check if it was skipped before task creation
+                     if finding.get("poc_result"): continue
+                     finding["poc_result"] = results[task_idx]
+                     task_idx += 1
 
     proven = sum(1 for f in findings if f.get("poc_result", {}).get("status") == "proven")
     print(f"[PoC Verifier] {proven}/{len(findings)} PROVEN")
