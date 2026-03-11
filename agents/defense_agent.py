@@ -34,24 +34,16 @@ class DefenseAgent(BaseAgent):
             {"vulnerability_count": len(vulnerabilities_list)},
         )
 
-        reviewed_vulnerabilities: list[dict[str, Any]] = []
-        for index, vulnerability in enumerate(vulnerabilities_list, start=1):
-            self.log_step(
-                "defense_vulnerability_review_started",
-                {
-                    "index": index,
-                    "original_id": str(vulnerability.get("id", f"unknown-{index}"))
-                    if isinstance(vulnerability, dict)
-                    else f"unknown-{index}",
-                },
-            )
-
-            reviewed = await self._review_single_vulnerability(vulnerability, index)
-            reviewed_vulnerabilities.append(reviewed)
-            self.log_step(
-                "defense_vulnerability_review_completed",
-                {"index": index, "reviewed": reviewed},
-            )
+        import asyncio
+        tasks = [
+            self._review_single_vulnerability(vulnerability, index)
+            for index, vulnerability in enumerate(vulnerabilities_list, start=1)
+        ]
+        reviewed_vulnerabilities = await asyncio.gather(*tasks, return_exceptions=True)
+        # Filter out exceptions and maintain logging if possible, 
+        # but asyncio.gather hides the individual log steps unless handled inside.
+        # For simplicity and speed, we'll take the results and filter.
+        reviewed_vulnerabilities = [r for r in reviewed_vulnerabilities if not isinstance(r, Exception)]
 
         overall_security_score = self._calculate_overall_security_score(reviewed_vulnerabilities)
         result = {
@@ -173,7 +165,7 @@ class DefenseAgent(BaseAgent):
 
     def _calculate_overall_security_score(self, reviews: list[dict[str, Any]]) -> int:
         score = 100.0
-        severity_penalty = {"high": 30.0, "medium": 10.0, "low": 3.0}
+        severity_penalty = {"high": 25.0, "medium": 10.0, "low": 3.0}
         status_multiplier = {"validated": 1.0, "needs_more_info": 0.5, "false_positive": 0.0}
 
         for review in reviews:

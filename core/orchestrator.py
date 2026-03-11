@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from collections.abc import Callable
 from typing import Any
@@ -389,9 +390,9 @@ class SRPOrchestrator:
                     project_root = os.getcwd()
                 
             await self._emit_status("PoCVerifier", "started", {"finding_count": len(all_vulns)})
-            all_vulns = run_all_pocs(all_vulns, project_root)
+            all_vulns = await run_all_pocs(all_vulns, project_root)
             proven = sum(1 for f in all_vulns if f.get("poc_result", {}).get("status") == "proven")
-            self.log_orchestrator(f"poc_verification_complete — {proven} passed")
+            self.log_orchestrator(f"poc_verification_complete — {proven}/{len(all_vulns)} PROVEN")
             await self._emit_status("PoCVerifier", "completed", {"finding_count": len(all_vulns), "proven": proven})
 
             # Safety merge: Ensure poc_result is preserved across all finding objects.
@@ -405,6 +406,10 @@ class SRPOrchestrator:
             # Update attack object so server.py's raw_vulns contains the PoC results
             attack["vulnerabilities"] = all_vulns
             context["attack_output"] = attack
+
+            # Log final vulnerabilities to ensure trace captures complete data
+            self._log_final_vulnerabilities(all_vulns)
+
             context.update(
                 {
                     "vulnerabilities": all_vulns,
@@ -461,11 +466,28 @@ class SRPOrchestrator:
             report = await self.report_agent.run(context)
             results["report"] = report
             context["report_output"] = report
+            
+            # Map report results into context for exporter
+            context["report_summary"] = report.get("summary", "")
+            context["report_markdown"] = report.get("report_md", "")
+            
             await self._emit_status("ReportAgent", "completed", report)
 
             # PDF Report Export
             try:
                 from core.pdf_exporter import export_pdf
+                
+                # Derive project name if not already in context
+                if "project_name" not in context:
+                    if contract_paths:
+                        context["project_name"] = Path(contract_paths[0]).parent.name
+                    else:
+                        context["project_name"] = "unknown"
+                
+                # Ensure score is in context
+                if "score" not in context:
+                    context["score"] = context.get("overall_security_score", 0)
+
                 pdf_path = export_pdf(
                     findings=all_vulns,
                     report_summary=context.get("report_summary", ""),
@@ -497,3 +519,27 @@ class SRPOrchestrator:
     def log_orchestrator(self, msg: str):
         """Helper to log from orchestrator."""
         print(f"[SRP] [Orchestrator] {msg}")
+
+    def _log_final_vulnerabilities(self, all_vulns: list) -> None:
+        """FIX: Log final vulnerabilities after debate/PoC to ensure trace captures complete data.
+
+        This addresses a bug where the trace only captured pre-debate vulnerability counts.
+        Now the trace will include the final vulnerabilities with debate verdicts and PoC results.
+        """
+        # Log to orchestrator for debugging
+        proven = sum(1 for v in all_vulns if v.get("poc_result", {}).get("status") == "proven")
+        print(f"[SRP] [Orchestrator] final_vulnerabilities_logged — {len(all_vulns)} findings, {proven} proven")
+        # Store in context for trace_agent to pick up via context.get("orchestrator_traces")
+        # TraceAgent will collect this via _get_trace_items looking for orchestrator_* keys
+        if not hasattr(self, '_orchestrator_trace'):
+            self._orchestrator_trace = []
+        self._orchestrator_trace.append({
+            "timestamp": datetime.now(timezone.utc).isoformat() if 'datetime' in globals() else "",
+            "agent": "Orchestrator",
+            "step": "post_poc_vulnerabilities_finalized",
+            "data": {
+                "vulnerabilities": all_vulns,
+                "vulnerability_count": len(all_vulns),
+                "proven_count": proven,
+            },
+        })

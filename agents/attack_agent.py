@@ -73,11 +73,36 @@ class AttackAgent(BaseAgent):
         business_logic_result = await self._run_business_logic_pass(contract_map, entry_points)
         invariant_result      = await self._run_invariant_pass(contract_map, entry_points, business_logic_result)
         hypothesis_result     = await self._run_hypothesis_pass(contract_map, entry_points, business_logic_result, invariant_result)
-        exploit_result        = await self._run_exploit_pass(contract_map, entry_points, hypothesis_result)
+        import asyncio
+        
+        # Parallelize exploit, ghost, and zero passes (Fix 3)
+        # Fix 5: Skip ZERO if no arithmetic or signature patterns in codebase
+        # Use sol_sources if available, otherwise fallback to contract_map values safely
+        sources = context.get("sol_sources", contract_map)
+        if isinstance(sources, dict):
+            source_values = []
+            for v in sources.values():
+                if isinstance(v, str): source_values.append(v)
+                elif isinstance(v, list): source_values.extend([str(i) for i in v if isinstance(i, str)])
+            source_text = " ".join(source_values).lower()
+        else:
+            source_text = ""
 
+        zero_keywords = ["ecrecover", "permit", "nonce", "deadline", "overflow", "unchecked", "abi.encode"]
         recon_result  = context.get("recon_output", {})
-        ghost_result  = await self._run_ghost_pass(contract_map, recon_result)
-        zero_result   = await self._run_zero_pass(contract_map, recon_result)
+        
+        if any(kw in source_text for kw in zero_keywords):
+            zero_task = self._run_zero_pass(contract_map, recon_result)
+        else:
+            self.log("[ZERO] Skipped — no signature/arithmetic patterns detected")
+            async def skipped_zero(): return {"vulnerabilities": []}
+            zero_task = skipped_zero()
+
+        exploit_result, ghost_result, zero_result = await asyncio.gather(
+            self._run_exploit_pass(contract_map, entry_points, hypothesis_result),
+            self._run_ghost_pass(contract_map, recon_result),
+            zero_task
+        )
 
         merged_vulns = (
             self._ensure_list(exploit_result.get("vulnerabilities", [])) +
