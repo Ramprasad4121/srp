@@ -5,6 +5,21 @@ Uses reportlab. Install: pip install reportlab
 import os
 from datetime import datetime
 
+
+def normalize_severity(sev: str) -> str:
+    """Normalize severity to Cyfrin CodeHawks framework: high, medium, low only."""
+    if not sev:
+        return "medium"
+    s = sev.lower().strip()
+    if s == "critical":
+        return "high"
+    if s in ("informational", "info", "gas", "qa", "none", ""):
+        return "low"
+    if s in ("high", "medium", "low"):
+        return s
+    return "medium"
+
+
 def export_pdf(findings: list, report_summary: str, project_name: str, score: int, output_dir: str) -> str:
     try:
         from reportlab.lib.pagesizes import A4
@@ -30,18 +45,17 @@ def export_pdf(findings: list, report_summary: str, project_name: str, score: in
     )
 
     styles = getSampleStyleSheet()
-    BLACK  = colors.HexColor("#0a0a0a")
-    GREEN  = colors.HexColor("#00c853")
-    RED    = colors.HexColor("#d32f2f")
-    AMBER  = colors.HexColor("#f57c00")
-    GRAY   = colors.HexColor("#555555")
+    BLACK = colors.HexColor("#0a0a0a")
+    GREEN = colors.HexColor("#00c853")
+    RED = colors.HexColor("#d32f2f")
+    AMBER = colors.HexColor("#f57c00")
+    GRAY = colors.HexColor("#555555")
     BGDARK = colors.HexColor("#f5f5f5")
 
     SEV_COLORS = {
-        "high":     colors.HexColor("#d32f2f"),
-        "medium":   colors.HexColor("#f57c00"),
-        "low":      colors.HexColor("#388e3c"),
-        "informational": GRAY,
+        "high": colors.HexColor("#d32f2f"),
+        "medium": colors.HexColor("#f57c00"),
+        "low": colors.HexColor("#388e3c"),
     }
 
     h1 = ParagraphStyle("h1", fontSize=24, leading=30, textColor=BLACK, fontName="Helvetica-Bold", spaceAfter=4)
@@ -63,7 +77,7 @@ def export_pdf(findings: list, report_summary: str, project_name: str, score: in
     # Meta table
     sev_counts = {"high": 0, "medium": 0, "low": 0}
     for f in findings:
-        sev = f.get("severity", "low").lower()
+        sev = normalize_severity(f.get("severity", "low"))
         if sev in sev_counts:
             sev_counts[sev] += 1
 
@@ -87,7 +101,7 @@ def export_pdf(findings: list, report_summary: str, project_name: str, score: in
         ("PADDING", (0,0), (-1,-1), 4),
     ]))
     story.append(meta_table)
-    
+
     story.append(Paragraph(
         "Security Score = 100 − Σ(severity weight × proof multiplier) | High=25pts, Medium=10pts, Low=3pts | PROVEN finding doubles the deduction | Floor: 15",
         ParagraphStyle("formula", fontSize=7, textColor=GRAY, fontName="Helvetica-Oblique", spaceBefore=2, spaceAfter=6)
@@ -96,7 +110,7 @@ def export_pdf(findings: list, report_summary: str, project_name: str, score: in
         'Severity ratings follow the <link href="https://support.cyfrin.io/codehawks/findings-severity">Cyfrin CodeHawks Findings Severity</link> framework.',
         ParagraphStyle("attribution", fontSize=8, textColor=GRAY, fontName="Helvetica-Oblique", spaceAfter=8)
     ))
-    
+
     story.append(Spacer(1, 6*mm))
 
     # Executive Summary
@@ -120,8 +134,8 @@ def export_pdf(findings: list, report_summary: str, project_name: str, score: in
     story.append(HRFlowable(width="100%", thickness=0.5, color=GRAY))
 
     for i, f in enumerate(findings, 1):
-        sev = f.get("severity", "low").lower()
-        sev_color = SEV_COLORS.get(sev, GRAY)
+        sev = normalize_severity(f.get("severity", "low"))
+        sev_color = SEV_COLORS.get(sev, SEV_COLORS["medium"])
         poc_status = f.get("poc_result", {}).get("status", "skipped")
         poc_label = {"proven": "✅ PROVEN ON FORK", "unproven": "⚠️ UNPROVEN", "compile_error": "❌ COMPILE ERROR"}.get(poc_status, "— SKIPPED")
 

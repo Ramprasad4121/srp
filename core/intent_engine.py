@@ -2,8 +2,8 @@
 Protocol Intent Engine — Extracts protocol invariants, trust boundaries, and assumptions
 from project documentation, whitepapers, and NatSpec comments.
 
-Reads: README.md, docs/, whitepapers, NatSpec from .sol files
-Outputs: structured JSON with protocol_name, protocol_type, invariants, trust_boundaries, assumptions
+Reads: README.md, docs/, whitepapers, NatSpec from .sol files, SPEC.md, DESIGN.md, etc.
+Outputs: structured JSON with protocol_name, protocol_type, invariants, access_control_rules, etc.
 Saves to: outputs/intent.json
 """
 from __future__ import annotations
@@ -12,8 +12,73 @@ import glob
 import json
 import os
 import re
+from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any, Callable, Awaitable
+
+
+def _ensure_str_list(value: Any) -> list[str]:
+    """Coerce a value into a list of strings."""
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if value is None:
+        return []
+    val_str = str(value).strip()
+    return [val_str] if val_str else []
+
+
+@dataclass
+class Invariant:
+    """A machine-checkable invariant extracted from protocol documentation."""
+    id: str  # e.g. "INV-001"
+    description: str  # human readable
+    formal: str  # code-like: "sum(balances) == totalSupply"
+    severity_if_broken: str  # high / medium / low
+    category: str  # economic / state / access / ordering
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "description": self.description,
+            "formal": self.formal,
+            "severity_if_broken": self.severity_if_broken,
+            "category": self.category,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Invariant":
+        return cls(
+            id=str(d.get("id", "INV-000")),
+            description=str(d.get("description", "")),
+            formal=str(d.get("formal", "")),
+            severity_if_broken=str(d.get("severity_if_broken", "high")).lower(),
+            category=str(d.get("category", "state")),
+        )
+
+
+@dataclass
+class ProtocolIntent:
+    """Complete protocol intent specification extracted from documentation."""
+    protocol_name: str = "Unknown Protocol"
+    protocol_type: str = "generic"  # lending, amm, bridge, staking, governance, perpetuals, generic
+    summary: str = ""
+    invariants: list[Invariant] = field(default_factory=list)
+    access_control_rules: list[str] = field(default_factory=list)
+    trust_assumptions: list[str] = field(default_factory=list)
+    critical_functions: list[str] = field(default_factory=list)
+    economic_model: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "protocol_name": self.protocol_name,
+            "protocol_type": self.protocol_type,
+            "summary": self.summary,
+            "invariants": [inv.to_dict() for inv in self.invariants],
+            "access_control_rules": self.access_control_rules,
+            "trust_assumptions": self.trust_assumptions,
+            "critical_functions": self.critical_functions,
+            "economic_model": self.economic_model,
+        }
 
 
 class ProtocolIntentEngine:
@@ -23,7 +88,10 @@ class ProtocolIntentEngine:
     WHITEPAPER_EXTENSIONS = {".md", ".pdf", ".txt", ".rst"}
 
     # NatSpec tags to extract
-    NATSPEC_TAGS = {"@notice", "@dev", "@param", "@return", "@custom:", "@inheritdoc"}
+    NATSPEC_TAGS = {"@notice", "@dev", "@param", "@return", "@custom:", "@inheritdoc", "@invariant"}
+
+    # Additional spec files to look for
+    SPEC_FILES = ["SPEC.md", "DESIGN.md", "ARCHITECTURE.md", "SECURITY.md", "INVARIANTS.md"]
 
     def __init__(self, project_root: str | Path) -> None:
         """Initialize the intent engine with a project root path.
@@ -35,10 +103,11 @@ class ProtocolIntentEngine:
         self.outputs_dir = self.project_root / "outputs"
         self._collected_docs: dict[str, str] = {}
         self._natspec_entries: list[dict[str, str]] = []
+        self._invariant_natspec: list[dict[str, str]] = []
 
     async def extract(
         self,
-        call_llm: Callable[..., Awaitable[str]],
+        call_llm: Callable[..., Awaitable[str]] = None,
         api_key: str | None = None,
     ) -> dict[str, Any]:
         """Run the full intent extraction pipeline.
@@ -48,27 +117,35 @@ class ProtocolIntentEngine:
             api_key: Optional API key for LLM calls.
 
         Returns:
-            Structured protocol intent dict with invariants, trust boundaries, assumptions.
+            Structured protocol intent dict with invariants, access_control_rules, etc.
         """
         # Step 1: Collect all documentation
         self._collect_readme()
         self._collect_docs_folder()
         self._collect_whitepapers()
-        self._collect_natspec()
+        self._collect_spec_files()
+        self._collect_natspec()  # Includes @invariant extraction
 
         # Step 2: Build consolidated prompt
         prompt_payload = self._build_extraction_prompt()
 
-        # Step 3: Send to LLM for structured extraction
-        result = await self._extract_via_llm(prompt_payload, call_llm, api_key)
+        # Step 3: Send to LLM for structured extraction (if LLM available)
+        if call_llm:
+            result = await self._extract_via_llm(prompt_payload, call_llm, api_key)
+        else:
+            # Fallback: construct intent from collected data without LLM
+            result = self._build_fallback_intent()
 
-        # Step 4: Normalize and validate output
-        normalized = self._normalize_result(result)
+        # Step 4: Merge with NatSpec invariants
+        result = self._merge_natspec_invariants(result)
 
-        # Step 5: Save to outputs/intent.json
-        self._save_result(normalized)
+        # Step 5: Normalize and validate output
+        normalized = self._normalize_to_protocol_intent(result)
 
-        return normalized
+        # Step 6: Save to outputs/intent.json
+        self._save_result(normalized.to_dict())
+
+        return normalized.to_dict()
 
     def _collect_readme(self) -> None:
         """Find and read README files from the project root."""
@@ -111,19 +188,56 @@ class ProtocolIntentEngine:
                 continue
             if entry.suffix.lower() not in self.WHITEPAPER_EXTENSIONS:
                 continue
-            # Skip PDFs (binary), but note them
+            # Try to extract text from PDFs if possible
             if entry.suffix.lower() == ".pdf":
-                self._collected_docs[f"WHITEPAPER:{entry.name}"] = (
-                    f"[PDF whitepaper detected: {entry.name}. "
-                    f"Size: {entry.stat().st_size} bytes. "
-                    f"Binary content cannot be read directly — extract key claims from README/docs instead.]"
-                )
+                pdf_text = self._extract_pdf_text(entry)
+                if pdf_text:
+                    self._collected_docs[f"WHITEPAPER:{entry.name}"] = pdf_text
+                else:
+                    self._collected_docs[f"WHITEPAPER:{entry.name}"] = (
+                        f"[PDF whitepaper detected: {entry.name}. "
+                        f"Size: {entry.stat().st_size} bytes. "
+                        f"PDF text extraction failed — analyze based on filename and other docs.]"
+                    )
                 continue
             try:
                 content = entry.read_text(encoding="utf-8", errors="replace")
                 self._collected_docs[f"WHITEPAPER:{entry.name}"] = content
             except OSError:
                 continue
+
+    def _extract_pdf_text(self, pdf_path: Path) -> str | None:
+        """Attempt to extract text from PDF using pypdf or pdfplumber."""
+        # Try pypdf first (newer fork of PyPDF2)
+        try:
+            from pypdf import PdfReader
+            reader = PdfReader(str(pdf_path))
+            text_parts = [page.extract_text() or "" for page in reader.pages]
+            return "\n".join(text_parts)[:15000]  # Cap size
+        except Exception:
+            pass
+
+        # Try pdfplumber
+        try:
+            import pdfplumber
+            with pdfplumber.open(str(pdf_path)) as pdf:
+                text_parts = [page.extract_text() or "" for page in pdf.pages]
+                return "\n".join(text_parts)[:15000]
+        except Exception:
+            pass
+
+        return None
+
+    def _collect_spec_files(self) -> None:
+        """Read SPEC.md, DESIGN.md, ARCHITECTURE.md, SECURITY.md files."""
+        for spec_name in self.SPEC_FILES:
+            spec_path = self.project_root / spec_name
+            if spec_path.is_file():
+                try:
+                    content = spec_path.read_text(encoding="utf-8", errors="replace")
+                    self._collected_docs[f"SPEC:{spec_name}"] = content
+                except OSError:
+                    continue
 
     def _collect_natspec(self) -> None:
         """Extract NatSpec comments from all Solidity files in the project."""
@@ -145,25 +259,29 @@ class ProtocolIntentEngine:
 
                 try:
                     content = Path(abs_path).read_text(encoding="utf-8", errors="replace")
-                    entries = self._parse_natspec(content, abs_path)
+                    entries, invariants = self._parse_natspec(content, abs_path)
                     self._natspec_entries.extend(entries)
+                    self._invariant_natspec.extend(invariants)
                 except OSError:
                     continue
 
-    def _parse_natspec(self, source: str, file_path: str) -> list[dict[str, str]]:
+    def _parse_natspec(
+        self, source: str, file_path: str
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
         """Parse NatSpec comments from Solidity source code.
 
         Extracts both /// single-line and /** multi-line NatSpec blocks, associating
-        them with the function/contract they document.
+        them with the function/contract they document. Also extracts @invariant tags.
 
         Args:
             source: Solidity source code content.
             file_path: Path to the source file (for reference).
 
         Returns:
-            List of dicts with keys: file, target, tag, content.
+            Tuple of (entries, invariants) — both lists of dicts.
         """
         entries: list[dict[str, str]] = []
+        invariants: list[dict[str, str]] = []
         lines = source.splitlines()
         rel_path = str(file_path)
         try:
@@ -188,6 +306,7 @@ class ProtocolIntentEngine:
                 target = self._find_next_declaration(lines, i)
                 natspec_text = " ".join(comment_lines)
                 entries.extend(self._extract_tags(natspec_text, rel_path, target))
+                invariants.extend(self._extract_invariants(natspec_text, rel_path, target))
                 continue
 
             # Single-line NatSpec: ///
@@ -199,11 +318,12 @@ class ProtocolIntentEngine:
                 target = self._find_next_declaration(lines, i)
                 natspec_text = " ".join(comment_lines)
                 entries.extend(self._extract_tags(natspec_text, rel_path, target))
+                invariants.extend(self._extract_invariants(natspec_text, rel_path, target))
                 continue
 
             i += 1
 
-        return entries
+        return entries, invariants
 
     @staticmethod
     def _find_next_declaration(lines: list[str], start: int) -> str:
@@ -228,13 +348,16 @@ class ProtocolIntentEngine:
         """Extract individual NatSpec tags from a comment block."""
         entries: list[dict[str, str]] = []
 
-        # Match @tag content patterns
+        # Match @tag content patterns (but not @invariant which is handled separately)
         tag_pattern = re.compile(r'(@(?:notice|dev|param|return|custom:\w+|inheritdoc))\s+')
         parts = tag_pattern.split(natspec_text)
 
         # If no tags found, treat the whole block as a @notice
         if len(parts) <= 1:
             clean = re.sub(r'[/\*]+', '', natspec_text).strip()
+            # Skip if it's an @invariant tag
+            if "@invariant" in natspec_text:
+                return []
             if clean and len(clean) > 5:
                 entries.append({
                     "file": file_path,
@@ -250,7 +373,7 @@ class ProtocolIntentEngine:
             tag = parts[i].strip()
             content = parts[i + 1].strip()
             content = re.sub(r'[/\*]+', '', content).strip()
-            if content:
+            if content and "@invariant" not in tag:
                 entries.append({
                     "file": file_path,
                     "target": target,
@@ -261,6 +384,28 @@ class ProtocolIntentEngine:
 
         return entries
 
+    def _extract_invariants(
+        self, natspec_text: str, file_path: str, target: str
+    ) -> list[dict[str, str]]:
+        """Extract @invariant tags from NatSpec comments."""
+        invariants: list[dict[str, str]] = []
+
+        # Match @invariant descriptions
+        inv_pattern = re.compile(r'@invariant\s+([^@\n]+)')
+        matches = inv_pattern.findall(natspec_text)
+
+        for match in matches:
+            clean = re.sub(r'[/\*]+', '', match).strip()
+            if clean and len(clean) > 5:
+                invariants.append({
+                    "file": file_path,
+                    "target": target,
+                    "tag": "@invariant",
+                    "content": clean[:500],
+                })
+
+        return invariants
+
     def _build_extraction_prompt(self) -> str:
         """Build the consolidated prompt from all collected documentation."""
         sections: list[str] = []
@@ -270,6 +415,13 @@ class ProtocolIntentEngine:
             # Truncate individual docs to prevent prompt explosion
             truncated = content[:8000] if len(content) > 8000 else content
             sections.append(f"=== {doc_key} ===\n{truncated}\n")
+
+        # Add NatSpec invariants section (these are critical)
+        if self._invariant_natspec:
+            invariant_block = "=== INVARIANTS FROM NATSPEC (@invariant TAGS) ===\n"
+            for inv in self._invariant_natspec:
+                invariant_block += f" [{inv['file']}] {inv['target']}: {inv['content']}\n"
+            sections.append(invariant_block)
 
         # Add NatSpec entries (deduplicated, limited)
         if self._natspec_entries:
@@ -282,12 +434,12 @@ class ProtocolIntentEngine:
                     continue
                 seen_content.add(content_key)
                 natspec_block += (
-                    f"  [{entry['file']}] {entry['target']} "
+                    f" [{entry['file']}] {entry['target']} "
                     f"{entry['tag']}: {entry['content']}\n"
                 )
                 count += 1
                 if count >= 200:  # Cap at 200 unique entries
-                    natspec_block += f"  ... ({len(self._natspec_entries) - count} more entries truncated)\n"
+                    natspec_block += f" ... ({len(self._natspec_entries) - count} more entries truncated)\n"
                     break
             sections.append(natspec_block)
 
@@ -323,45 +475,44 @@ class ProtocolIntentEngine:
         system_prompt = (
             "You are a protocol security analyst. Your task is to extract what a DeFi protocol "
             "PROMISES to guarantee — its invariants, security assumptions, and trust boundaries.\n\n"
-            "Read all provided documentation (README, whitepaper, docs, NatSpec comments) and extract "
+            "Read all provided documentation (README, whitepaper, docs, NatSpec comments, SPEC files) and extract "
             "the protocol's intended behavior as structured data.\n\n"
             "Focus specifically on:\n"
-            "1. INVARIANTS — properties the protocol claims will ALWAYS hold (e.g., 'total supply equals "
-            "sum of all balances', 'collateral ratio never drops below threshold')\n"
-            "2. TRUST BOUNDARIES — who is trusted vs untrusted (e.g., 'admin can pause', 'oracle is trusted')\n"
-            "3. ASSUMPTIONS — implicit or explicit assumptions about the environment (e.g., 'ETH price > 0', "
-            "'block.timestamp is reliable')\n\n"
+            "1. ASSETS — What tokens/assets does the protocol handle? (e.g., 'WETH', 'stablecoins', 'LP tokens')\n"
+            "2. ACCESS CONTROL RULES — Who can call what? (e.g., 'onlyOwner can pause', 'anyone can deposit')\n"
+            "3. ECONOMIC INVARIANTS — Properties that must hold for financial consistency "
+            "(e.g., 'sum of all user balances equals total supply', 'collateral ratio always >= 150%')\n"
+            "4. STATE INVARIANTS — Properties about contract state "
+            "(e.g., 'totalDeposited >= totalBorrowed', 'locked <= totalSupply')\n"
+            "5. ORDERING GUARANTEES — What operations must happen in sequence "
+            "(e.g., 'interest accrues before state update', 'checks happen before effects')\n"
+            "6. TRUST ASSUMPTIONS — What is trusted "
+            "(e.g., 'oracle price feed is honest', 'admin cannot rug within 48h timelock')\n"
+            "7. NEVER INVARIANTS — What can NEVER happen "
+            "(e.g., 'users can never lose principal', 'withdrawals can never exceed deposits')\n\n"
             "Return ONLY valid JSON with this exact schema:\n"
             "{\n"
             '  "protocol_name": "string — name of the protocol",\n'
-            '  "protocol_type": "string — one of: lending, amm, bridge, staking, governance, perpetuals, vault, generic",\n'
+            '  "protocol_type": "string — one of: lending, amm, bridge, staking, governance, perpetuals, generic",\n'
+            '  "summary": "string — brief description of what the protocol does",\n'
             '  "invariants": [\n'
-            "    {\n"
+            '    {\n'
             '      "id": "INV-001",\n'
             '      "description": "human-readable description of the invariant",\n'
-            '      "expected_behavior": "what should always be true",\n'
-            '      "contracts_involved": ["ContractName1", "ContractName2"]\n'
-            "    }\n"
-            "  ],\n"
-            '  "trust_boundaries": [\n'
-            "    {\n"
-            '      "id": "TB-001",\n'
-            '      "entity": "who/what is trusted",\n'
-            '      "trust_level": "full|partial|none",\n'
-            '      "description": "what they can do and why"\n'
-            "    }\n"
-            "  ],\n"
-            '  "assumptions": [\n'
-            "    {\n"
-            '      "id": "ASM-001",\n'
-            '      "description": "what is assumed to be true",\n'
-            '      "risk_if_violated": "what happens if this assumption breaks"\n'
-            "    }\n"
-            "  ]\n"
+            '      "formal": "code-like representation: sum(balances) == totalSupply",\n'
+            '      "severity_if_broken": "high|medium|low",\n'
+            '      "category": "economic|state|access|ordering"\n'
+            '    }\n'
+            '  ],\n'
+            '  "access_control_rules": ["string: rule 1", "string: rule 2"],\n'
+            '  "trust_assumptions": ["string: assumption 1", "string: assumption 2"],\n'
+            '  "critical_functions": ["functionName1", "functionName2"],\n'
+            '  "economic_model": "string — description of the economic model (fees, yields, incentives)"\n'
             "}\n\n"
             "Extract AT LEAST 5 invariants if the documentation is rich enough. "
-            "If documentation is sparse, infer from contract names and NatSpec. "
-            "Be specific and concrete — avoid generic statements."
+            "Each invariant should have a clear formal representation that could be checked. "
+            "Be specific and concrete — avoid generic statements like \"contract is secure\". "
+            "Include concrete mathematical conditions where possible."
         )
 
         messages = [{"role": "user", "content": docs_payload}]
@@ -375,22 +526,105 @@ class ProtocolIntentEngine:
 
         return self._parse_response(raw_response)
 
+    def _build_fallback_intent(self) -> dict[str, Any]:
+        """Build a fallback intent from collected metadata when LLM is not available."""
+        invariants: list[dict[str, Any]] = []
+        inv_idx = 1
+
+        # Extract invariants from NatSpec @invariant tags
+        for inv_natspec in self._invariant_natspec:
+            invariants.append({
+                "id": f"INV-{inv_idx:03d}",
+                "description": inv_natspec["content"],
+                "formal": inv_natspec["content"],  # Use description as formal
+                "severity_if_broken": "high",
+                "category": "state",
+            })
+            inv_idx += 1
+
+        # Infer protocol type from documentation content
+        all_text = " ".join(self._collected_docs.values()).lower()
+        protocol_type = "generic"
+        type_keywords = {
+            "lending": ["borrow", "collateral", "interest", "liquidat", "aave", "compound"],
+            "amm": ["swap", "liquidity", "market maker", "uniswap", "sushiswap", "curve"],
+            "bridge": ["bridge", "cross-chain", "relay", "message"],
+            "staking": ["stake", "validator", "epoch", "rewards"],
+            "governance": ["vote", "proposal", "governance", "timelock"],
+            "perpetuals": ["perpetual", "margin", "funding", "leverage", "dex"],
+        }
+        for ptype, keywords in type_keywords.items():
+            if any(kw in all_text for kw in keywords):
+                protocol_type = ptype
+                break
+
+        # Infer protocol name from directory or collected docs
+        protocol_name = self.project_root.name.replace("-", " ").replace("_", " ").title()
+        if "README:" in str(self._collected_docs.keys()):
+            # Try to extract from README
+            readme_content = list(self._collected_docs.values())[0] if self._collected_docs else ""
+            lines = readme_content.strip().split("\n")
+            if lines:
+                first_line = lines[0].strip("# ").strip()
+                if first_line and len(first_line) < 100:
+                    protocol_name = first_line
+
+        return {
+            "protocol_name": protocol_name,
+            "protocol_type": protocol_type,
+            "summary": f"Protocol intent extracted from {len(self._collected_docs)} documentation sources.",
+            "invariants": invariants,
+            "access_control_rules": [],
+            "trust_assumptions": [],
+            "critical_functions": [],
+            "economic_model": "",
+        }
+
+    def _merge_natspec_invariants(self, result: dict[str, Any]) -> dict[str, Any]:
+        """Merge invariants extracted from NatSpec @invariant tags into the result."""
+        if self._invariant_natspec:
+            existing_invariants = result.get("invariants", [])
+            next_idx = len(existing_invariants) + 1
+
+            for inv_natspec in self._invariant_natspec:
+                # Check if this invariant is already captured
+                content = inv_natspec["content"]
+                exists = False
+                for existing in existing_invariants:
+                    if existing.get("description", "").lower() == content.lower():
+                        exists = True
+                        break
+
+                if not exists:
+                    existing_invariants.append({
+                        "id": f"INV-{next_idx:03d}",
+                        "description": content,
+                       "formal": content,
+                        "severity_if_broken": "high",
+                        "category": "state",
+                    })
+                    next_idx += 1
+
+            result["invariants"] = existing_invariants
+
+        return result
+
     @staticmethod
     def _parse_response(raw: str) -> dict[str, Any]:
         """Parse LLM JSON response with robust fallback handling."""
         from core.utils import parse_llm_json
         return parse_llm_json(raw)
 
-    def _normalize_result(self, parsed: dict[str, Any]) -> dict[str, Any]:
+    def _normalize_to_protocol_intent(self, parsed: dict[str, Any]) -> ProtocolIntent:
         """Normalize and validate the extracted protocol intent.
 
         Args:
             parsed: Raw parsed dict from LLM.
 
         Returns:
-            Normalized dict with guaranteed schema compliance.
+            Normalized ProtocolIntent dataclass.
         """
-        protocol_name = str(parsed.get("protocol_name", "Unknown Protocol")).strip()
+        protocol_name = str(parsed.get("protocol_name", self.project_root.name)).strip()
         protocol_type = str(parsed.get("protocol_type", "generic")).strip().lower()
 
         valid_types = {"lending", "amm", "bridge", "staking", "governance", "perpetuals", "vault", "generic"}
@@ -402,64 +636,50 @@ class ProtocolIntentEngine:
         if not isinstance(raw_invariants, list):
             raw_invariants = []
 
-        invariants: list[dict[str, Any]] = []
+        invariants: list[Invariant] = []
         for idx, inv in enumerate(raw_invariants, start=1):
             if not isinstance(inv, dict):
                 inv = {"description": str(inv)}
-            invariants.append({
-                "id": str(inv.get("id", f"INV-{idx:03d}")),
-                "description": str(inv.get("description", "")).strip(),
-                "expected_behavior": str(inv.get("expected_behavior", "")).strip(),
-                "contracts_involved": self._ensure_str_list(inv.get("contracts_involved", [])),
-            })
 
-        # Normalize trust boundaries
-        raw_boundaries = parsed.get("trust_boundaries", [])
-        if not isinstance(raw_boundaries, list):
-            raw_boundaries = []
+            # Normalize severity
+            sev = str(inv.get("severity_if_broken", "high")).lower().strip()
+            if sev not in {"high", "medium", "low"}:
+                if sev == "critical":
+                    sev = "high"
+                elif sev in {"informational", "info"}:
+                    sev = "low"
+                else:
+                    sev = "medium"
 
-        trust_boundaries: list[dict[str, str]] = []
-        for idx, tb in enumerate(raw_boundaries, start=1):
-            if not isinstance(tb, dict):
-                tb = {"description": str(tb)}
-            trust_level = str(tb.get("trust_level", "partial")).strip().lower()
-            if trust_level not in {"full", "partial", "none"}:
-                trust_level = "partial"
-            trust_boundaries.append({
-                "id": str(tb.get("id", f"TB-{idx:03d}")),
-                "entity": str(tb.get("entity", "unknown")).strip(),
-                "trust_level": trust_level,
-                "description": str(tb.get("description", "")).strip(),
-            })
+            # Normalize category
+            cat = str(inv.get("category", "state")).lower().strip()
+            if cat not in {"economic", "state", "access", "ordering"}:
+                cat = "state"
 
-        # Normalize assumptions
-        raw_assumptions = parsed.get("assumptions", [])
-        if not isinstance(raw_assumptions, list):
-            raw_assumptions = []
+            invariants.append(Invariant(
+                id=str(inv.get("id", f"INV-{idx:03d}")),
+                description=str(inv.get("description", "")).strip(),
+                formal=str(inv.get("formal", inv.get("description", ""))).strip(),
+                severity_if_broken=sev,
+                category=cat,
+            ))
 
-        assumptions: list[dict[str, str]] = []
-        for idx, asm in enumerate(raw_assumptions, start=1):
-            if not isinstance(asm, dict):
-                asm = {"description": str(asm)}
-            assumptions.append({
-                "id": str(asm.get("id", f"ASM-{idx:03d}")),
-                "description": str(asm.get("description", "")).strip(),
-                "risk_if_violated": str(asm.get("risk_if_violated", "")).strip(),
-            })
-
-        return {
-            "protocol_name": protocol_name,
-            "protocol_type": protocol_type,
-            "invariants": invariants,
-            "trust_boundaries": trust_boundaries,
-            "assumptions": assumptions,
-        }
+        return ProtocolIntent(
+            protocol_name=protocol_name,
+            protocol_type=protocol_type,
+            summary=str(parsed.get("summary", "")).strip(),
+            invariants=invariants,
+            access_control_rules=_ensure_str_list(parsed.get("access_control_rules", [])),
+            trust_assumptions=_ensure_str_list(parsed.get("trust_assumptions", [])),
+            critical_functions=_ensure_str_list(parsed.get("critical_functions", [])),
+            economic_model=str(parsed.get("economic_model", "")).strip(),
+        )
 
     def _save_result(self, result: dict[str, Any]) -> Path:
         """Save the extracted intent to outputs/intent.json.
 
         Args:
-            result: Normalized protocol intent dict.
+            result: Protocol intent dict.
 
         Returns:
             Path to the saved file.
@@ -472,16 +692,6 @@ class ProtocolIntentEngine:
         )
         return output_path
 
-    @staticmethod
-    def _ensure_str_list(value: Any) -> list[str]:
-        """Coerce a value into a list of strings."""
-        if isinstance(value, list):
-            return [str(item).strip() for item in value if str(item).strip()]
-        if value is None:
-            return []
-        val_str = str(value).strip()
-        return [val_str] if val_str else []
-
     def get_collection_stats(self) -> dict[str, Any]:
         """Return stats about what was collected — useful for logging.
 
@@ -492,5 +702,6 @@ class ProtocolIntentEngine:
             "docs_collected": len(self._collected_docs),
             "doc_sources": list(self._collected_docs.keys()),
             "natspec_entries": len(self._natspec_entries),
+            "invariant_natspec": len(self._invariant_natspec),
             "total_doc_chars": sum(len(v) for v in self._collected_docs.values()),
         }

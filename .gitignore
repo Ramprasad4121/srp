@@ -2,7 +2,7 @@
 .srp/
 .env
 thoughts.md
-
+PROMPT.md
 # Python
 __pycache__/
 *.pyc

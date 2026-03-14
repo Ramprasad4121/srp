@@ -15,14 +15,11 @@ from agents.recon_agent import ReconAgent
 from agents.report_agent import ReportAgent
 from agents.trace_agent import TraceAgent
 from core.debate import run_debate
+from core.domain_detector import DomainDetector, DetectionResult
 from core.poc_verifier import run_all_pocs
 from core.anvil import start_anvil, stop_anvil
 import os
 
-
-# ─────────────────────────────────────────────────────────
-# Domain Detection Keywords
-# ─────────────────────────────────────────────────────────
 
 DOMAIN_KEYWORDS: dict[str, set[str]] = {
     "lending": {
@@ -91,11 +88,9 @@ class SRPOrchestrator:
         for entry in sorted(skills_path.iterdir()):
             if not entry.is_dir():
                 continue
-
             skill_file = entry / "SKILL.md"
             if not skill_file.exists() or not skill_file.is_file():
                 continue
-
             loaded[entry.name] = skill_file.read_text(encoding="utf-8")
 
         self.skills = loaded
@@ -108,8 +103,6 @@ class SRPOrchestrator:
         available = sorted(self.skills.keys())
         if not available:
             return "solidity-auditor"
-
-        # Single skill setup currently defaults to the only loaded skill.
         if len(available) == 1:
             return available[0]
 
@@ -141,9 +134,8 @@ class SRPOrchestrator:
                 if need in normalized_skill_name or normalized_skill_name in need:
                     score_by_skill[skill_name] += 2
                     continue
-
-                skill_tokens = [token for token in normalized_skill_name.replace("_", "-").split("-") if token]
-                if any(token and token in need for token in skill_tokens):
+                skill_tokens = [t for t in normalized_skill_name.replace("_", "-").split("-") if t]
+                if any(t and t in need for t in skill_tokens):
                     score_by_skill[skill_name] += 1
 
         best_skill = max(available, key=lambda name: score_by_skill.get(name, 0))
@@ -155,81 +147,16 @@ class SRPOrchestrator:
     # Domain Detection
     # ─────────────────────────────────────────────────────────
 
-    def detect_domain(self, recon_output: dict, contract_map: dict) -> str:
-        """Detect the protocol domain from recon output and contract source code.
-
-        Scans entry points, contract names, function names, and raw source code against
-        domain keyword sets. Returns the domain with the highest match score.
-
-        Args:
-            recon_output: Output from ReconAgent with contracts, entry_points, external_calls.
-            contract_map: Dict mapping contract name/path to source code.
-
-        Returns:
-            One of: lending, amm, bridge, staking, governance, perpetuals, generic.
-        """
-        # Build a search corpus from all available data
-        corpus_parts: list[str] = []
-
-        # Contract names
-        contracts = recon_output.get("contracts", recon_output.get("contract_map", {}).get("contracts", []))
-        if isinstance(contracts, list):
-            corpus_parts.extend(str(c).lower() for c in contracts)
-
-        # Entry points (function names)
-        entry_points = recon_output.get("entry_points", {})
-        if isinstance(entry_points, dict):
-            for contract_name, functions in entry_points.items():
-                corpus_parts.append(str(contract_name).lower())
-                if isinstance(functions, list):
-                    corpus_parts.extend(str(f).lower() for f in functions)
-        elif isinstance(entry_points, list):
-            corpus_parts.extend(str(ep).lower() for ep in entry_points)
-
-        # External calls
-        external_calls = recon_output.get("external_calls", [])
-        if isinstance(external_calls, list):
-            corpus_parts.extend(str(ec).lower() for ec in external_calls)
-
-        # Contract source code — scan function names from actual code
-        if isinstance(contract_map, dict):
-            for name, code in contract_map.items():
-                corpus_parts.append(str(name).lower())
-                if isinstance(code, str):
-                    # Extract function signatures from source
-                    import re
-                    func_matches = re.findall(r'function\s+(\w+)', code)
-                    corpus_parts.extend(f.lower() for f in func_matches)
-                    # Also add raw identifiers from the code
-                    identifiers = re.findall(r'\b[a-zA-Z_]\w+\b', code)
-                    corpus_parts.extend(i.lower() for i in identifiers)
-
-        # Build single search string
-        corpus = " ".join(corpus_parts)
-
-        # Score each domain
-        domain_scores: dict[str, int] = {}
-        for domain, keywords in DOMAIN_KEYWORDS.items():
-            score = sum(1 for kw in keywords if kw in corpus)
-            domain_scores[domain] = score
-
-        # Find best match
-        if not domain_scores:
-            return "generic"
-
-        best_domain = max(domain_scores, key=lambda d: domain_scores[d])
-        best_score = domain_scores[best_domain]
-
-        # Require minimum threshold to avoid false positives
-        # Score of 5+ required — prevents misclassifying generic protocols
-        if best_score < 5:
-            return "generic"
-
-        self.log_orchestrator(
-            f"domain_detected — {best_domain} (score: {best_score}, "
-            f"scores: {json.dumps(domain_scores)})"
+    async def detect_domain(self, project_root: str | Path, contract_paths: list[str] | None = None) -> DetectionResult:
+        detector = DomainDetector(project_root)
+        result = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: detector.detect(contract_paths)
         )
-        return best_domain
+        self.log_orchestrator(
+            f"domain_detected — {result.primary} (confidence: {result.confidence:.0%}"
+            f"{f', secondary: {result.secondary} ({result.secondary_confidence:.0%})' if result.secondary else ''})"
+        )
+        return result
 
     # ─────────────────────────────────────────────────────────
     # Main Pipeline
@@ -252,13 +179,13 @@ class SRPOrchestrator:
 
         results: dict[str, Any] = {}
 
+        # ── Intent Agent ──────────────────────────────────────
         try:
             intent = await self.intent_agent.run(context)
             results["intent"] = intent
             context["intent_output"] = intent
             context.update(intent)
 
-            # Inject protocol intent into context for all downstream agents
             protocol_intent = intent.get("protocol_intent", {})
             context["protocol_intent"] = protocol_intent
 
@@ -286,98 +213,204 @@ class SRPOrchestrator:
             assumptions.append(f"selected_skill_content: {selected_skill_content}")
             context["assumptions"] = assumptions
 
-            await self._emit_status(
-                "SkillSelector",
-                "completed",
-                {
-                    "selected_skill_name": selected_skill_name,
-                    "selected_skill_content_preview": selected_skill_content[:200],
-                },
-            )
+            await self._emit_status("SkillSelector", "completed", {
+                "selected_skill_name": selected_skill_name,
+                "selected_skill_content_preview": selected_skill_content[:200],
+            })
             await self._emit_status("IntentAgent", "completed", intent)
         except Exception as exc:
             await self._emit_status("IntentAgent", "failed", {"error": str(exc)})
             raise
 
+        # ── Recon Agent ───────────────────────────────────────
         try:
             recon = await self.recon_agent.run(context)
             results["recon"] = recon
             context["recon_output"] = recon
-            context.update(
-                {
-                    "contract_map": recon.get("contract_map", {}),
-                    "functions": recon.get("functions", []),
-                    "state_vars": recon.get("state_vars", []),
-                    "external_calls": recon.get("external_calls", []),
-                    "entry_points": recon.get("entry_points", []),
-                    "risk_surface": recon.get("risk_surface", []),
-                }
-            )
+            context.update({
+                "contract_map": recon.get("contract_map", {}),
+                "functions": recon.get("functions", []),
+                "state_vars": recon.get("state_vars", []),
+                "external_calls": recon.get("external_calls", []),
+                "entry_points": recon.get("entry_points", []),
+                "risk_surface": recon.get("risk_surface", []),
+            })
             await self._emit_status("ReconAgent", "completed", recon)
         except Exception as exc:
             await self._emit_status("ReconAgent", "failed", {"error": str(exc)})
             raise
 
         # ── Domain Detection ──────────────────────────────────
-        detected_domain = self.detect_domain(recon, context.get("contract_map", {}))
-        context["detected_domain"] = detected_domain
-        await self._emit_status(
-            "DomainDetector",
-            "completed",
-            {"detected_domain": detected_domain},
-        )
-        self.log_orchestrator(f"domain_detection_complete — {detected_domain}")
+        detected_domain = "generic"
+        secondary_domain = None
+        secondary_confidence = 0.0
+        try:
+            project_root = context.get("project_root") or os.environ.get("SRP_PROJECT_ROOT") or os.getcwd()
+            detection_result = await self.detect_domain(project_root, contract_paths)
+            detected_domain = detection_result.primary
+            secondary_domain = detection_result.secondary
+            secondary_confidence = detection_result.secondary_confidence
+            context["detected_domain"] = detected_domain
+            context["secondary_domain"] = secondary_domain
+            context["secondary_confidence"] = secondary_confidence
+            await self._emit_status("DomainDetector", "completed", {
+                "detected_domain": detected_domain,
+                "confidence": detection_result.confidence,
+                "secondary": secondary_domain,
+                "secondary_confidence": secondary_confidence,
+            })
+            self.log_orchestrator(f"domain_detection_complete — {detected_domain}")
+        except Exception as domain_exc:
+            self.log_orchestrator(f"domain_detection_failed — {domain_exc}, falling back to generic")
+            await self._emit_status("DomainDetector", "failed", {"error": str(domain_exc)})
 
+        # ── Attack Agent + Domain Armies ──────────────────────
         try:
             attack = await self.attack_agent.run(context)
             results["attack"] = attack
             all_vulns = attack.get("vulnerabilities", [])
 
-            # ── Domain Agent Army Phase ───────────────────────
+            # ── Lending Army ───────────────────────────────────
             if detected_domain == "lending":
-                await self._emit_status(
-                    "LendingArmy",
-                    "started",
-                    {"domain": "lending", "agents": 5},
-                )
+                await self._emit_status("LendingArmy", "started", {"domain": "lending", "agents": 5})
                 try:
                     from agents.audit.lending import run_lending_army
                     lending_findings = await run_lending_army(context)
                     if isinstance(lending_findings, list):
                         all_vulns = all_vulns + lending_findings
-                        self.log_orchestrator(
-                            f"lending_army_complete — {len(lending_findings)} additional findings, "
-                            f"{len(all_vulns)} total"
-                        )
-                    await self._emit_status(
-                        "LendingArmy",
-                        "completed",
-                        {
-                            "lending_findings": len(lending_findings),
-                            "total_findings": len(all_vulns),
-                        },
-                    )
-                except Exception as lending_exc:
-                    self.log_orchestrator(f"lending_army_failed — {lending_exc}")
-                    await self._emit_status(
-                        "LendingArmy",
-                        "failed",
-                        {"error": str(lending_exc)},
-                    )
-                    # Don't crash pipeline — continue with generic findings only
+                    self.log_orchestrator(f"lending_army_complete — {len(lending_findings)} additional findings, {len(all_vulns)} total")
+                    await self._emit_status("LendingArmy", "completed", {"lending_findings": len(lending_findings), "total_findings": len(all_vulns)})
+                except Exception as e:
+                    self.log_orchestrator(f"lending_army_failed — {e}")
+                    await self._emit_status("LendingArmy", "failed", {"error": str(e)})
 
-            # ── DynaDebate Phase ──────────────────────────────
+            # ── AMM Army ───────────────────────────────────────
+            if detected_domain == "amm":
+                await self._emit_status("AMMArmy", "started", {"domain": "amm", "agents": 5})
+                try:
+                    from agents.audit.amm import run_amm_army
+                    amm_findings = await run_amm_army(context)
+                    if isinstance(amm_findings, list):
+                        all_vulns = all_vulns + amm_findings
+                    self.log_orchestrator(f"amm_army_complete — {len(amm_findings)} additional findings, {len(all_vulns)} total")
+                    await self._emit_status("AMMArmy", "completed", {"amm_findings": len(amm_findings), "total_findings": len(all_vulns)})
+                except Exception as e:
+                    self.log_orchestrator(f"amm_army_failed — {e}")
+                    await self._emit_status("AMMArmy", "failed", {"error": str(e)})
+
+            # ── Bridge Army ────────────────────────────────────
+            if detected_domain == "bridge":
+                await self._emit_status("BridgeArmy", "started", {"domain": "bridge", "agents": 5})
+                try:
+                    from agents.audit.bridge import run_bridge_army
+                    bridge_findings = await run_bridge_army(context)
+                    if isinstance(bridge_findings, list):
+                        all_vulns = all_vulns + bridge_findings
+                    self.log_orchestrator(f"bridge_army_complete — {len(bridge_findings)} additional findings, {len(all_vulns)} total")
+                    await self._emit_status("BridgeArmy", "completed", {"bridge_findings": len(bridge_findings), "total_findings": len(all_vulns)})
+                except Exception as e:
+                    self.log_orchestrator(f"bridge_army_failed — {e}")
+                    await self._emit_status("BridgeArmy", "failed", {"error": str(e)})
+
+            # ── Staking Army ───────────────────────────────────
+            if detected_domain == "staking":
+                await self._emit_status("StakingArmy", "started", {"domain": "staking", "agents": 4})
+                try:
+                    from agents.audit.staking import run_staking_army
+                    staking_findings = await run_staking_army(context)
+                    if isinstance(staking_findings, list):
+                        all_vulns = all_vulns + staking_findings
+                    self.log_orchestrator(f"staking_army_complete — {len(staking_findings)} additional findings, {len(all_vulns)} total")
+                    await self._emit_status("StakingArmy", "completed", {"staking_findings": len(staking_findings), "total_findings": len(all_vulns)})
+                except Exception as e:
+                    self.log_orchestrator(f"staking_army_failed — {e}")
+                    await self._emit_status("StakingArmy", "failed", {"error": str(e)})
+
+            # ── Governance Army ────────────────────────────────
+            if detected_domain == "governance":
+                await self._emit_status("GovernanceArmy", "started", {"domain": "governance", "agents": 4})
+                try:
+                    from agents.audit.governance import run_governance_army
+                    governance_findings = await run_governance_army(context)
+                    if isinstance(governance_findings, list):
+                        all_vulns = all_vulns + governance_findings
+                    self.log_orchestrator(f"governance_army_complete — {len(governance_findings)} additional findings, {len(all_vulns)} total")
+                    await self._emit_status("GovernanceArmy", "completed", {"governance_findings": len(governance_findings), "total_findings": len(all_vulns)})
+                except Exception as e:
+                    self.log_orchestrator(f"governance_army_failed — {e}")
+                    await self._emit_status("GovernanceArmy", "failed", {"error": str(e)})
+
+            # ── Perpetuals Army ────────────────────────────────
+            if detected_domain == "perpetuals":
+                await self._emit_status("PerpetualsArmy", "started", {"domain": "perpetuals", "agents": 4})
+                try:
+                    from agents.audit.perpetuals import run_perpetuals_army
+                    perpetuals_findings = await run_perpetuals_army(context)
+                    if isinstance(perpetuals_findings, list):
+                        all_vulns = all_vulns + perpetuals_findings
+                    self.log_orchestrator(f"perpetuals_army_complete — {len(perpetuals_findings)} additional findings, {len(all_vulns)} total")
+                    await self._emit_status("PerpetualsArmy", "completed", {"perpetuals_findings": len(perpetuals_findings), "total_findings": len(all_vulns)})
+                except Exception as e:
+                    self.log_orchestrator(f"perpetuals_army_failed — {e}")
+                    await self._emit_status("PerpetualsArmy", "failed", {"error": str(e)})
+
+            # ── Cross-Chain Army ───────────────────────────────
+            if detected_domain == "crosschain":
+                await self._emit_status("CrossChainArmy", "started", {"domain": "crosschain", "agents": 4})
+                try:
+                    from agents.audit.crosschain import run_crosschain_army
+                    crosschain_findings = await run_crosschain_army(context)
+                    if isinstance(crosschain_findings, list):
+                        all_vulns = all_vulns + crosschain_findings
+                    self.log_orchestrator(f"crosschain_army_complete — {len(crosschain_findings)} additional findings, {len(all_vulns)} total")
+                    await self._emit_status("CrossChainArmy", "completed", {"crosschain_findings": len(crosschain_findings), "total_findings": len(all_vulns)})
+                except Exception as e:
+                    self.log_orchestrator(f"crosschain_army_failed — {e}")
+                    await self._emit_status("CrossChainArmy", "failed", {"error": str(e)})
+
+            # ── Secondary Domain Army ──────────────────────────
+            if secondary_domain and secondary_confidence > 0.3 and secondary_domain != detected_domain:
+                self.log_orchestrator(f"running_secondary_domain_army — {secondary_domain} ({secondary_confidence:.0%})")
+                try:
+                    if secondary_domain == "lending":
+                        from agents.audit.lending import run_lending_army
+                        extra = await run_lending_army(context)
+                    elif secondary_domain == "amm":
+                        from agents.audit.amm import run_amm_army
+                        extra = await run_amm_army(context)
+                    elif secondary_domain == "bridge":
+                        from agents.audit.bridge import run_bridge_army
+                        extra = await run_bridge_army(context)
+                    elif secondary_domain == "staking":
+                        from agents.audit.staking import run_staking_army
+                        extra = await run_staking_army(context)
+                    elif secondary_domain == "governance":
+                        from agents.audit.governance import run_governance_army
+                        extra = await run_governance_army(context)
+                    elif secondary_domain == "perpetuals":
+                        from agents.audit.perpetuals import run_perpetuals_army
+                        extra = await run_perpetuals_army(context)
+                    elif secondary_domain == "crosschain":
+                        from agents.audit.crosschain import run_crosschain_army
+                        extra = await run_crosschain_army(context)
+                    else:
+                        extra = []
+                    if isinstance(extra, list):
+                        all_vulns = all_vulns + extra
+                        self.log_orchestrator(f"secondary_army_complete — {len(extra)} additional findings")
+                except Exception as e:
+                    self.log_orchestrator(f"secondary_army_failed — {e}")
+
+            # ── DynaDebate ─────────────────────────────────────
             contract_map = context.get("contract_map", {})
             contract_summary = "\n".join([f"- {name}: {len(code)} chars" for name, code in contract_map.items()])
 
             await self._emit_status("DynaDebate", "started", {"finding_count": len(all_vulns)})
-            # We pass the attack_agent.call_llm which is already bound to the agent instance
             all_vulns = await run_debate(all_vulns, contract_summary, api_key, self.attack_agent.call_llm)
             self.log_orchestrator(f"debate_complete — {len(all_vulns)} findings survived debate")
             await self._emit_status("DynaDebate", "completed", {"surviving_count": len(all_vulns)})
 
-            # ── PoC Verifier Phase ────────────────────────────
-            # derive project_root from environment or first contract path
+            # ── PoC Verifier ───────────────────────────────────
             project_root = os.environ.get("SRP_PROJECT_ROOT")
             if not project_root:
                 if contract_paths and isinstance(contract_paths, list):
@@ -388,57 +421,48 @@ class SRPOrchestrator:
                         project_root = os.path.dirname(path)
                 else:
                     project_root = os.getcwd()
-                
+
             await self._emit_status("PoCVerifier", "started", {"finding_count": len(all_vulns)})
             all_vulns = await run_all_pocs(all_vulns, project_root)
             proven = sum(1 for f in all_vulns if f.get("poc_result", {}).get("status") == "proven")
             self.log_orchestrator(f"poc_verification_complete — {proven}/{len(all_vulns)} PROVEN")
             await self._emit_status("PoCVerifier", "completed", {"finding_count": len(all_vulns), "proven": proven})
 
-            # Safety merge: Ensure poc_result is preserved across all finding objects.
-            # Build poc lookup by id from the list returned by run_all_pocs
+            # Safety merge: ensure poc_result preserved
             poc_map = {v.get("id"): v.get("poc_result", {}) for v in all_vulns}
-            # Re-attach to any findings list used downstream, ensuring consistency
             for v in all_vulns:
                 if "poc_result" not in v or not v["poc_result"]:
                     v["poc_result"] = poc_map.get(v.get("id"), {"status": "skipped", "reason": "not run"})
-            
-            # Update attack object so server.py's raw_vulns contains the PoC results
+
             attack["vulnerabilities"] = all_vulns
             context["attack_output"] = attack
-
-            # Log final vulnerabilities to ensure trace captures complete data
             self._log_final_vulnerabilities(all_vulns)
 
-            context.update(
-                {
-                    "vulnerabilities": all_vulns,
-                    "attack_summary": attack.get("attack_summary", ""),
-                }
-            )
+            context.update({
+                "vulnerabilities": all_vulns,
+                "attack_summary": attack.get("attack_summary", ""),
+            })
             await self._emit_status("AttackAgent", "completed", attack)
         except Exception as exc:
             await self._emit_status("AttackAgent", "failed", {"error": str(exc)})
             raise
 
+        # ── Defense Agent ─────────────────────────────────────
         try:
             defense = await self.defense_agent.run(context)
             results["defense"] = defense
             context["defense_output"] = defense
-            context.update(
-                {
-                    "reviewed_vulnerabilities": defense.get(
-                        "reviewed_vulnerabilities", []
-                    ),
-                    "overall_security_score": defense.get("overall_security_score"),
-                    "final_findings": defense,
-                }
-            )
+            context.update({
+                "reviewed_vulnerabilities": defense.get("reviewed_vulnerabilities", []),
+                "overall_security_score": defense.get("overall_security_score"),
+                "final_findings": defense,
+            })
             await self._emit_status("DefenseAgent", "completed", defense)
         except Exception as exc:
             await self._emit_status("DefenseAgent", "failed", {"error": str(exc)})
             raise
 
+        # ── Trace Agent ───────────────────────────────────────
         try:
             context["agent_traces"] = {
                 "IntentAgent": self.intent_agent.get_trace(),
@@ -449,42 +473,33 @@ class SRPOrchestrator:
             trace = await self.trace_agent.run(context)
             results["trace"] = trace
             context["trace_output"] = trace
-            context.update(
-                {
-                    "trace_id": trace.get("trace_id"),
-                    "input_hash": trace.get("input_hash"),
-                    "output_hash": trace.get("output_hash"),
-                    "timestamp": trace.get("timestamp"),
-                }
-            )
+            context.update({
+                "trace_id": trace.get("trace_id"),
+                "input_hash": trace.get("input_hash"),
+                "output_hash": trace.get("output_hash"),
+                "timestamp": trace.get("timestamp"),
+            })
             await self._emit_status("TraceAgent", "completed", trace)
         except Exception as exc:
             await self._emit_status("TraceAgent", "failed", {"error": str(exc)})
             raise
 
+        # ── Report Agent + PDF ────────────────────────────────
         try:
             report = await self.report_agent.run(context)
             results["report"] = report
             context["report_output"] = report
-            
-            # Map report results into context for exporter
             context["report_summary"] = report.get("summary", "")
             context["report_markdown"] = report.get("report_md", "")
-            
             await self._emit_status("ReportAgent", "completed", report)
 
-            # PDF Report Export
             try:
                 from core.pdf_exporter import export_pdf
-                
-                # Derive project name if not already in context
                 if "project_name" not in context:
                     if contract_paths:
                         context["project_name"] = Path(contract_paths[0]).parent.name
                     else:
                         context["project_name"] = "unknown"
-                
-                # Ensure score is in context
                 if "score" not in context:
                     context["score"] = context.get("overall_security_score", 0)
 
@@ -511,30 +526,20 @@ class SRPOrchestrator:
     async def _emit_status(self, step_name: str, status: str, data: dict) -> None:
         if self.status_callback is None:
             return
-
         callback_result = self.status_callback(step_name, status, data)
         if inspect.isawaitable(callback_result):
             await callback_result
 
     def log_orchestrator(self, msg: str):
-        """Helper to log from orchestrator."""
         print(f"[SRP] [Orchestrator] {msg}")
 
     def _log_final_vulnerabilities(self, all_vulns: list) -> None:
-        """FIX: Log final vulnerabilities after debate/PoC to ensure trace captures complete data.
-
-        This addresses a bug where the trace only captured pre-debate vulnerability counts.
-        Now the trace will include the final vulnerabilities with debate verdicts and PoC results.
-        """
-        # Log to orchestrator for debugging
         proven = sum(1 for v in all_vulns if v.get("poc_result", {}).get("status") == "proven")
         print(f"[SRP] [Orchestrator] final_vulnerabilities_logged — {len(all_vulns)} findings, {proven} proven")
-        # Store in context for trace_agent to pick up via context.get("orchestrator_traces")
-        # TraceAgent will collect this via _get_trace_items looking for orchestrator_* keys
         if not hasattr(self, '_orchestrator_trace'):
             self._orchestrator_trace = []
         self._orchestrator_trace.append({
-            "timestamp": datetime.now(timezone.utc).isoformat() if 'datetime' in globals() else "",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "agent": "Orchestrator",
             "step": "post_poc_vulnerabilities_finalized",
             "data": {
