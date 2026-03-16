@@ -175,7 +175,7 @@ Return ONLY valid JSON:
 
             normalized.append({
                 "id": str(f.get("id", f"AMM-TICK-{idx:03d}")),
-                "title": str(f.get("title", "Untitled")).strip(),
+                "title": f"Tick Math Boundary Bug in {f.get('contract', 'Unknown')} allows invariant violation",
                 "severity": severity,
                 "contract": str(f.get("contract", "")).strip(),
                 "description": str(f.get("description", "")).strip(),

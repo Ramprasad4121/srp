@@ -29,3 +29,9 @@ venv/
 .venv/
 env/
 .env/
+
+# Telegram Bot
+*.pid
+tg_bot.log
+tg_claude.py
+CLAUDE.md

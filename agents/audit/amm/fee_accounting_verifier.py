@@ -90,7 +90,7 @@ Return ONLY valid JSON with "vulnerabilities" array.
                 severity = "medium"
             normalized.append({
                 "id": str(f.get("id", f"AMM-FEE-{idx:03d}")),
-                "title": str(f.get("title", "Untitled")).strip(),
+                "title": f"Fee Accounting Error in {f.get('contract', 'Unknown')} allows protocol drain",
                 "severity": severity,
                 "contract": str(f.get("contract", "")).strip(),
                 "description": str(f.get("description", "")).strip(),

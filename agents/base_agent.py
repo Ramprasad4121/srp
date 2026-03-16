@@ -33,6 +33,18 @@ class BaseAgent(ABC):
         """Inject audit progress tracker into agent."""
         self.progress = progress
 
+    def get_shared_notes(self) -> str:
+        """Get shared protocol notes from outputs/SHARED_TASK_NOTES.md."""
+        import os
+        notes_path = os.path.join(os.getcwd(), "outputs", "SHARED_TASK_NOTES.md")
+        if not os.path.exists(notes_path):
+            return ""
+        try:
+            with open(notes_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        except Exception:
+            return ""
+
     def get_handoff_context(self) -> str:
         """Get notes left by previous agents — read at start of every run."""
         if not getattr(self, "progress", None):
@@ -95,7 +107,14 @@ class BaseAgent(ABC):
         # Soul first — this is WHO the agent is
         # Skills second — this is WHAT the agent knows
         # System extra third — this is WHAT the agent is doing right now
+        # Shared notes fourth — this is CONTEXT from previous agents
         system_prompt = ""
+
+        # Add shared notes first
+        shared_notes = self.get_shared_notes()
+        if shared_notes:
+            system_prompt += "---\n\n# SHARED PROTOCOL NOTES\n\n"
+            system_prompt += shared_notes + "\n\n"
 
         if self.soul_content:
             system_prompt += self.soul_content + "\n\n"

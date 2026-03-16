@@ -199,11 +199,11 @@ def cmd_analyze(args):
 
     # ── Step 1: Build Execution Intent ──────────────────────
     from intent import ExecutionIntent
-    from policy import EIP8004PolicyClient
+    from policy import ERC8004PolicyClient
     from budget import X402BudgetEngine
     from agent import OpenClawWorker
     from trace import ReasoningTrace
-    from reasoning.pipeline import MultiPassReasoningPipeline, PASS_SEQUENCE
+    from srp_pkg.pipeline import MultiPassReasoningPipeline, PASS_SEQUENCE
 
     task = args.task or f"Perform comprehensive security analysis of {target}"
     if ctx.get("protocol"):
@@ -249,7 +249,7 @@ def cmd_analyze(args):
 
     # ── Step 2: ERC-8004 Policy Approval ─────────────────────
     print(f"[SRP] 🔐 Requesting ERC-8004 policy approval...")
-    policy_client = EIP8004PolicyClient(
+    policy_client = ERC8004PolicyClient(
         agent_id=config["policy"].get("erc8004_agent_id", 0),
         local_mode=(config["policy"]["mode"] == "local"),
     )

@@ -1,72 +1,42 @@
 {
-  "protocol_name": "Unknown Protocol",
+  "protocol_name": "SecondSwap",
   "protocol_type": "generic",
+  "summary": "A protocol for swapping assets, likely with a focus on a secondary market or additional features beyond traditional AMMs.",
   "invariants": [
     {
       "id": "INV-001",
-      "description": "Total supply is always equal to the sum of all balances",
-      "expected_behavior": "totalSupply == sumOfAllBalances",
-      "contracts_involved": [
-        "TokenContract"
-      ]
+      "description": "The total balance of assets in the swap contract is equal to the sum of user deposits.",
+      "formal": "sum(userBalances) == totalSwapBalance",
+      "severity_if_broken": "high",
+      "category": "economic"
     },
     {
       "id": "INV-002",
-      "description": "User balances are always non-negative",
-      "expected_behavior": "userBalance >= 0",
-      "contracts_involved": [
-        "TokenContract"
-      ]
+      "description": "Each user's balance is non-negative.",
+      "formal": "forall users, userBalance >= 0",
+      "severity_if_broken": "medium",
+      "category": "state"
     },
     {
       "id": "INV-003",
-      "description": "Only authorized users can access certain functions",
-      "expected_behavior": "accessControl modifiers are correctly implemented",
-      "contracts_involved": [
-        "AccessControlContract"
-      ]
-    },
-    {
-      "id": "INV-004",
-      "description": "Contract state is always consistent across all functions",
-      "expected_behavior": "contract state is updated correctly after each function call",
-      "contracts_involved": [
-        "AllContracts"
-      ]
-    },
-    {
-      "id": "INV-005",
-      "description": "Reentrancy attacks are prevented",
-      "expected_behavior": "reentrancy checks are correctly implemented",
-      "contracts_involved": [
-        "AllContracts"
-      ]
+      "description": "Only authorized users can call critical functions such as swapping or withdrawing assets.",
+      "formal": "forall criticalFunctions, caller in authorizedUsers",
+      "severity_if_broken": "high",
+      "category": "access"
     }
   ],
-  "trust_boundaries": [
-    {
-      "id": "TB-001",
-      "entity": "Contract Administrator",
-      "trust_level": "full",
-      "description": "The contract administrator has full control over the contract and can modify its state at will."
-    },
-    {
-      "id": "TB-002",
-      "entity": "Users",
-      "trust_level": "partial",
-      "description": "Users can interact with the contract, but their actions are limited by the contract's access control mechanisms."
-    }
+  "access_control_rules": [
+    "Only authorized users can call critical functions.",
+    "Users can only access their own balances."
   ],
-  "assumptions": [
-    {
-      "id": "ASM-001",
-      "description": "The Ethereum network is functioning correctly",
-      "risk_if_violated": "Contract functionality may be impaired or compromised if the Ethereum network experiences issues."
-    },
-    {
-      "id": "ASM-002",
-      "description": "Contract dependencies are secure and functioning correctly",
-      "risk_if_violated": "Contract functionality may be impaired or compromised if dependencies are vulnerable or malfunctioning."
-    }
-  ]
+  "trust_assumptions": [
+    "The swap contract is assumed to be correctly implemented and free of vulnerabilities.",
+    "Authorized users are assumed to be trustworthy and will not exploit the contract."
+  ],
+  "critical_functions": [
+    "swap",
+    "withdraw",
+    "deposit"
+  ],
+  "economic_model": "The economic model is likely based on fees collected from swaps, but the exact details are unclear without further documentation."
 }

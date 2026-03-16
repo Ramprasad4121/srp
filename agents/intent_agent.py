@@ -101,8 +101,104 @@ class IntentAgent(BaseAgent):
         protocol_intent = await self._run_protocol_intent_engine(contract_paths, api_key)
         intent["protocol_intent"] = protocol_intent
 
+        # ── Step 3: Write SHARED_TASK_NOTES.md ──
+        try:
+            from pathlib import Path
+            notes_path = Path("outputs/SHARED_TASK_NOTES.md")
+            notes_path.parent.mkdir(exist_ok=True)
+
+            notes_content = self._build_shared_notes(protocol_intent, intent)
+            notes_path.write_text(notes_content, encoding="utf-8")
+            self.log_step("shared_notes_written", {"path": str(notes_path), "lines": len(notes_content.splitlines())})
+        except Exception as e:
+            self.log_step("shared_notes_write_failed", {"error": str(e)})
+
         self.log_step("intent_built", {"intent_keys": list(intent.keys())})
         return intent
+
+    def _build_shared_notes(self, protocol_intent: dict, intent: dict) -> str:
+        """Build SHARED_TASK_NOTES.md content from protocol intent and intent data."""
+        import json
+        from datetime import datetime
+
+        protocol_name = protocol_intent.get("protocol_name", "Unknown")
+        protocol_type = protocol_intent.get("protocol_type", "generic")
+        invariants = protocol_intent.get("invariants", [])
+        trust_boundaries = protocol_intent.get("trust_boundaries", [])
+        assumptions = protocol_intent.get("assumptions", [])
+
+        # Build summary sections
+        protocol_summary = f"""
+## What This Protocol Does
+{intent.get('task', 'Unknown protocol purpose')}
+"""
+
+        if invariants:
+            invariant_lines = []
+            for i, inv in enumerate(invariants, 1):
+                invariant_lines.append(f"- INV-{i:03d}: {inv.get('description', 'No description')} — SEVERITY: {inv.get('severity', 'medium').upper()}")
+            invariant_section = """
+## Key Invariants
+""" + "\n".join(invariant_lines)
+        else:
+            invariant_section = """
+## Key Invariants
+- No invariants detected
+"""
+
+        critical_functions = """
+## Critical Functions to Hunt
+- No critical functions identified
+"""
+
+        if trust_boundaries:
+            trust_lines = []
+            for tb in trust_boundaries:
+                trust_lines.append(f"- {tb.get('description', 'No description')}")
+            trust_section = """
+## Trust Assumptions
+""" + "\n".join(trust_lines)
+        else:
+            trust_section = """
+## Trust Assumptions
+- No trust assumptions identified
+"""
+
+        access_control = """
+## Access Control Rules
+- No access control rules identified
+"""
+
+        recon_summary = """
+## Attack Surface Summary
+- No attack surface analysis available
+"""
+
+        content = f"""
+---
+# Protocol: {protocol_name}
+# Type: {protocol_type}
+# Detected: {datetime.now().isoformat()}
+---
+
+{protocol_summary}
+
+{invariant_section}
+
+{critical_functions}
+
+{trust_section}
+
+{access_control}
+
+{recon_summary}
+
+---
+# Shared Notes for SRP Agents
+# DO NOT EDIT MANUALLY
+---
+"""
+        return content
 
     async def _run_protocol_intent_engine(
         self, contract_paths: list, api_key: str | None

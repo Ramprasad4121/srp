@@ -111,6 +111,34 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:
 .cyfrin-link{color:var(--accent);text-decoration:none;}
 .cyfrin-link:hover{text-decoration:underline;}
 
+/* INTENT SECTION */
+.intent-section{display:none;margin-bottom:32px;}
+.intent-section.visible{display:block !important;}
+.intent-protocol-info{padding:24px;background:var(--bg-surface);border:1px solid var(--border);border-radius:4px;margin-top:16px;}
+.intent-protocol-header{margin-bottom:20px;}
+.intent-protocol-header h3{font-family:var(--mono);font-size:1rem;font-weight:600;color:var(--text);margin-bottom:8px;}
+.intent-type-badge{font-family:var(--mono);font-size:0.7rem;color:var(--accent);background:var(--accent-dim);padding:3px 10px;border-radius:2px;border:1px solid rgba(0,255,136,0.3);display:inline-block;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;}
+.intent-summary{font-size:0.8rem;color:var(--text-dim);line-height:1.6;}
+.intent-invariants{border-top:1px solid var(--border);padding-top:20px;margin-top:4px;}
+.intent-invariants-title{font-family:var(--mono);font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;}
+.intent-invariant-card{margin-bottom:16px;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;transition:background 0.15s;}
+.intent-invariant-card:hover{background:var(--bg-hover);}
+.intent-invariant-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.intent-invariant-id{font-family:var(--mono);font-size:0.75rem;font-weight:700;color:var(--text);}
+.intent-severity-badge{font-family:var(--mono);font-size:0.6rem;padding:2px 7px;border-radius:2px;text-transform:uppercase;letter-spacing:1px;}
+.intent-severity-badge.high{color:#ff6644;background:rgba(255,102,68,0.12);border:1px solid rgba(255,102,68,0.3);}
+.intent-severity-badge.medium{color:var(--amber);background:var(--amber-dim);border:1px solid rgba(255,170,0,0.3);}
+.intent-severity-badge.low{color:var(--blue);background:rgba(68,136,255,0.12);border:1px solid rgba(68,136,255,0.3);}
+.intent-category-badge{font-family:var(--mono);font-size:0.6rem;color:var(--text-muted);background:transparent;padding:2px 7px;border-radius:2px;border:1px solid var(--border);text-transform:uppercase;letter-spacing:1px;}
+.intent-invariant-description{font-size:0.78rem;color:var(--text-dim);line-height:1.5;margin-bottom:8px;}
+.intent-invariant-formal{color:var(--accent);font-family:var(--mono);font-size:0.72rem;background:var(--bg);padding:8px 12px;border-radius:2px;border-left:2px solid var(--accent);white-space:pre-wrap;}
+.intent-access-rules{margin-top:20px;padding-top:20px;border-top:1px solid var(--border);}
+.intent-access-title{font-family:var(--mono);font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;}
+.intent-access-list{list-style:none;padding:0;}
+.intent-access-list li{font-family:var(--mono);font-size:0.75rem;color:var(--text-dim);padding:4px 0;border-bottom:1px solid var(--border);}
+.intent-access-list li:last-child{border-bottom:none;}
+.intent-access-list li::before{content:"→ ";color:var(--accent);}
+
 /* FINDINGS */
 .findings-grid{display:grid;gap:0;}
 .finding-card{padding:24px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:120px 1fr;gap:24px;transition:background 0.15s;}
@@ -129,11 +157,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:
 
 .finding-content h3{font-family:var(--mono);font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:8px;}
 .finding-meta{font-family:var(--mono);font-size:0.7rem;color:var(--text-dim);margin-bottom:12px;}
+.finding-section-label{font-family:var(--mono);font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-top:14px;margin-bottom:4px;}
 .finding-description{font-size:0.8rem;color:var(--text-dim);line-height:1.6;}
+.finding-attack-path{font-size:0.8rem;color:var(--text-dim);line-height:1.8;white-space:pre-wrap;}
 .finding-code{margin-top:4px;background:var(--bg);border:1px solid var(--border);padding:16px;font-family:var(--mono);font-size:0.72rem;color:var(--text);overflow-x:auto;white-space:pre-wrap;word-break:break-all;border-radius:2px;}
 .finding-code.fix{border-color:rgba(0,255,136,0.2);}
 .finding-code-label{font-family:var(--mono);font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-top:12px;margin-bottom:4px;}
-.poc-output{margin-top:8px;background:var(--bg-surface);border:1px solid rgba(0,255,136,0.15);padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--accent);white-space:pre-wrap;border-radius:2px;}
+.poc-output{margin-top:4px;background:var(--bg-surface);border:1px solid rgba(0,255,136,0.15);padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--accent);white-space:pre-wrap;border-radius:2px;}
 
 .skills-panel{border-top:1px solid var(--border);margin-top:40px;padding:24px 0;}
 .skills-toggle{font-family:var(--mono);font-size:0.7rem;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:8px;background:none;border:none;padding:0;}
@@ -222,6 +252,28 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:
 
   <div class="results-section" id="results-section">
     <div class="section-header">Mission Results</div>
+
+    <!-- INTENT ANALYSIS SECTION -->
+    <div class="intent-section" id="intent-section">
+      <div class="section-header">Protocol Intent Analysis</div>
+      <div class="intent-protocol-info">
+        <div class="intent-protocol-header">
+          <h3 id="intent-protocol-name">—</h3>
+          <div id="intent-protocol-type" class="intent-type-badge">GENERIC</div>
+          <p id="intent-summary" class="intent-summary">—</p>
+        </div>
+        <div id="intent-invariants-container" class="intent-invariants" style="display:none">
+          <div class="intent-invariants-title">Extracted Invariants</div>
+          <div id="intent-invariants-list"></div>
+        </div>
+        <div id="intent-access-rules" class="intent-access-rules" style="display:none">
+          <div class="intent-access-title">Access Control Rules</div>
+          <ul id="intent-access-list" class="intent-access-list"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCORE -->
     <div class="score-display">
       <div class="score-row">
         <div class="score-number" id="final-score">—</div>
@@ -240,6 +292,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:
         </div>
       </div>
     </div>
+
+    <!-- FINDINGS -->
     <div class="findings-grid" id="findings-grid"></div>
   </div>
 
@@ -276,7 +330,6 @@ const AGENT_MAP = {
 let lastLogCount=0, pollInterval=null, auditStarted=false, auditComplete=false;
 
 function $(id){return document.getElementById(id);}
-
 function safe(id,fn){const el=$(id);if(el)fn(el);}
 
 function escapeHtml(str){
@@ -295,6 +348,7 @@ function normalizeSev(s){
   return 'medium';
 }
 
+/* ─── AGENT GRID ─── */
 function renderAgentRow(cid,agents){
   const c=$(cid);if(!c)return;
   c.innerHTML=agents.map(a=>`
@@ -322,6 +376,7 @@ function setAgentStatus(id,st){
 
 function setAgentLog(id,msg){safe(`aglog-${id}`,el=>{el.textContent=msg;});}
 
+/* ─── LOG STREAM ─── */
 function addLogLine(text){
   const stream=$('log-stream');if(!stream)return;
   let agent='SYSTEM',msg=text,cls='';
@@ -338,6 +393,59 @@ function addLogLine(text){
   if(agent!=='SYSTEM')setAgentLog(agent,msg.substring(0,60));
 }
 
+/* ─── INTENT SECTION ─── */
+function showIntentSection(intent){
+  if(!intent)return;
+
+  // Protocol name + type + summary
+  safe('intent-protocol-name',el=>{el.textContent=intent.protocol_name||'Unknown Protocol';});
+  safe('intent-protocol-type',el=>{
+    const t=(intent.protocol_type||'generic').toUpperCase();
+    el.textContent=t;
+  });
+  safe('intent-summary',el=>{el.textContent=intent.summary||'';});
+
+  // Invariants
+  const invList=$(  'intent-invariants-list');
+  const invContainer=$('intent-invariants-container');
+  const invariants=intent.invariants||[];
+  if(invList&&invariants.length>0){
+    invList.innerHTML=invariants.map(inv=>{
+      const sev=normalizeSev(inv.severity_if_broken||inv.severity||'medium');
+      const cat=(inv.category||'general').toLowerCase();
+      const formal=inv.formal||'';
+      return `
+        <div class="intent-invariant-card">
+          <div class="intent-invariant-header">
+            <span class="intent-invariant-id">${escapeHtml(inv.id||'INV')}</span>
+            <span class="intent-severity-badge ${sev}">${sev.toUpperCase()}</span>
+            <span class="intent-category-badge">${escapeHtml(cat)}</span>
+          </div>
+          <div class="intent-invariant-description">${escapeHtml(inv.description||'')}</div>
+          ${formal?`<div class="intent-invariant-formal">${escapeHtml(formal)}</div>`:''}
+        </div>`;
+    }).join('');
+    if(invContainer)invContainer.style.display='block';
+  }
+
+  // Access control rules
+  const rules=intent.access_control_rules||[];
+  const rulesList=$('intent-access-list');
+  const rulesContainer=$('intent-access-rules');
+  if(rulesList&&rules.length>0){
+    rulesList.innerHTML=rules.map(r=>`<li>${escapeHtml(r)}</li>`).join('');
+    if(rulesContainer)rulesContainer.style.display='block';
+  }
+
+  // Show the section
+  const section=$('intent-section');
+  if(section){
+    section.style.display='block';
+    section.classList.add('visible');
+  }
+}
+
+/* ─── FINDINGS ─── */
 function pocBadge(f){
   const status=(f.poc_result||{}).status||'skipped';
   const M={proven:['proven','✅ PROVEN ON FORK'],unproven:['unproven','⚠️ UNPROVEN'],compile_error:['compile_error','❌ COMPILE ERROR'],skipped:['skipped','— SKIPPED']};
@@ -357,6 +465,10 @@ function renderFindings(findings){
     const fix=f.fix_code||f.fixCode||'';
     const pocStatus=(f.poc_result||{}).status||'skipped';
     const pocOut=(f.poc_result||{}).output||'';
+    const rootCause=f.root_cause||f.description||f.defense_notes||'';
+    const attackPath=f.attack_path||'';
+    const impact=f.impact||'';
+    const loc=f.location||f.affected_function||f.contract||'';
     return `
       <div class="finding-card">
         <div class="finding-left">
@@ -365,9 +477,11 @@ function renderFindings(findings){
         </div>
         <div class="finding-content">
           <h3>${escapeHtml(f.title||`Finding ${i+1}`)}</h3>
-          ${f.location||f.affected_function||f.contract?`<div class="finding-meta">Location: ${escapeHtml(f.location||f.affected_function||f.contract)}</div>`:''}
-          <div class="finding-description">${escapeHtml(f.description||f.defense_notes||'')}</div>
-          ${exploit?`<div class="finding-code-label">Exploit</div><div class="finding-code">${escapeHtml(exploit)}</div>`:''}
+          ${loc?`<div class="finding-meta">Location: ${escapeHtml(loc)}</div>`:''}
+          ${rootCause?`<div class="finding-section-label">Root Cause</div><div class="finding-description">${escapeHtml(rootCause)}</div>`:''}
+          ${attackPath?`<div class="finding-section-label">Attack Path</div><div class="finding-attack-path">${escapeHtml(attackPath)}</div>`:''}
+          ${impact?`<div class="finding-section-label">Impact</div><div class="finding-description">${escapeHtml(impact)}</div>`:''}
+          ${exploit?`<div class="finding-code-label">Exploit Code</div><div class="finding-code">${escapeHtml(exploit)}</div>`:''}
           ${fix?`<div class="finding-code-label">Recommended Fix</div><div class="finding-code fix">${escapeHtml(fix)}</div>`:''}
           ${pocStatus==='proven'&&pocOut?`<div class="finding-code-label">PoC Output</div><div class="poc-output">${escapeHtml(pocOut.trim())}</div>`:''}
         </div>
@@ -375,6 +489,7 @@ function renderFindings(findings){
   }).join('');
 }
 
+/* ─── SHOW RESULTS ─── */
 function showResults(data){
   const score=typeof data.score==='number'?data.score:0;
   safe('stat-score',el=>{el.textContent=score;});
@@ -387,7 +502,15 @@ function showResults(data){
   safe('score-label',el=>{el.textContent=score>=90?'Secure':score>=70?'Needs Attention':'Critical Issues Found';});
   safe('status-dot',el=>{el.className=score>=70?'status-dot':'status-dot error';});
   Object.values(AGENTS).flat().forEach(a=>setAgentStatus(a.id,'complete'));
+
+  // Show intent section — check both possible keys from server
+  const intentData=data.protocol_intent||data.intent||null;
+  if(intentData&&(intentData.protocol_name||intentData.invariants)){
+    showIntentSection(intentData);
+  }
+
   renderFindings(data.findings||[]);
+
   const results=$('results-section');
   const pipeline=$('agent-pipeline');
   if(results){
@@ -398,6 +521,7 @@ function showResults(data){
   setTimeout(()=>{if(results)results.scrollIntoView({behavior:'smooth'});},150);
 }
 
+/* ─── POLL ─── */
 async function pollStatus(){
   if(auditComplete)return;
   try{
@@ -415,7 +539,6 @@ async function pollStatus(){
 
     if(data.project)safe('project-name',el=>{el.textContent=data.project;});
     if(data.contracts_total!==undefined)safe('stat-contracts',el=>{el.textContent=data.contracts_total;});
-
     if(data.agent_statuses)Object.entries(data.agent_statuses).forEach(([id,st])=>setAgentStatus(id,st));
 
     if(Array.isArray(data.logs)&&data.logs.length>lastLogCount){
@@ -445,6 +568,7 @@ async function pollStatus(){
   }
 }
 
+/* ─── SKILLS ─── */
 function toggleSkills(){
   const grid=$('skills-grid'),arrow=$('skills-arrow');
   if(!grid||!arrow)return;
@@ -459,14 +583,18 @@ async function loadSkills(){
     const data=await res.json();
     if(!Array.isArray(data))return;
     safe('skills-count',el=>{el.textContent=data.length;});
-    safe('skills-grid',el=>{el.innerHTML = data.map(s => {
-  if (typeof s === 'string') return `<span class="skill-pill">${escapeHtml(s)}</span>`;
-  const label = s.name || s.skill_name || s.key || s.title || s.skill_key || Object.values(s)[0] || '?';
-  return `<span class="skill-pill">${escapeHtml(String(label))}</span>`;
-}).join('');});
+    safe('skills-grid',el=>{
+      el.innerHTML=data.map(s=>{
+        if(typeof s==='string')return `<span class="skill-pill">${escapeHtml(s)}</span>`;
+        const label=s.key||s.name||s.skill_name||s.title||Object.values(s)[0]||'?';
+        const raw=String(label).replace(/^audit-firm-\d+-/,'').replace(/-/g,' ');
+        return `<span class="skill-pill">${escapeHtml(raw)}</span>`;
+      }).join('');
+    });
   }catch(_){}
 }
 
+/* ─── THEME ─── */
 function toggleTheme(){
   const dark=document.documentElement.getAttribute('data-theme')==='dark';
   if(dark){document.documentElement.removeAttribute('data-theme');safe('theme-icon',el=>{el.textContent='◐';});localStorage.setItem('srp-theme','light');}
@@ -480,6 +608,7 @@ function initTheme(){
   }
 }
 
+/* ─── INIT ─── */
 document.addEventListener('DOMContentLoaded',()=>{
   initTheme();
   initGrid();

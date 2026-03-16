@@ -1,0 +1,10 @@
+{
+  "protocol_name": "SecondSwap audit details",
+  "protocol_type": "amm",
+  "summary": "Protocol intent extracted from 1 documentation sources.",
+  "invariants": [],
+  "access_control_rules": [],
+  "trust_assumptions": [],
+  "critical_functions": [],
+  "economic_model": ""
+}

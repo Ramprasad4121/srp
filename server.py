@@ -378,6 +378,7 @@ async def start_audit(request: Request, background_tasks: BackgroundTasks):
         "logs": ["🚀 Audit started — deploying 13 agents..."],
         "findings": [],
         "score": 100,
+        "protocol_intent": None,
     }
     background_tasks.add_task(run_audit, contract_code, description, api_key)
     return {"status": "started"}
@@ -399,6 +400,7 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
             budget_usd=50.0,
             api_key=api_key,
         )
+        intent_result = None
 
         async def emit(payload: dict) -> None:
             event = payload.get("event", "")
@@ -434,6 +436,17 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
         audit_state["logs"].append("🔍 [WATCHDOG] Classifying threat surface...")
 
         result = await _run_audit(audit_req, emit=emit)
+
+        # Capture intent data if available
+        if "intent" in result:
+            intent_data = result["intent"]
+            audit_state["protocol_intent"] = {
+                'protocol_name': intent_data.get('protocol_name', ''),
+                'protocol_type': intent_data.get('protocol_type', ''),
+                'summary': intent_data.get('summary', ''),
+                'invariants': intent_data.get('invariants', []),
+                'access_control_rules': intent_data.get('access_control_rules', []),
+            }
 
         defense = result.get("defense", {})
         reviewed = defense.get("reviewed_vulnerabilities", [])
@@ -497,7 +510,11 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
         audit_state["status"] = "complete"
         audit_state["findings"] = findings
         audit_state["score"] = score
-        await emit({"event": "complete", "result": result})
+        # Include intent in the complete event
+        complete_data = {"result": result}
+        if "intent" in result:
+            complete_data["intent"] = result["intent"]
+        await emit({"event": "complete", **complete_data})
         audit_state["logs"].append(f"✅ Audit complete. Score: {score}/100. {len(findings)} findings.")
 
     except Exception as e:

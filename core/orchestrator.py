@@ -100,6 +100,30 @@ class SRPOrchestrator:
         if not self.skills:
             self.load_skills()
 
+    async def run_solodit_phase(self, context: dict) -> dict:
+        """Run Solodit intelligence phase to cross-reference with external findings."""
+        if not os.environ.get("CYFRIN_API_KEY"):
+            return {"status": "skipped", "reason": "CYFRIN_API_KEY not set"}
+
+        try:
+            from agents.audit.solodit import run_solodit_phase
+            return await run_solodit_phase(context)
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+
+    async def run_full_audit(self, raw_input: str, contract_paths: list[str], budget_usd: float, api_key: str | None = None) -> dict:
+        """Run full audit pipeline."""
+        # Phase 1: Intent Analysis
+        intent_result = await self.intent_agent.run({
+            "raw_input": raw_input,
+            "contract_paths": contract_paths,
+            "budget_usd": budget_usd,
+            "api_key": api_key,
+        })
+        if self.status_callback:
+            await self.status_callback("IntentAgent", "complete", intent_result)
+            self.load_skills()
+
         available = sorted(self.skills.keys())
         if not available:
             return "solidity-auditor"
@@ -189,6 +213,12 @@ class SRPOrchestrator:
             protocol_intent = intent.get("protocol_intent", {})
             context["protocol_intent"] = protocol_intent
 
+            # Merge Solodit findings into intent if available
+            if "solodit_findings" in intent:
+                context["solodit_findings"] = intent["solodit_findings"]
+            if "solodit_intelligence" in intent:
+                context["solodit_intelligence"] = intent["solodit_intelligence"]
+
             skill_selector_input = {
                 "skills_needed": intent.get("skills", intent.get("skills_needed", [])),
                 "task": intent.get("task", intent.get("task_description", "")),
@@ -221,6 +251,35 @@ class SRPOrchestrator:
         except Exception as exc:
             await self._emit_status("IntentAgent", "failed", {"error": str(exc)})
             raise
+
+        # Phase 2: Solodit Intelligence Phase
+        solodit_findings = []
+        try:
+            if os.environ.get("CYFRIN_API_KEY"):
+                try:
+                    solodit_result = await self.run_solodit_phase({
+                        "raw_input": raw_input,
+                        "contract_paths": contract_paths,
+                        "budget_usd": budget_usd,
+                        "api_key": api_key,
+                    })
+                    if solodit_result:
+                        solodit_findings = solodit_result
+                        if self.status_callback:
+                            await self.status_callback("SoloditIntelligence", "complete", {
+                                "confirmed_findings": solodit_findings,
+                                "finding_count": len(solodit_findings)
+                            })
+                except Exception as e:
+                    if self.status_callback:
+                        await self.status_callback("SoloditIntelligence", "error", {"error": str(e)})
+        except Exception as exc:
+            await self._emit_status("IntentAgent", "failed", {"error": str(exc)})
+            raise
+
+        # Add Solodit findings to context
+        context["solodit_findings"] = solodit_findings
+        context["solodit_intelligence"] = bool(solodit_findings)
 
         # ── Recon Agent ───────────────────────────────────────
         try:
@@ -367,6 +426,18 @@ class SRPOrchestrator:
                 except Exception as e:
                     self.log_orchestrator(f"crosschain_army_failed — {e}")
                     await self._emit_status("CrossChainArmy", "failed", {"error": str(e)})
+
+            # ── De-sloppify Pass ──────────────────────────────────
+            try:
+                all_vulns, dropped = self._desloppify_findings(all_vulns)
+                if dropped:
+                    self.log_orchestrator(f"de_sloppify_complete — {len(dropped)} findings dropped, {len(all_vulns)} remaining")
+                    for d in dropped[:5]:  # Log first 5 for brevity
+                        self.log_orchestrator(f"de_sloppify_dropped: {d['title']} — reason: {d['reason']}")
+                    if len(dropped) > 5:
+                        self.log_orchestrator(f"de_sloppify_dropped: {len(dropped) - 5} more findings...")
+            except Exception as e:
+                self.log_orchestrator(f"de_sloppify_failed — {e}")
 
             # ── Secondary Domain Army ──────────────────────────
             if secondary_domain and secondary_confidence > 0.3 and secondary_domain != detected_domain:
@@ -523,6 +594,80 @@ class SRPOrchestrator:
 
         return results
 
+    def _desloppify_findings(self, vulnerabilities: list[dict]) -> tuple[list[dict], list[dict]]:
+        """Filter weak findings using strict criteria.
+
+        DROP a finding if ANY of these are true:
+        - title is None, empty, or "Untitled"
+        - description is shorter than 50 characters
+        - location is "unknown" AND exploit_code contains no actual function calls
+        - exploit_code contains placeholder text like "// TODO" or "..."
+        - title is identical to another finding (exact duplicate)
+        - severity is missing
+
+        KEEP all findings that pass all 6 checks.
+        Log each dropped finding: "de_sloppify dropped: [title] — reason: [rule]"
+        """
+        import re
+        from collections import defaultdict
+
+        kept = []
+        dropped = []
+        title_counts = defaultdict(int)
+
+        for vuln in vulnerabilities:
+            title = vuln.get("title", "")
+            title_counts[title] += 1
+
+        for vuln in vulnerabilities:
+            title = vuln.get("title", "")
+            description = vuln.get("description", "")
+            location = vuln.get("location", "")
+            exploit_code = vuln.get("exploit_code", "")
+            severity = vuln.get("severity", "")
+
+            # Track drop reasons
+            drop_reasons = []
+
+            # Rule 1: title is None, empty, or "Untitled"
+            if not title or title.strip() == "" or title.strip().lower() == "untitled":
+                drop_reasons.append("empty/untitled title")
+
+            # Rule 2: description is shorter than 50 characters
+            if len(description) < 50:
+                drop_reasons.append("short description")
+
+            # Rule 3: location is "unknown" AND exploit_code contains no actual function calls
+            if location.lower() == "unknown":
+                # Check if exploit_code contains actual function calls (look for function(), method(), etc.)
+                if not re.search(r'\bfunction\s*\(', exploit_code, re.IGNORECASE) and \
+                   not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\s*\(', exploit_code):
+                    drop_reasons.append("no function calls in unknown location")
+
+            # Rule 4: exploit_code contains placeholder text like "// TODO" or "..."
+            if re.search(r'//\s*TODO|//\s*TODO:|//\s*HACK|//\s*FIXME|\.\.\.', exploit_code, re.IGNORECASE):
+                drop_reasons.append("placeholder text in exploit_code")
+
+            # Rule 5: title is identical to another finding (exact duplicate)
+            if title_counts[title] > 1:
+                drop_reasons.append("duplicate title")
+
+            # Rule 6: severity is missing
+            if not severity:
+                drop_reasons.append("missing severity")
+
+            if drop_reasons:
+                dropped.append({
+                    "title": title,
+                    "reason": ", ".join(drop_reasons)
+                })
+                self.log_orchestrator(f"de_sloppify dropped: {title} — reason: {', '.join(drop_reasons)}")
+            else:
+                kept.append(vuln)
+
+        return kept, dropped
+
+
     async def _emit_status(self, step_name: str, status: str, data: dict) -> None:
         if self.status_callback is None:
             return
@@ -532,6 +677,57 @@ class SRPOrchestrator:
 
     def log_orchestrator(self, msg: str):
         print(f"[SRP] [Orchestrator] {msg}")
+
+    def _desloppify_findings(self, findings: list) -> tuple[list, list]:
+        """Filter weak findings using exact criteria."""
+        kept = []
+        dropped = []
+
+        # Track titles we've seen to detect duplicates
+        seen_titles = set()
+
+        for finding in findings:
+            title = finding.get("title")
+            description = finding.get("description", "")
+            location = finding.get("location", "unknown")
+            exploit_code = finding.get("exploit_code", "")
+            severity = finding.get("severity")
+
+            # Check each criterion
+            reasons = []
+
+            if not title or title.strip() == "" or title.strip().lower() == "untitled":
+                reasons.append("title_empty_or_untitled")
+
+            if len(description) < 50:
+                reasons.append("description_too_short")
+
+            if location.lower() == "unknown" and not any(
+                func in exploit_code.lower() for func in ["function", "call", "send", "transfer", "approve", "permit"]
+            ):
+                reasons.append("unknown_location_no_function_calls")
+
+            if any(placeholder in exploit_code.lower() for placeholder in ["// todo", "...", "placeholder"]):
+                reasons.append("placeholder_in_exploit_code")
+
+            if title and title in seen_titles:
+                reasons.append("duplicate_title")
+
+            if severity is None:
+                reasons.append("missing_severity")
+
+            if reasons:
+                dropped.append({
+                    "title": title,
+                    "reason": ", ".join(reasons),
+                    "finding": finding
+                })
+            else:
+                kept.append(finding)
+                if title:
+                    seen_titles.add(title)
+
+        return kept, dropped
 
     def _log_final_vulnerabilities(self, all_vulns: list) -> None:
         proven = sum(1 for v in all_vulns if v.get("poc_result", {}).get("status") == "proven")

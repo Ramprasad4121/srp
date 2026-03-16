@@ -93,13 +93,14 @@ class ProtocolIntentEngine:
     # Additional spec files to look for
     SPEC_FILES = ["SPEC.md", "DESIGN.md", "ARCHITECTURE.md", "SECURITY.md", "INVARIANTS.md"]
 
-    def __init__(self, project_root: str | Path) -> None:
+    def __init__(self, project_root: str | Path | None = None) -> None:
         """Initialize the intent engine with a project root path.
 
         Args:
             project_root: Absolute or relative path to the project root directory.
+                          If None, uses current working directory.
         """
-        self.project_root = Path(project_root).resolve()
+        self.project_root = Path(project_root or ".").resolve()
         self.outputs_dir = self.project_root / "outputs"
         self._collected_docs: dict[str, str] = {}
         self._natspec_entries: list[dict[str, str]] = []
@@ -109,6 +110,8 @@ class ProtocolIntentEngine:
         self,
         call_llm: Callable[..., Awaitable[str]] = None,
         api_key: str | None = None,
+        project_root: str | Path | None = None,
+        contract_paths: list[str] | None = None,
     ) -> dict[str, Any]:
         """Run the full intent extraction pipeline.
 
@@ -120,6 +123,8 @@ class ProtocolIntentEngine:
             Structured protocol intent dict with invariants, access_control_rules, etc.
         """
         # Step 1: Collect all documentation
+        if project_root:
+            self.project_root = Path(project_root).resolve()
         self._collect_readme()
         self._collect_docs_folder()
         self._collect_whitepapers()
@@ -155,7 +160,11 @@ class ProtocolIntentEngine:
             if readme_path.is_file():
                 try:
                     content = readme_path.read_text(encoding="utf-8", errors="replace")
+                    # Truncate README to 8KB to prevent prompt explosion
+                    if len(content) > 8000:
+                        content = content[:8000] + "\n...[TRUNCATED_DUE_TO_LENGTH]..."
                     self._collected_docs[f"README:{name}"] = content
+                    return  # Found README, exit after first successful read
                 except OSError:
                     continue
 
@@ -173,6 +182,9 @@ class ProtocolIntentEngine:
                     continue
                 try:
                     content = md_file.read_text(encoding="utf-8", errors="replace")
+                    # Truncate individual docs to 8KB
+                    if len(content) > 8000:
+                        content = content[:8000] + "\n...[TRUNCATED_DUE_TO_LENGTH]..."
                     rel_path = md_file.relative_to(self.project_root)
                     self._collected_docs[f"DOCS:{rel_path}"] = content
                 except OSError:
@@ -259,6 +271,9 @@ class ProtocolIntentEngine:
 
                 try:
                     content = Path(abs_path).read_text(encoding="utf-8", errors="replace")
+                    # Limit contract content to first 5KB to prevent prompt explosion
+                    if len(content) > 5000:
+                        content = content[:5000] + "\n...[TRUNCATED_DUE_TO_LENGTH]..."
                     entries, invariants = self._parse_natspec(content, abs_path)
                     self._natspec_entries.extend(entries)
                     self._invariant_natspec.extend(invariants)
@@ -410,18 +425,30 @@ class ProtocolIntentEngine:
         """Build the consolidated prompt from all collected documentation."""
         sections: list[str] = []
 
-        # Add documentation
+        # Add documentation with size limits
+        total_size = 0
         for doc_key, content in self._collected_docs.items():
-            # Truncate individual docs to prevent prompt explosion
-            truncated = content[:8000] if len(content) > 8000 else content
-            sections.append(f"=== {doc_key} ===\n{truncated}\n")
+            # Add size check before appending
+            if total_size > 20000:  # Stop at 20KB to leave room for other sections
+                break
+            # Truncate individual docs to 5KB max
+            if len(content) > 5000:
+                content = content[:5000] + "\n...[TRUNCATED_DUE_TO_LENGTH]..."
+            # Check if adding this would exceed limit
+            if total_size + len(content) > 20000:
+                content = content[:(20000 - total_size)]
+            sections.append(f"=== {doc_key} ===\n{content}\n")
+            total_size += len(content)
 
         # Add NatSpec invariants section (these are critical)
         if self._invariant_natspec:
             invariant_block = "=== INVARIANTS FROM NATSPEC (@invariant TAGS) ===\n"
             for inv in self._invariant_natspec:
-                invariant_block += f" [{inv['file']}] {inv['target']}: {inv['content']}\n"
-            sections.append(invariant_block)
+                invariant_content = f" [{inv['file']}] {inv['target']}: {inv['content']}\n"
+                if len(invariant_block) + len(invariant_content) > 8000:  # Cap at 8KB
+                    break
+                invariant_block += invariant_content
+            sections.append(invariant_block[:8000])  # Ensure it doesn't exceed 8KB
 
         # Add NatSpec entries (deduplicated, limited)
         if self._natspec_entries:
@@ -433,15 +460,17 @@ class ProtocolIntentEngine:
                 if content_key in seen_content:
                     continue
                 seen_content.add(content_key)
-                natspec_block += (
+                entry_content = (
                     f" [{entry['file']}] {entry['target']} "
                     f"{entry['tag']}: {entry['content']}\n"
                 )
-                count += 1
-                if count >= 200:  # Cap at 200 unique entries
-                    natspec_block += f" ... ({len(self._natspec_entries) - count} more entries truncated)\n"
+                if len(natspec_block) + len(entry_content) > 5000:  # Cap at 5KB
                     break
-            sections.append(natspec_block)
+                natspec_block += entry_content
+                count += 1
+                if count >= 100:  # Cap at 100 entries
+                    break
+            sections.append(natspec_block[:5000])
 
         if not sections:
             sections.append(
@@ -449,10 +478,10 @@ class ProtocolIntentEngine:
                 "Infer protocol intent from contract names and NatSpec if available."
             )
 
-        # Truncate total payload to 25000 chars to stay within LLM limits
+        # Final size check: ensure total prompt is under 30KB
         combined = "\n".join(sections)
-        if len(combined) > 25000:
-            combined = combined[:25000] + "\n...[TRUNCATED_DUE_TO_LENGTH]..."
+        if len(combined) > 30000:
+            combined = combined[:30000] + "\n...[TRUNCATED_DUE_TO_LENGTH]..."
 
         return combined
 
@@ -477,19 +506,17 @@ class ProtocolIntentEngine:
             "PROMISES to guarantee — its invariants, security assumptions, and trust boundaries.\n\n"
             "Read all provided documentation (README, whitepaper, docs, NatSpec comments, SPEC files) and extract "
             "the protocol's intended behavior as structured data.\n\n"
-            "Focus specifically on:\n"
-            "1. ASSETS — What tokens/assets does the protocol handle? (e.g., 'WETH', 'stablecoins', 'LP tokens')\n"
-            "2. ACCESS CONTROL RULES — Who can call what? (e.g., 'onlyOwner can pause', 'anyone can deposit')\n"
-            "3. ECONOMIC INVARIANTS — Properties that must hold for financial consistency "
-            "(e.g., 'sum of all user balances equals total supply', 'collateral ratio always >= 150%')\n"
-            "4. STATE INVARIANTS — Properties about contract state "
-            "(e.g., 'totalDeposited >= totalBorrowed', 'locked <= totalSupply')\n"
-            "5. ORDERING GUARANTEES — What operations must happen in sequence "
-            "(e.g., 'interest accrues before state update', 'checks happen before effects')\n"
-            "6. TRUST ASSUMPTIONS — What is trusted "
-            "(e.g., 'oracle price feed is honest', 'admin cannot rug within 48h timelock')\n"
-            "7. NEVER INVARIANTS — What can NEVER happen "
-            "(e.g., 'users can never lose principal', 'withdrawals can never exceed deposits')\n\n"
+            "Based on this protocol documentation and function signatures, identify "
+            "the key security invariants this protocol must maintain. For each invariant:\n"
+            "- Give it an ID (INV-001, INV-002 etc)\n"
+            "- Write a clear description\n"
+            "- Classify as: economic / state / access / ordering\n"
+            "- Rate severity if broken: high / medium / low\n\n"
+            "Focus on:\n"
+            "- What balances or ratios must always hold\n"
+            "- Who is allowed to call what\n"
+            "- What ordering of operations is required\n"
+            "- What can never happen (user losing funds, unauthorized access etc)\n\n"
             "Return ONLY valid JSON with this exact schema:\n"
             "{\n"
             '  "protocol_name": "string — name of the protocol",\n'
@@ -509,7 +536,7 @@ class ProtocolIntentEngine:
             '  "critical_functions": ["functionName1", "functionName2"],\n'
             '  "economic_model": "string — description of the economic model (fees, yields, incentives)"\n'
             "}\n\n"
-            "Extract AT LEAST 5 invariants if the documentation is rich enough. "
+            "Extract AT LEAST 3 invariants if the documentation is rich enough. "
             "Each invariant should have a clear formal representation that could be checked. "
             "Be specific and concrete — avoid generic statements like \"contract is secure\". "
             "Include concrete mathematical conditions where possible."
@@ -599,7 +626,7 @@ class ProtocolIntentEngine:
                     existing_invariants.append({
                         "id": f"INV-{next_idx:03d}",
                         "description": content,
-                       "formal": content,
+                        "formal": content,
                         "severity_if_broken": "high",
                         "category": "state",
                     })

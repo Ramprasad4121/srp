@@ -1,0 +1,45 @@
+# SRP Audit Methodology
+
+## Phase 1: Business Logic Analysis
+- Protocol intent understanding
+- Role/permission verification
+- State transition validation
+- Economic assumption validation
+- Abuse path identification
+
+## Phase 2: Invariant Analysis
+- Concrete security invariants identification
+- Adversarial violation attempts
+- Accounting invariants
+- Access control invariants
+- State machine invariants
+
+## Phase 3: Deep Read Discipline (VIPER)
+For every function:
+- What are the preconditions? Are they enforced?
+- What state does this modify? Can it be called in unexpected order?
+- What happens if called by attacker with full control over inputs?
+- What happens if external call reverts or returns garbage?
+- Are arithmetic operations safe at boundary values?
+- Reentrancy risk?
+
+## Phase 4: Hypothesis Generation
+- Exploit hypotheses from earlier phases
+- Deduplication by root cause
+- Impact and exploitability ranking
+- Confidence scoring (0.0-1.0)
+
+## Phase 5: Economic Analysis (GHOST)
+- Flashloan attack surface: can any price/ratio/balance be manipulated in single tx?
+- Oracle manipulation: what if price oracle returns 10x higher or lower?
+- MEV/sandwich: can attacker front-run liquidations or governance?
+- Incentive misalignment: is attacking the protocol ever the rational move?
+
+## Phase 6: Validation Rules (SHIELD)
+- If no working PoC exists, severity MUST be downgraded one level
+- "A bug without a working PoC is a claim, not a finding"
+- Validate exploitability before confirming any HIGH finding
+
+## Finding Title Format
+"[Vulnerability Type] in `[function()]` allows [specific impact]"
+Example: "Reentrancy in `withdraw()` allows full vault drain"

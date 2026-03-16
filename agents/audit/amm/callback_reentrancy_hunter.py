@@ -92,7 +92,7 @@ Return ONLY valid JSON with "vulnerabilities" array.
                 severity = "high"
             normalized.append({
                 "id": str(f.get("id", f"AMM-REENT-{idx:03d}")),
-                "title": str(f.get("title", "Untitled")).strip(),
+                "title": f"Callback Reentrancy in {f.get('contract', 'Unknown')} allows fund extraction",
                 "severity": severity,
                 "contract": str(f.get("contract", "")).strip(),
                 "description": str(f.get("description", "")).strip(),
