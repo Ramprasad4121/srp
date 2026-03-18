@@ -103,6 +103,30 @@ class BaseAgent(ABC):
         resolved_model = model or self.model
         resolved_timeout = timeout or 240.0
 
+        # Soul first — this is WHO the agent is
+        # Skills second — this is WHAT the agent knows
+        # System extra third — this is WHAT the agent is doing right now
+        # Shared notes fourth — this is CONTEXT from previous agents
+        system_prompt = ""
+
+        # Add shared notes first
+        shared_notes = self.get_shared_notes()
+        if shared_notes:
+            system_prompt += "---\n\n# SHARED PROTOCOL NOTES\n\n"
+            system_prompt += shared_notes + "\n\n"
+
+        if self.soul_content:
+            system_prompt += self.soul_content + "\n\n"
+
+        if self.skill_content:
+            system_prompt += "---\n\n# YOUR SKILLS ARSENAL\n\n"
+            system_prompt += self.skill_content + "\n\n"
+
+        if system_extra:
+            system_prompt += "---\n\n# CURRENT TASK\n\n"
+            system_prompt += system_extra
+
+
         self.log_step(
             "llm_call_started",
             {
