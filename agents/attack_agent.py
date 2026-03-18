@@ -404,8 +404,7 @@ Return JSON only:
             return {}
 
     def _parse_json_output(self, llm_output: str) -> dict[str, Any]:
-        from core.utils import parse_llm_json
-        return parse_llm_json(llm_output)
+        return self.parse_json(llm_output)
 
     def _normalize_vulnerabilities(self, vulnerabilities: Any, contract_map: dict | None = None) -> list[dict[str, Any]]:
         normalized: list[dict[str, Any]] = []

@@ -3,10 +3,12 @@ from __future__ import annotations
 import asyncio
 import inspect
 import json
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from collections.abc import Callable
 from typing import Any
+from uuid import uuid4
 
 from agents.attack_agent import AttackAgent
 from agents.defense_agent import DefenseAgent
@@ -19,6 +21,14 @@ from core.domain_detector import DomainDetector, DetectionResult
 from core.poc_verifier import run_all_pocs
 from core.anvil import start_anvil, stop_anvil
 import os
+import subprocess
+
+# Phase 2 imports
+from sol_parser.solidity_parser import SolidityParser
+from srg.graph import SecurityReasoningGraph
+from planner.planner import Planner
+from mcp.wrapper import MCPWrapper
+from evolution_engine.engine import EvolutionEngine
 
 
 DOMAIN_KEYWORDS: dict[str, set[str]] = {
@@ -71,6 +81,10 @@ class SRPOrchestrator:
         self.report_agent = ReportAgent()
         self.status_callback: Callable[[str, str, dict], Any] | None = None
         self.skills: dict[str, str] = {}
+        self.mcp = MCPWrapper()
+        self.evolution = EvolutionEngine(mcp=self.mcp)
+        self.context: dict[str, Any] = {}
+        self.current_run_id: str | None = None
 
     def set_status_callback(self, fn) -> None:
         self.status_callback = fn
@@ -176,22 +190,153 @@ class SRPOrchestrator:
     # Main Pipeline
     # ─────────────────────────────────────────────────────────
 
-    async def run_full_audit(
-        self, raw_input: str, contract_paths: list, budget_usd: float, api_key: str | None = None
-    ) -> dict:
-        loaded_skills = self.load_skills()
-        context: dict[str, Any] = {
+    def _resolve_project_root(self, contract_paths: list[Any]) -> str:
+        env_root = os.environ.get("SRP_PROJECT_ROOT", "").strip()
+        if env_root:
+            return str(Path(env_root).resolve())
+
+        if contract_paths and isinstance(contract_paths, list):
+            first_path = Path(str(contract_paths[0])).resolve()
+            if first_path.is_dir():
+                if first_path.name in {"contracts", "src", "contract", "test", "tests"}:
+                    return str(first_path.parent)
+                return str(first_path)
+            if first_path.is_file():
+                if first_path.parent.name in {"contracts", "src", "contract", "test", "tests"}:
+                    return str(first_path.parent.parent)
+                return str(first_path.parent)
+
+        return os.getcwd()
+
+    def _detect_project_name(self, project_root: str, contract_paths: list[Any]) -> str:
+        root_name = Path(project_root).resolve().name
+        if root_name and root_name not in {"contracts", "src", "contract", "test", "tests"}:
+            return root_name
+
+        if contract_paths and isinstance(contract_paths, list):
+            first_path = Path(str(contract_paths[0])).resolve()
+            if first_path.is_file():
+                return first_path.parent.name or "unknown"
+            if first_path.is_dir():
+                return first_path.name or "unknown"
+
+        return "unknown"
+
+    def _set_agents_shared_notes_path(self, shared_notes_path: Path) -> None:
+        for agent in (
+            self.intent_agent,
+            self.recon_agent,
+            self.attack_agent,
+            self.defense_agent,
+            self.trace_agent,
+            self.report_agent,
+        ):
+            if hasattr(agent, "trace_log"):
+                agent.trace_log = []
+            if hasattr(agent, "progress"):
+                agent.progress = None
+            if hasattr(agent, "set_shared_notes_path"):
+                agent.set_shared_notes_path(shared_notes_path)
+
+    def _clean_run_cache(self, project_root: str) -> None:
+        project_path = Path(project_root).resolve()
+        srp_root = project_path / ".srp"
+
+        for dirname in ("cache", "tmp"):
+            target_dir = srp_root / dirname
+            target_dir.mkdir(parents=True, exist_ok=True)
+            for child in target_dir.iterdir():
+                if child.is_dir() and not child.is_symlink():
+                    shutil.rmtree(child)
+                else:
+                    child.unlink(missing_ok=True)
+
+        outputs_dir = project_path / "outputs"
+        for generated_file in ("SHARED_TASK_NOTES.md", "intent.json"):
+            (outputs_dir / generated_file).unlink(missing_ok=True)
+
+    def _fresh_context(
+        self,
+        raw_input: str,
+        contract_paths: list[Any],
+        budget_usd: float,
+        api_key: str | None,
+        project_root: str,
+        project_name: str,
+        shared_notes_path: Path,
+        loaded_skills: dict[str, str],
+    ) -> dict[str, Any]:
+        return {
+            "current_run_id": self.current_run_id,
             "api_key": api_key,
             "raw_input": raw_input,
             "contract_paths": contract_paths,
             "budget_usd": budget_usd,
+            "project_root": project_root,
+            "project_name": project_name,
+            "project": project_name,
+            "shared_notes_path": str(shared_notes_path),
             "available_skills": sorted(loaded_skills.keys()),
+            "findings": [],
+            "skills": [],
+            "srg": None,
+            "srg_summary": {},
+            "plan": {},
+            "planner_result": {},
+            "detected_domain": "unknown",
+            "attack_surfaces": [],
+            "protocol_type": "unknown",
+            "protocol_intent": {},
+            "solodit_findings": [],
+            "solodit_intelligence": False,
+            "assumptions": [],
         }
+
+    async def run_full_audit(
+        self, raw_input: str, contract_paths: list, budget_usd: float, api_key: str | None = None
+    ) -> dict:
+        loaded_skills = self.load_skills()
+        project_root = self._resolve_project_root(contract_paths)
+        project_name = self._detect_project_name(project_root, contract_paths)
+        shared_notes_path = Path(project_root) / "outputs" / "SHARED_TASK_NOTES.md"
+
+        self.current_run_id = uuid4().hex
+        self._clean_run_cache(project_root)
+        self._set_agents_shared_notes_path(shared_notes_path)
+
+        self.context = self._fresh_context(
+            raw_input=raw_input,
+            contract_paths=contract_paths,
+            budget_usd=budget_usd,
+            api_key=api_key,
+            project_root=project_root,
+            project_name=project_name,
+            shared_notes_path=shared_notes_path,
+            loaded_skills=loaded_skills,
+        )
+        context = self.context
+        os.environ["SRP_PROJECT_ROOT"] = project_root
+        os.environ["SRP_SHARED_NOTES_PATH"] = str(shared_notes_path)
+        print(f"[DEBUG] project: {context['project']}")
 
         anvil_running = start_anvil()
         self.log_orchestrator("anvil_started" if anvil_running else "anvil_skipped")
 
-        results: dict[str, Any] = {}
+        results: dict[str, Any] = {
+            "current_run_id": self.current_run_id,
+            "project": project_name,
+            "project_name": project_name,
+        }
+        plan: dict[str, Any] = {
+            "protocol_type": "unknown",
+            "confidence": 0.0,
+            "attack_surfaces": [],
+            "plan": [],
+            "fallback": True,
+            "error": "planner_not_run",
+        }
+        context["plan"] = plan
+        context["planner_result"] = plan
 
         # ── Intent Agent ──────────────────────────────────────
         try:
@@ -305,29 +450,238 @@ class SRPOrchestrator:
             await self._emit_status("ReconAgent", "failed", {"error": str(exc)})
             raise
 
-        # ── Domain Detection ──────────────────────────────────
-        detected_domain = "generic"
-        secondary_domain = None
-        secondary_confidence = 0.0
+        # ── Phase 2: SRG + Planner ─────────────────────────────
         try:
-            project_root = context.get("project_root") or os.environ.get("SRP_PROJECT_ROOT") or os.getcwd()
-            detection_result = await self.detect_domain(project_root, contract_paths)
-            detected_domain = detection_result.primary
-            secondary_domain = detection_result.secondary
-            secondary_confidence = detection_result.secondary_confidence
-            context["detected_domain"] = detected_domain
-            context["secondary_domain"] = secondary_domain
-            context["secondary_confidence"] = secondary_confidence
+            await self._emit_status("SRGBuilder", "started", {})
+            # Build SRG from contract paths
+            srg = None
+            for sol_path in contract_paths:
+                p = Path(sol_path)
+                target = str(p) if p.is_dir() else str(p.parent)
+                parser = SolidityParser(target)
+                parsed = parser.parse_all()
+                srg = SecurityReasoningGraph.from_parser_output(parsed)
+                break  # use first path
+            if srg is None:
+                srg = SecurityReasoningGraph()  # empty fallback
+
+            srg_summary_data = srg.summary()
+            self.log_orchestrator(
+                f"srg_built — nodes={len(srg.nodes)} edges={len(srg.edges)}"
+            )
+            await self._emit_status("SRGBuilder", "completed", srg_summary_data)
+            results["srg_summary"] = srg_summary_data
+            context["srg"] = srg
+            context["srg_summary"] = srg_summary_data
+        except Exception as srg_exc:
+            self.log_orchestrator(f"srg_build_failed — {srg_exc}")
+            await self._emit_status("SRGBuilder", "failed", {"error": str(srg_exc)})
+
+        try:
+            await self._emit_status("Planner", "started", {})
+            planner = Planner()
+            plan = await planner.create_plan(srg, api_key=api_key)
+            results["plan"] = plan
+            context["plan"] = plan
+            context["planner_result"] = plan
+            context["protocol_type"] = plan.get("protocol_type", "unknown")
+            context["attack_surfaces"] = plan.get("attack_surfaces", [])
+
+            # Terminal output for Phase 2 validation
+            if plan.get("fallback"):
+                print("[Planner] LLM failed → using fallback")
+                print(f"[Planner] Protocol: {plan.get('protocol_type', 'Unknown').upper()} (fallback)")
+            else:
+                print(f"[Planner] Protocol: {plan.get('protocol_type', 'Unknown').capitalize()}")
+            print(f"[Planner] Attack surfaces: {', '.join(plan.get('attack_surfaces', []))}")
+            print("[Planner] Plan:")
+            for step in plan.get("plan", []):
+                action = step.get("action", "")
+                target = step.get("target", "")
+                if target and target != "all_contracts":
+                    print(f" - {action} ({target})")
+                else:
+                    print(f" - {action}")
+
+            self.log_orchestrator(
+                f"planner_complete — type={plan.get('protocol_type')}, "
+                f"surfaces={len(plan.get('attack_surfaces', []))}, "
+                f"steps={len(plan.get('plan', []))}"
+            )
+            await self._emit_status("Planner", "completed", {
+                "protocol_type": plan.get("protocol_type"),
+                "confidence": plan.get("confidence"),
+                "attack_surfaces": plan.get("attack_surfaces", []),
+                "plan_steps": len(plan.get("plan", [])),
+                "fallback": plan.get("fallback", False),
+            })
+        except Exception as plan_exc:
+            self.log_orchestrator(f"planner_failed — {plan_exc}")
+            results["plan"] = plan
+            context["plan"] = plan
+            context["planner_result"] = plan
+            await self._emit_status("Planner", "failed", {"error": str(plan_exc)})
+
+        context["project_root"] = project_root
+
+        # ── Learning Engine (Phase Retrieval) ─────────────────
+        try:
+            from learning_engine.engine import LearningEngine
+            learning_engine = LearningEngine()
+            # Apply decay on startup to maintain skill relevance
+            learning_engine.apply_decay()
+            matched_skills = learning_engine.match_skills(context)
+            context["matched_skills"] = matched_skills
+        except Exception as le_exc:
+            print(f"[Learning] Retrieval failed: {le_exc}")
+
+        # ── Evolution Engine (Phase 16: strategy discovery) ──
+        try:
+            candidates = await self.evolution.run(context)
+            context["evolved_strategies"] = candidates
+        except Exception as evo_exc:
+            print(f"[Evolution] Engine failed: {evo_exc}")
+
+        # ── Attack Engine (Phase 3) ───────────────────────────
+        try:
+            print("[Attack] Running strategies...")
+            from attack_engine.engine import AttackEngine
+            attack_engine = AttackEngine()
+            attack_results = await attack_engine.run(plan, context)
+            context["attacks"] = attack_results
+            results["attacks"] = attack_results
+            
+            for res in attack_results:
+                strat = res.get("strategy")
+                profit = res.get("profit", 0)
+                print(f"[Attack] {strat} → profit: {profit}")
+                
+                # Exploit Generation
+                if profit > 0:
+                    from exploit_generator.generator import ExploitGenerator
+                    gen = ExploitGenerator()
+                    output_file = "tests/Exploit.t.sol"
+                    if gen.save_exploit(res, output_file, project_root=project_root):
+                        print(f"[Exploit] Generated: {output_file}")
+                        print(f"[Exploit] Profit: {profit}")
+                        
+                        # Phase 12: Real Exploit Validation
+                        try:
+                            # 1. Ensure forge-std is present (required for the template)
+                            subprocess.run(["forge", "install", "foundry-rs/forge-std", "--no-commit"], cwd=project_root, capture_output=True)
+                            
+                            # 2. Run forge test
+                            process = subprocess.run(
+                                ["forge", "test", "--match-test", "testExploit"],
+                                cwd=project_root,
+                                capture_output=True,
+                                text=True,
+                                timeout=60
+                            )
+                            if process.returncode == 0:
+                                res["exploit_status"] = "validated"
+                                print(f"[Exploit] Status: validated")
+                                
+                                # Phase 13: Learning Engine (Self-Improving SRP)
+                                try:
+                                    from learning_engine.engine import LearningEngine
+                                    learning_engine = LearningEngine()
+                                    await learning_engine.extract_and_save(res, context)
+                                    # ── Debate Phase (Phase 15: Multi-Agent Refinement) ──
+                                    try:
+                                        from debate_engine.engine import DebateEngine
+                                        debate_engine = DebateEngine()
+                                        debate_res = await debate_engine.run_debate(context, res, rounds=2)
+                                        
+                                        res["debate_verdict"] = debate_res.get("verdict")
+                                        res["debate_confidence"] = debate_res.get("confidence")
+                                        res["debate_reasoning"] = debate_res.get("reasoning")
+                                        
+                                        if debate_res.get("verdict") == "rejected":
+                                            print(f"[Debate] Exploit REJECTED by judge. Removing from final results.")
+                                            # We still log it but mark as rejected
+                                            res["exploit_status"] = "rejected_by_debate"
+                                    except Exception as de_exc:
+                                        print(f"[Debate] Engine failed: {de_exc}")
+
+                                    # Update success rate of the skill used if applicable
+                                    if res.get("skill_id"):
+                                        learning_engine.update_stats(res["skill_id"], success=(res["exploit_status"] == "validated"))
+                                except Exception as ls_exc:
+                                    print(f"[Learning] Storage failed: {ls_exc}")
+                            else:
+                                res["exploit_status"] = "invalid_exploit"
+                                print(f"[Exploit] Status: invalid_exploit")
+                                # Update success rate (failure)
+                                if res.get("skill_id"):
+                                    try:
+                                        from learning_engine.engine import LearningEngine
+                                        learning_engine = LearningEngine()
+                                        learning_engine.update_stats(res["skill_id"], success=False)
+                                    except Exception as ls_exc:
+                                        print(f"[Learning] Stat update failed: {ls_exc}")
+                                # print(f"[Exploit] Forge Output: {process.stdout}")
+                        except Exception as ve:
+                             print(f"[Exploit] Validation failed to run: {ve}")
+                             res["exploit_status"] = "validation_error"
+                    else:
+                        res["exploit_status"] = "discarded_invalid_exploit"
+                        if gen.last_error:
+                            print(f"[Exploit] Discarded: {gen.last_error}")
+
+
+
+                
+            await self._emit_status("AttackEngine", "completed", {"results": len(attack_results)})
+        except Exception as ae_exc:
+            self.log_orchestrator(f"attack_engine_failed — {ae_exc}")
+            await self._emit_status("AttackEngine", "failed", {"error": str(ae_exc)})
+
+
+        # ── Domain Detection ──────────────────────────────────
+        # Priority 1: Planner output (LLM-driven)
+        planner_result = context.get("planner_result", {})
+        planner_protocol = str(planner_result.get("protocol_type", "unknown")).lower()
+        planner_failed = bool(planner_result.get("fallback")) or planner_protocol in {"", "unknown"}
+        detected_domain = planner_protocol if not planner_failed else "unknown"
+        detection_source = "planner" if not planner_failed else "unresolved"
+
+        # Priority 2: Keyword-based detection (SRG signals)
+        if detected_domain in ["unknown", "generic"]:
+            try:
+                project_root = context.get("project_root") or os.environ.get("SRP_PROJECT_ROOT") or os.getcwd()
+                detection_result = await self.detect_domain(project_root, contract_paths)
+                detected_domain = detection_result.primary
+                context["secondary_domain"] = detection_result.secondary
+                context["secondary_confidence"] = detection_result.secondary_confidence
+                detection_source = "keywords"
+            except Exception as domain_exc:
+                self.log_orchestrator(f"keyword_detection_failed — {domain_exc}")
+
+        # Priority 3: Fallback to IntentAgent or Generic
+        if detected_domain in ["unknown", "generic"]:
+            detected_domain = intent.get("domain", intent.get("protocol_type", "generic")).lower()
+            detection_source = "intent_fallback"
+
+        # Final normalization & cleanup
+        if detected_domain == "unknown":
+            detected_domain = "generic"
+            
+        context["detected_domain"] = detected_domain
+        print(f"[Domain] Detected: {detected_domain} (via {detection_source})")
+
+        try:
             await self._emit_status("DomainDetector", "completed", {
                 "detected_domain": detected_domain,
-                "confidence": detection_result.confidence,
-                "secondary": secondary_domain,
-                "secondary_confidence": secondary_confidence,
+                "detection_source": detection_source,
+                "confidence": planner_result.get("confidence") if detection_source == "planner" else 0.5
             })
-            self.log_orchestrator(f"domain_detection_complete — {detected_domain}")
-        except Exception as domain_exc:
-            self.log_orchestrator(f"domain_detection_failed — {domain_exc}, falling back to generic")
-            await self._emit_status("DomainDetector", "failed", {"error": str(domain_exc)})
+            self.log_orchestrator(f"domain_detection_complete — {detected_domain} (source: {detection_source})")
+        except Exception as emit_exc:
+            self.log_orchestrator(f"domain_emit_failed — {emit_exc}")
+
+        secondary_domain = context.get("secondary_domain")
+        secondary_confidence = context.get("secondary_confidence", 0.0)
 
         # ── Attack Agent + Domain Armies ──────────────────────
         try:

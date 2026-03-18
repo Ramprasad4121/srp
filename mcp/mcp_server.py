@@ -153,6 +153,44 @@ class TraceTransactionTool(Tool):
             return {"status": "error", "error": str(e)}
 
 
+class EthGetBalanceTool(Tool):
+    name = "eth_get_balance"
+    description = "Get the ETH balance of an address (in wei) from an RPC endpoint."
+    input_schema = ToolSchema(
+        properties={
+            "rpc_url": {"type": "string", "description": "RPC endpoint (default: http://127.0.0.1:8545)"},
+            "address": {"type": "string", "description": "Address to check balance for"},
+        },
+        required=["address"],
+    )
+
+    async def execute(self, params: dict) -> dict:
+        import httpx
+
+        rpc = params.get("rpc_url", "http://127.0.0.1:8545")
+        payload = {
+            "jsonrpc": "2.0",
+            "method": "eth_getBalance",
+            "params": [params["address"], "latest"],
+            "id": 1,
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                resp = await client.post(rpc, json=payload)
+                result = resp.json()
+            if "error" in result:
+                return {"status": "error", "error": result["error"]}
+            
+            balance_hex = result.get("result", "0x0")
+            balance_int = int(balance_hex, 16)
+            return {"status": "success", "result": {"balance": balance_int, "balance_hex": balance_hex}}
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+
+
+
+
 # ────────────────────────── Tool Registry ─────────────────────────────────
 
 class ToolRegistry:
@@ -186,6 +224,8 @@ registry = ToolRegistry()
 registry.register(ForkChainTool())
 registry.register(SimulateTxTool())
 registry.register(TraceTransactionTool())
+registry.register(EthGetBalanceTool())
+
 
 app = FastAPI(title="SRP MCP Server", version="1.1.0")
 

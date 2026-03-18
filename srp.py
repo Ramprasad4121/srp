@@ -211,7 +211,15 @@ def audit(target, no_browser, port):
         console.print("[dim]   Try pointing to a specific folder or file.[/dim]")
         sys.exit(1)
 
-    project_name = Path(os.getcwd()).name
+    # 2. Set environment for auto-start
+    # If target is a file, project root is its parent. If directory, it is the parent if we are in contracts/ src/ etc.
+    actual_project_root = target_path if target_path.is_dir() else target_path.parent
+    
+    # Check if we should go one level up (if target is contracts/ etc)
+    if actual_project_root.name in ["contracts", "src", "contract", "test"]:
+        actual_project_root = actual_project_root.parent
+
+    project_name = actual_project_root.name
     console.print(Panel(
         f"[bold green]SRP AUDIT[/bold green]\n\n"
         f"  Project:   [cyan]{project_name}[/cyan]\n"
@@ -222,14 +230,6 @@ def audit(target, no_browser, port):
         border_style="green",
         title="[bold]Mission Briefing[/bold]"
     ))
-
-    # 2. Set environment for auto-start
-    # If target is a file, project root is its parent. If directory, it is the parent if we are in contracts/ src/ etc.
-    actual_project_root = target_path if target_path.is_dir() else target_path.parent
-    
-    # Check if we should go one level up (if target is contracts/ etc)
-    if actual_project_root.name in ["contracts", "src", "contract", "test"]:
-        actual_project_root = actual_project_root.parent
 
     os.environ["SRP_AUTOSTART"] = "true"
     os.environ["SRP_PROJECT_ROOT"] = str(actual_project_root)

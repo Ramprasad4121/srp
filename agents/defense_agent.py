@@ -186,8 +186,7 @@ class DefenseAgent(BaseAgent):
         return int(round(score))
 
     def _parse_json_output(self, llm_output: str) -> dict[str, Any]:
-        from core.utils import parse_llm_json
-        return parse_llm_json(llm_output)
+        return self.parse_json(llm_output)
 
     def _ensure_list(self, value: Any) -> list:
         if isinstance(value, list):

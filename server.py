@@ -222,9 +222,13 @@ async def run_audit_on_project(project_root: str, target_path: str = None) -> No
         "logs": [f"🚀 Audit started — targeting {target_path} in {project_name}"],
         "findings": [],
         "score": 100,
+        "current_run_id": uuid4().hex,
         "project": project_name,
         "contracts_total": contract_count,
         "contracts_done": 0,
+        "protocol_intent": None,
+        "planner_result": None,
+        "trace_id": None,
         "current_agent": "WATCHDOG",
         "agent_statuses": {
             "WATCHDOG": "active", "ORACLE": "active", "SPIDER": "active",
@@ -368,7 +372,7 @@ async def start_audit(request: Request, background_tasks: BackgroundTasks):
     global audit_state
     body = await request.json()
     contract_code = body.get("contract_code", "")
-    description = body.get("description", "")
+    description = body.get("raw_input", body.get("description", ""))
     api_key = body.get("api_key", "")
 
     if not contract_code:
@@ -379,7 +383,10 @@ async def start_audit(request: Request, background_tasks: BackgroundTasks):
         "logs": ["🚀 Audit started — deploying 13 agents..."],
         "findings": [],
         "score": 100,
+        "current_run_id": uuid4().hex,
         "protocol_intent": None,
+        "planner_result": None,
+        "trace_id": None,
     }
     background_tasks.add_task(run_audit, contract_code, description, api_key)
     return {"status": "started"}
@@ -394,6 +401,8 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
     global audit_state
 
     try:
+        if not audit_state.get("current_run_id"):
+            audit_state["current_run_id"] = uuid4().hex
         raw_input = description or "Audit this Solidity contract for security vulnerabilities."
         audit_req = AuditRequest(
             raw_input=raw_input,
@@ -426,6 +435,14 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
                             "event": "intent_ready",
                             "data": audit_state["protocol_intent"]
                         }))
+                elif agent == "Planner":
+                    audit_state["planner_result"] = {
+                        "protocol_type": data.get("protocol_type", ""),
+                        "confidence": data.get("confidence"),
+                        "attack_surfaces": data.get("attack_surfaces", []),
+                        "plan_steps": data.get("plan_steps"),
+                        "fallback": bool(data.get("fallback", False)),
+                    }
             elif event == "step":
                 step_name = data.get("step", "") if isinstance(data, dict) else ""
                 if step_name and not step_name.endswith("_started"):
@@ -455,13 +472,23 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
         # Capture intent data if available
         if "intent" in result:
             intent_data = result["intent"]
+            p_intent = intent_data.get("protocol_intent", intent_data)
             audit_state["protocol_intent"] = {
-                'protocol_name': intent_data.get('protocol_name', ''),
-                'protocol_type': intent_data.get('protocol_type', ''),
-                'summary': intent_data.get('summary', ''),
-                'invariants': intent_data.get('invariants', []),
-                'access_control_rules': intent_data.get('access_control_rules', []),
+                'protocol_name': p_intent.get('protocol_name', ''),
+                'protocol_type': p_intent.get('protocol_type', ''),
+                'summary': p_intent.get('summary', ''),
+                'invariants': p_intent.get('invariants', []),
+                'access_control_rules': p_intent.get('access_control_rules', []),
             }
+
+        plan_result = result.get("plan", {})
+        audit_state["planner_result"] = {
+            "protocol_type": plan_result.get("protocol_type", ""),
+            "confidence": plan_result.get("confidence"),
+            "attack_surfaces": plan_result.get("attack_surfaces", []),
+            "plan_steps": len(plan_result.get("plan", [])) if isinstance(plan_result.get("plan", []), list) else 0,
+            "fallback": bool(plan_result.get("fallback", False)),
+        }
 
         defense = result.get("defense", {})
         reviewed = defense.get("reviewed_vulnerabilities", [])
@@ -523,6 +550,7 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
         # Save trace
         trace = result.get("trace", {})
         trace_id = trace.get("trace_id")
+        audit_state["trace_id"] = trace_id
         if trace_id:
             trace_path = TRACES_DIR / f"{trace_id}.json"
             trace_path.write_text(json.dumps(trace, indent=2, default=str), encoding="utf-8")
@@ -538,7 +566,12 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
         audit_state["findings"] = findings
         audit_state["score"] = score
         # Include intent in the complete event
-        complete_data = {"result": result}
+        complete_data = {
+            "result": result,
+            "current_run_id": audit_state.get("current_run_id"),
+            "planner_result": audit_state.get("planner_result"),
+            "protocol_intent": audit_state.get("protocol_intent"),
+        }
         if "intent" in result:
             complete_data["intent"] = result["intent"]
         await emit({"event": "complete", **complete_data})

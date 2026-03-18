@@ -203,8 +203,7 @@ class ReconAgent(BaseAgent):
         return "\n".join(summary)
 
     def _parse_json_output(self, llm_output: str) -> dict:
-        from core.utils import parse_llm_json
-        return parse_llm_json(llm_output)
+        return self.parse_json(llm_output)
 
     def _normalize_recon_result(self, parsed: dict) -> dict:
         contracts = self._normalize_list(parsed.get("contracts", []))

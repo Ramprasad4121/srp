@@ -1,0 +1,18 @@
+{
+    "id": "218f6749ded9",
+    "strategy": "unknown",
+    "steps": [],
+    "metadata": {},
+    "lineage": {
+        "parents": [
+            "ac956d07b692"
+        ],
+        "mutation_type": "exploration",
+        "generation": 1
+    },
+    "fitness": {
+        "profit": 0,
+        "validated": true,
+        "confidence": 0.0
+    }
+}

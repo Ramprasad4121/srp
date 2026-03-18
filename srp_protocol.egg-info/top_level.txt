@@ -1,5 +1,8 @@
 agents
 chain
 core
+mcp
+sol_parser
+srg
 srp
 srp_pkg

@@ -154,6 +154,55 @@ class SecurityReasoningGraph:
     def find_state_readers(self, state_id: str) -> list[Node]:
         return self.predecessors(state_id, EdgeType.READS)
 
+    def get_sensitive_functions(self) -> list[Node]:
+        """Find functions that match a specific behavior profile (writes + external calls)."""
+        results = []
+        for node in self.nodes_by_type(NodeType.FUNCTION):
+            has_write = bool(self.successors(node.id, EdgeType.WRITES))
+            has_external = bool(self.successors(node.id, EdgeType.EXTERNAL_CALL))
+            if has_write and has_external:
+                results.append(node)
+        return results
+
+    def get_balance_changing_functions(self) -> list[Node]:
+        """Find functions likely to affect token or ETH balances."""
+        sensitive_keywords = ["balance", "reserve", "totalLiquidity", "vault", "pool"]
+        results = []
+        for node in self.nodes_by_type(NodeType.FUNCTION):
+            # Check for writes to balance-related states
+            writes = self.successors(node.id, EdgeType.WRITES)
+            has_balance_write = any(any(kw in w.name.lower() for kw in sensitive_keywords) for w in writes)
+            
+            # Check for calls to transfer/withdraw/claim
+            calls = self.successors(node.id, EdgeType.CALLS) + self.successors(node.id, EdgeType.EXTERNAL_CALL)
+            has_transfer_call = any(any(kw in c.name.lower() for kw in ["transfer", "withdraw", "claim", "send", "call"]) for c in calls)
+            
+            if has_balance_write or has_transfer_call:
+                results.append(node)
+        return results
+
+    def get_function_signature(self, function_id: str) -> str:
+        """Constructs a minimal signature for calldata encoding."""
+        node = self.nodes.get(function_id)
+        if not node or node.node_type != NodeType.FUNCTION:
+            return ""
+        name = node.name
+        args = node.metadata.get("arguments", [])
+        # Extract types if available, else default to uint256
+        arg_types = []
+        if args:
+            for arg in args:
+                if isinstance(arg, dict):
+                    arg_types.append(arg.get("type", "uint256"))
+                else:
+                    arg_types.append("uint256")
+        else:
+             # Heuristic: if name matches common patterns, guess args
+             if name in ["borrow", "swap", "withdraw", "claim"]:
+                 arg_types = ["uint256"]
+        
+        return f"{name}({','.join(arg_types)})"
+
     # ── Summary / Debug ───────────────────────────────────────────────────
 
     def summary(self) -> dict:

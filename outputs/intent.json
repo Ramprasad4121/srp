@@ -1,10 +1,41 @@
 {
-  "protocol_name": "SecondSwap audit details",
-  "protocol_type": "amm",
-  "summary": "Protocol intent extracted from 1 documentation sources.",
-  "invariants": [],
-  "access_control_rules": [],
-  "trust_assumptions": [],
-  "critical_functions": [],
-  "economic_model": ""
+  "protocol_name": "SRP — Security Reasoning Protocol",
+  "protocol_type": "generic",
+  "summary": "AI agent army for smart contract security",
+  "invariants": [
+    {
+      "id": "INV-001",
+      "description": "The total budget locked in SRPBudget contract should always be equal to the sum of individual budgets.",
+      "formal": "sum(budgets) == totalBudget",
+      "severity_if_broken": "high",
+      "category": "economic"
+    },
+    {
+      "id": "INV-002",
+      "description": "The SRPPolicy contract should only allow approved intents to be executed.",
+      "formal": "approveIntent(intent) == true => executeIntent(intent) == true",
+      "severity_if_broken": "high",
+      "category": "access"
+    },
+    {
+      "id": "INV-003",
+      "description": "The VulnerableVault contract should not allow unauthorized access to its funds.",
+      "formal": "balanceOf(unauthorizedUser) == 0",
+      "severity_if_broken": "high",
+      "category": "access"
+    }
+  ],
+  "access_control_rules": [
+    "Only approved intents can be executed by SRPPolicy contract",
+    "Only authorized users can access funds in VulnerableVault contract"
+  ],
+  "trust_assumptions": [
+    "The SRPBudget contract is assumed to be secure and trustworthy",
+    "The SRPPolicy contract is assumed to be secure and trustworthy"
+  ],
+  "critical_functions": [
+    "approveIntentWithEvent",
+    "executeIntent"
+  ],
+  "economic_model": "The SRP protocol does not have a clear economic model, but it is designed to provide security auditing services for smart contracts."
 }

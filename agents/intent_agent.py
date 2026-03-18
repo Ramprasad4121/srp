@@ -98,13 +98,20 @@ class IntentAgent(BaseAgent):
         }
 
         # ── Step 2: Run Protocol Intent Engine ──
-        protocol_intent = await self._run_protocol_intent_engine(contract_paths, api_key)
+        protocol_intent = await self._run_protocol_intent_engine(
+            contract_paths,
+            api_key,
+            project_root=context.get("project_root"),
+        )
         intent["protocol_intent"] = protocol_intent
 
         # ── Step 3: Write SHARED_TASK_NOTES.md ──
         try:
-            from pathlib import Path
-            notes_path = Path("outputs/SHARED_TASK_NOTES.md")
+            notes_path_value = (
+                context.get("shared_notes_path")
+                or (str(self.shared_notes_path) if self.shared_notes_path else "")
+            )
+            notes_path = Path(notes_path_value) if notes_path_value else Path("outputs/SHARED_TASK_NOTES.md")
             notes_path.parent.mkdir(exist_ok=True)
 
             notes_content = self._build_shared_notes(protocol_intent, intent)
@@ -201,7 +208,7 @@ class IntentAgent(BaseAgent):
         return content
 
     async def _run_protocol_intent_engine(
-        self, contract_paths: list, api_key: str | None
+        self, contract_paths: list, api_key: str | None, project_root: str | None = None
     ) -> dict[str, Any]:
         """Run the Protocol Intent Engine to extract invariants from project docs.
 
@@ -218,25 +225,29 @@ class IntentAgent(BaseAgent):
         import os
         from core.intent_engine import ProtocolIntentEngine
 
-        # Derive project root from first contract path
-        project_root = os.getcwd()
-        if contract_paths and isinstance(contract_paths, list):
+        resolved_project_root = str(project_root).strip() if project_root else ""
+        if not resolved_project_root:
+            resolved_project_root = os.environ.get("SRP_PROJECT_ROOT", "").strip()
+
+        if not resolved_project_root:
+            resolved_project_root = os.getcwd()
+        if contract_paths and isinstance(contract_paths, list) and not project_root:
             first_path = str(contract_paths[0])
             if os.path.isfile(first_path):
                 # Go up from file to find project root (heuristic: 2 levels up from .sol)
                 candidate = os.path.dirname(os.path.dirname(first_path))
                 if os.path.isdir(candidate):
-                    project_root = candidate
+                    resolved_project_root = candidate
             elif os.path.isdir(first_path):
-                project_root = first_path
+                resolved_project_root = first_path
 
         self.log_step(
             "protocol_intent_engine_started",
-            {"project_root": project_root},
+            {"project_root": resolved_project_root},
         )
 
         try:
-            engine = ProtocolIntentEngine(project_root)
+            engine = ProtocolIntentEngine(resolved_project_root)
             result = await engine.extract(call_llm=self.call_llm, api_key=api_key)
             stats = engine.get_collection_stats()
 
@@ -268,9 +279,8 @@ class IntentAgent(BaseAgent):
             }
 
     def _parse_json_output(self, llm_output: str) -> dict:
-        """Parse JSON from LLM output with markdown fence stripping."""
-        from core.utils import parse_llm_json
-        return parse_llm_json(llm_output)
+        """Parse JSON from LLM output with robust cleaning and fallback."""
+        return self.parse_json(llm_output)
 
     def _normalize_intent(
         self, parsed: dict, raw_input: str, contract_paths: list

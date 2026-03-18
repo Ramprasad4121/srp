@@ -1,568 +1,569 @@
 {
-  "generated_at": "2026-03-05T07:18:51.753164+00:00",
-  "skills": [
-    {
-      "name": "solidity",
-      "source": "Cyfrin/solskill",
-      "path": "skills/cyfrin/solskill/solidity/SKILL.md",
-      "git_hash": "6d26e00afea2b2df1d609552b02dba8d9d3bfd1e",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "solidity-auditor",
-      "source": "audit-skills",
-      "path": "skills/audit-firm-1/solidity-auditor/SKILL.md",
-      "git_hash": "904f9eb785d9b3692212a42e6881fb07f1a64623",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "behavioral-state-analysis",
-      "source": "quillai-network/qs_skills",
-      "path": "skills/quillai/plugins/behavioral-state-analysis/skills/behavioral-state-analysis/SKILL.md",
-      "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "dos-griefing-analysis",
-      "source": "quillai-network/qs_skills",
-      "path": "skills/quillai/plugins/dos-griefing-analysis/skills/dos-griefing-analysis/SKILL.md",
-      "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "external-call-safety",
-      "source": "quillai-network/qs_skills",
-      "path": "skills/quillai/plugins/external-call-safety/skills/external-call-safety/SKILL.md",
-      "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "input-arithmetic-safety",
-      "source": "quillai-network/qs_skills",
-      "path": "skills/quillai/plugins/input-arithmetic-safety/skills/input-arithmetic-safety/SKILL.md",
-      "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "oracle-flashloan-analysis",
-      "source": "quillai-network/qs_skills",
-      "path": "skills/quillai/plugins/oracle-flashloan-analysis/skills/oracle-flashloan-analysis/SKILL.md",
-      "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "proxy-upgrade-safety",
-      "source": "quillai-network/qs_skills",
-      "path": "skills/quillai/plugins/proxy-upgrade-safety/skills/proxy-upgrade-safety/SKILL.md",
-      "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "reentrancy-pattern-analysis",
-      "source": "quillai-network/qs_skills",
-      "path": "skills/quillai/plugins/reentrancy-pattern-analysis/skills/reentrancy-pattern-analysis/SKILL.md",
-      "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "semantic-guard-analysis",
-      "source": "quillai-network/qs_skills",
-      "path": "skills/quillai/plugins/semantic-guard-analysis/skills/semantic-guard-analysis/SKILL.md",
-      "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "signature-replay-analysis",
-      "source": "quillai-network/qs_skills",
-      "path": "skills/quillai/plugins/signature-replay-analysis/skills/signature-replay-analysis/SKILL.md",
-      "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "state-invariant-detection",
-      "source": "quillai-network/qs_skills",
-      "path": "skills/quillai/plugins/state-invariant-detection/skills/state-invariant-detection/SKILL.md",
-      "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "security-auditor",
-      "source": "Archethect/sc-auditor",
-      "path": "skills/sc-auditor/security-auditor/SKILL.md",
-      "git_hash": "a7f06020b8ecca4b35ffe39d4eda42cb2293a03a",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "scv-scan",
-      "source": "kadenzipfel/scv-scan",
-      "path": "skills/scv-scan/SKILL.md",
-      "git_hash": "dcb0201a119a21bcf04ea4b991561f73360ad68c",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "solidity-auditor",
-      "source": "audit-skills",
-      "path": "skills/solidity-auditor/SKILL.md",
-      "git_hash": "904f9eb785d9b3692212a42e6881fb07f1a64623",
-      "agents_that_use_it": [
-        "AttackAgent",
-        "DefenseAgent"
-      ]
-    },
-    {
-      "name": "agentic-actions-auditor",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/agentic-actions-auditor/skills/agentic-actions-auditor/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "ask-questions-if-underspecified",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/ask-questions-if-underspecified/skills/ask-questions-if-underspecified/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "audit-context-building",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/audit-context-building/skills/audit-context-building/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "algorand-vulnerability-scanner",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/building-secure-contracts/skills/algorand-vulnerability-scanner/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "audit-prep-assistant",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/building-secure-contracts/skills/audit-prep-assistant/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "cairo-vulnerability-scanner",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/building-secure-contracts/skills/cairo-vulnerability-scanner/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "code-maturity-assessor",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/building-secure-contracts/skills/code-maturity-assessor/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "cosmos-vulnerability-scanner",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/building-secure-contracts/skills/cosmos-vulnerability-scanner/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "guidelines-advisor",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/building-secure-contracts/skills/guidelines-advisor/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "secure-workflow-guide",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/building-secure-contracts/skills/secure-workflow-guide/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "solana-vulnerability-scanner",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/building-secure-contracts/skills/solana-vulnerability-scanner/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "substrate-vulnerability-scanner",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/building-secure-contracts/skills/substrate-vulnerability-scanner/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "token-integration-analyzer",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/building-secure-contracts/skills/token-integration-analyzer/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "ton-vulnerability-scanner",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/building-secure-contracts/skills/ton-vulnerability-scanner/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "burpsuite-project-parser",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/burpsuite-project-parser/skills/burpsuite-project-parser/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "claude-in-chrome-troubleshooting",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/claude-in-chrome-troubleshooting/skills/claude-in-chrome-troubleshooting/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "constant-time-analysis",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/constant-time-analysis/skills/constant-time-analysis/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "interpreting-culture-index",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/culture-index/skills/interpreting-culture-index/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "debug-buttercup",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/debug-buttercup/skills/debug-buttercup/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "devcontainer-setup",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/devcontainer-setup/skills/devcontainer-setup/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "differential-review",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/differential-review/skills/differential-review/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "dwarf-expert",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/dwarf-expert/skills/dwarf-expert/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "entry-point-analyzer",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/entry-point-analyzer/skills/entry-point-analyzer/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "firebase-apk-scanner",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/firebase-apk-scanner/skills/firebase-apk-scanner/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "fp-check",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/fp-check/skills/fp-check/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "git-cleanup",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/git-cleanup/skills/git-cleanup/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "insecure-defaults",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/insecure-defaults/skills/insecure-defaults/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "let-fate-decide",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/let-fate-decide/skills/let-fate-decide/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "modern-python",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/modern-python/skills/modern-python/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "property-based-testing",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/property-based-testing/skills/property-based-testing/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "seatbelt-sandboxer",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/seatbelt-sandboxer/skills/seatbelt-sandboxer/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "second-opinion",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/second-opinion/skills/second-opinion/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "semgrep-rule-creator",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/semgrep-rule-creator/skills/semgrep-rule-creator/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "semgrep-rule-variant-creator",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/semgrep-rule-variant-creator/skills/semgrep-rule-variant-creator/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "sharp-edges",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/sharp-edges/skills/sharp-edges/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "skill-improver",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/skill-improver/skills/skill-improver/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "spec-to-code-compliance",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/spec-to-code-compliance/skills/spec-to-code-compliance/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "codeql",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/static-analysis/skills/codeql/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "sarif-parsing",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/static-analysis/skills/sarif-parsing/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "semgrep",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/static-analysis/skills/semgrep/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "supply-chain-risk-auditor",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/supply-chain-risk-auditor/skills/supply-chain-risk-auditor/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "address-sanitizer",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/address-sanitizer/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "aflpp",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/aflpp/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "atheris",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/atheris/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "cargo-fuzz",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/cargo-fuzz/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "constant-time-testing",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/constant-time-testing/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "coverage-analysis",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/coverage-analysis/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "fuzzing-dictionary",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/fuzzing-dictionary/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "fuzzing-obstacles",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/fuzzing-obstacles/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "harness-writing",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/harness-writing/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "libafl",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/libafl/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "libfuzzer",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/libfuzzer/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "ossfuzz",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/ossfuzz/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "ruzzy",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/ruzzy/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "testing-handbook-generator",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/testing-handbook-generator/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "wycheproof",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/wycheproof/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "variant-analysis",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/variant-analysis/skills/variant-analysis/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "designing-workflow-skills",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/workflow-skill-design/skills/designing-workflow-skills/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "yara-rule-authoring",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/yara-authoring/skills/yara-rule-authoring/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "zeroize-audit",
-      "source": "trailofbits/skills",
-      "path": "skills/trailofbits/plugins/zeroize-audit/skills/zeroize-audit/SKILL.md",
-      "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
-      "agents_that_use_it": []
-    },
-    {
-      "name": "audit",
-      "source": "ethskills.com",
-      "path": "skills/ethskills/audit.md",
-      "git_hash": null,
-      "agents_that_use_it": []
-    },
-    {
-      "name": "concepts",
-      "source": "ethskills.com",
-      "path": "skills/ethskills/concepts.md",
-      "git_hash": null,
-      "agents_that_use_it": []
-    },
-    {
-      "name": "security",
-      "source": "ethskills.com",
-      "path": "skills/ethskills/security.md",
-      "git_hash": null,
-      "agents_that_use_it": []
-    },
-    {
-      "name": "standards",
-      "source": "ethskills.com",
-      "path": "skills/ethskills/standards.md",
-      "git_hash": null,
-      "agents_that_use_it": []
-    },
-    {
-      "name": "testing",
-      "source": "ethskills.com",
-      "path": "skills/ethskills/testing.md",
-      "git_hash": null,
-      "agents_that_use_it": []
-    }
-  ]
+    "generated_at": "2026-03-05T07:18:51.753164+00:00",
+    "skills": [
+        {
+            "name": "solidity",
+            "source": "Cyfrin/solskill",
+            "path": "skills/cyfrin/solskill/solidity/SKILL.md",
+            "git_hash": "6d26e00afea2b2df1d609552b02dba8d9d3bfd1e",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "solidity-auditor",
+            "source": "audit-skills",
+            "path": "skills/audit-firm-1/solidity-auditor/SKILL.md",
+            "git_hash": "904f9eb785d9b3692212a42e6881fb07f1a64623",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "behavioral-state-analysis",
+            "source": "quillai-network/qs_skills",
+            "path": "skills/quillai/plugins/behavioral-state-analysis/skills/behavioral-state-analysis/SKILL.md",
+            "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "dos-griefing-analysis",
+            "source": "quillai-network/qs_skills",
+            "path": "skills/quillai/plugins/dos-griefing-analysis/skills/dos-griefing-analysis/SKILL.md",
+            "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "external-call-safety",
+            "source": "quillai-network/qs_skills",
+            "path": "skills/quillai/plugins/external-call-safety/skills/external-call-safety/SKILL.md",
+            "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "input-arithmetic-safety",
+            "source": "quillai-network/qs_skills",
+            "path": "skills/quillai/plugins/input-arithmetic-safety/skills/input-arithmetic-safety/SKILL.md",
+            "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "oracle-flashloan-analysis",
+            "source": "quillai-network/qs_skills",
+            "path": "skills/quillai/plugins/oracle-flashloan-analysis/skills/oracle-flashloan-analysis/SKILL.md",
+            "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "proxy-upgrade-safety",
+            "source": "quillai-network/qs_skills",
+            "path": "skills/quillai/plugins/proxy-upgrade-safety/skills/proxy-upgrade-safety/SKILL.md",
+            "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "reentrancy-pattern-analysis",
+            "source": "quillai-network/qs_skills",
+            "path": "skills/quillai/plugins/reentrancy-pattern-analysis/skills/reentrancy-pattern-analysis/SKILL.md",
+            "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "semantic-guard-analysis",
+            "source": "quillai-network/qs_skills",
+            "path": "skills/quillai/plugins/semantic-guard-analysis/skills/semantic-guard-analysis/SKILL.md",
+            "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "signature-replay-analysis",
+            "source": "quillai-network/qs_skills",
+            "path": "skills/quillai/plugins/signature-replay-analysis/skills/signature-replay-analysis/SKILL.md",
+            "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "state-invariant-detection",
+            "source": "quillai-network/qs_skills",
+            "path": "skills/quillai/plugins/state-invariant-detection/skills/state-invariant-detection/SKILL.md",
+            "git_hash": "75d48a8a4abbf7e6938a48beddc2585ee8e4e27f",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "security-auditor",
+            "source": "Archethect/sc-auditor",
+            "path": "skills/sc-auditor/security-auditor/SKILL.md",
+            "git_hash": "a7f06020b8ecca4b35ffe39d4eda42cb2293a03a",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "scv-scan",
+            "source": "kadenzipfel/scv-scan",
+            "path": "skills/scv-scan/SKILL.md",
+            "git_hash": "dcb0201a119a21bcf04ea4b991561f73360ad68c",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "solidity-auditor",
+            "source": "audit-skills",
+            "path": "skills/solidity-auditor/SKILL.md",
+            "git_hash": "904f9eb785d9b3692212a42e6881fb07f1a64623",
+            "agents_that_use_it": [
+                "AttackAgent",
+                "DefenseAgent"
+            ]
+        },
+        {
+            "name": "agentic-actions-auditor",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/agentic-actions-auditor/skills/agentic-actions-auditor/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "ask-questions-if-underspecified",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/ask-questions-if-underspecified/skills/ask-questions-if-underspecified/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "audit-context-building",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/audit-context-building/skills/audit-context-building/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "algorand-vulnerability-scanner",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/building-secure-contracts/skills/algorand-vulnerability-scanner/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "audit-prep-assistant",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/building-secure-contracts/skills/audit-prep-assistant/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "cairo-vulnerability-scanner",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/building-secure-contracts/skills/cairo-vulnerability-scanner/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "code-maturity-assessor",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/building-secure-contracts/skills/code-maturity-assessor/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "cosmos-vulnerability-scanner",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/building-secure-contracts/skills/cosmos-vulnerability-scanner/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "guidelines-advisor",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/building-secure-contracts/skills/guidelines-advisor/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "secure-workflow-guide",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/building-secure-contracts/skills/secure-workflow-guide/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "solana-vulnerability-scanner",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/building-secure-contracts/skills/solana-vulnerability-scanner/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "substrate-vulnerability-scanner",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/building-secure-contracts/skills/substrate-vulnerability-scanner/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "token-integration-analyzer",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/building-secure-contracts/skills/token-integration-analyzer/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "ton-vulnerability-scanner",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/building-secure-contracts/skills/ton-vulnerability-scanner/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "burpsuite-project-parser",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/burpsuite-project-parser/skills/burpsuite-project-parser/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "claude-in-chrome-troubleshooting",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/claude-in-chrome-troubleshooting/skills/claude-in-chrome-troubleshooting/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "constant-time-analysis",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/constant-time-analysis/skills/constant-time-analysis/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "interpreting-culture-index",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/culture-index/skills/interpreting-culture-index/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "debug-buttercup",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/debug-buttercup/skills/debug-buttercup/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "devcontainer-setup",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/devcontainer-setup/skills/devcontainer-setup/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "differential-review",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/differential-review/skills/differential-review/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "dwarf-expert",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/dwarf-expert/skills/dwarf-expert/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "entry-point-analyzer",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/entry-point-analyzer/skills/entry-point-analyzer/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "firebase-apk-scanner",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/firebase-apk-scanner/skills/firebase-apk-scanner/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "fp-check",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/fp-check/skills/fp-check/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "git-cleanup",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/git-cleanup/skills/git-cleanup/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "insecure-defaults",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/insecure-defaults/skills/insecure-defaults/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "let-fate-decide",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/let-fate-decide/skills/let-fate-decide/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "modern-python",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/modern-python/skills/modern-python/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "property-based-testing",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/property-based-testing/skills/property-based-testing/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "seatbelt-sandboxer",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/seatbelt-sandboxer/skills/seatbelt-sandboxer/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "second-opinion",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/second-opinion/skills/second-opinion/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "semgrep-rule-creator",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/semgrep-rule-creator/skills/semgrep-rule-creator/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "semgrep-rule-variant-creator",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/semgrep-rule-variant-creator/skills/semgrep-rule-variant-creator/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "sharp-edges",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/sharp-edges/skills/sharp-edges/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "skill-improver",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/skill-improver/skills/skill-improver/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "spec-to-code-compliance",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/spec-to-code-compliance/skills/spec-to-code-compliance/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "codeql",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/static-analysis/skills/codeql/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "sarif-parsing",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/static-analysis/skills/sarif-parsing/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "semgrep",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/static-analysis/skills/semgrep/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "supply-chain-risk-auditor",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/supply-chain-risk-auditor/skills/supply-chain-risk-auditor/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "address-sanitizer",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/address-sanitizer/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "aflpp",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/aflpp/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "atheris",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/atheris/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "cargo-fuzz",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/cargo-fuzz/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "constant-time-testing",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/constant-time-testing/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "coverage-analysis",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/coverage-analysis/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "fuzzing-dictionary",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/fuzzing-dictionary/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "fuzzing-obstacles",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/fuzzing-obstacles/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "harness-writing",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/harness-writing/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "libafl",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/libafl/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "libfuzzer",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/libfuzzer/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "ossfuzz",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/ossfuzz/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "ruzzy",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/ruzzy/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "testing-handbook-generator",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/testing-handbook-generator/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "wycheproof",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/testing-handbook-skills/skills/wycheproof/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "variant-analysis",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/variant-analysis/skills/variant-analysis/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "designing-workflow-skills",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/workflow-skill-design/skills/designing-workflow-skills/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "yara-rule-authoring",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/yara-authoring/skills/yara-rule-authoring/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "zeroize-audit",
+            "source": "trailofbits/skills",
+            "path": "skills/trailofbits/plugins/zeroize-audit/skills/zeroize-audit/SKILL.md",
+            "git_hash": "c6097699e4553f0dda4db615330f4a5097c4ff99",
+            "agents_that_use_it": []
+        },
+        {
+            "name": "audit",
+            "source": "ethskills.com",
+            "path": "skills/ethskills/audit.md",
+            "git_hash": null,
+            "agents_that_use_it": []
+        },
+        {
+            "name": "concepts",
+            "source": "ethskills.com",
+            "path": "skills/ethskills/concepts.md",
+            "git_hash": null,
+            "agents_that_use_it": []
+        },
+        {
+            "name": "security",
+            "source": "ethskills.com",
+            "path": "skills/ethskills/security.md",
+            "git_hash": null,
+            "agents_that_use_it": []
+        },
+        {
+            "name": "standards",
+            "source": "ethskills.com",
+            "path": "skills/ethskills/standards.md",
+            "git_hash": null,
+            "agents_that_use_it": []
+        },
+        {
+            "name": "testing",
+            "source": "ethskills.com",
+            "path": "skills/ethskills/testing.md",
+            "git_hash": null,
+            "agents_that_use_it": []
+        }
+    ],
+    "success_rate": 0.96
 }

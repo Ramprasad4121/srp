@@ -1,0 +1,26 @@
+{
+    "id": "0104d10141c9",
+    "strategy": "unknown",
+    "steps": [
+        {
+            "target": "0x123",
+            "data": "0xabc",
+            "value": "0x0",
+            "contract_name": "",
+            "function_name": ""
+        }
+    ],
+    "metadata": {},
+    "lineage": {
+        "parents": [
+            "25026bcb6427"
+        ],
+        "mutation_type": "exploration",
+        "generation": 1
+    },
+    "fitness": {
+        "profit": 0,
+        "validated": true,
+        "confidence": 0.0
+    }
+}

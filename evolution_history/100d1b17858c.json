@@ -1,0 +1,24 @@
+{
+    "id": "100d1b17858c",
+    "strategy": "flashloan",
+    "steps": [
+        {
+            "target": "0x123",
+            "data": "0xabc",
+            "value": "0x0",
+            "contract_name": "",
+            "function_name": ""
+        }
+    ],
+    "metadata": {},
+    "lineage": {
+        "parents": [],
+        "mutation_type": "initial",
+        "generation": 0
+    },
+    "fitness": {
+        "profit": 0,
+        "validated": false,
+        "confidence": 0.0
+    }
+}

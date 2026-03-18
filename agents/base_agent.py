@@ -5,6 +5,7 @@ import os
 import sys
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from anthropic import AsyncAnthropic
@@ -28,19 +29,30 @@ class BaseAgent(ABC):
 
 
         self.progress = None
+        self.shared_notes_path: Path | None = None
 
     def set_progress(self, progress: "AuditProgress") -> None:
         """Inject audit progress tracker into agent."""
         self.progress = progress
 
+    def set_shared_notes_path(self, path: str | os.PathLike[str] | None) -> None:
+        self.shared_notes_path = Path(path).resolve() if path else None
+
     def get_shared_notes(self) -> str:
-        """Get shared protocol notes from outputs/SHARED_TASK_NOTES.md."""
-        import os
-        notes_path = os.path.join(os.getcwd(), "outputs", "SHARED_TASK_NOTES.md")
-        if not os.path.exists(notes_path):
+        """Get shared protocol notes from the current project's scoped notes file."""
+        notes_path = self.shared_notes_path
+        if notes_path is None:
+            configured_path = os.environ.get("SRP_SHARED_NOTES_PATH")
+            if configured_path:
+                notes_path = Path(configured_path).resolve()
+            else:
+                project_root = Path(os.environ.get("SRP_PROJECT_ROOT", os.getcwd())).resolve()
+                notes_path = project_root / "outputs" / "SHARED_TASK_NOTES.md"
+
+        if not notes_path.exists():
             return ""
         try:
-            with open(notes_path, 'r', encoding='utf-8') as f:
+            with notes_path.open("r", encoding="utf-8") as f:
                 return f.read()
         except Exception:
             return ""
@@ -233,3 +245,15 @@ class BaseAgent(ABC):
             )
         return content
 
+    def clean_json_text(self, text: str) -> str:
+        """Strip markdown, remove trailing commas, and normalize quotes for JSON parsing."""
+        from core.utils import clean_json_text
+        return clean_json_text(text)
+
+    def parse_json(self, response: str, default: Any = None) -> Any:
+        """Safely parse LLM response into JSON with a robust fallback."""
+        from core.utils import parse_llm_json
+        parsed = parse_llm_json(response)
+        if not parsed and default is not None:
+            return default
+        return parsed

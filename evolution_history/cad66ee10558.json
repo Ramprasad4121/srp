@@ -1,0 +1,18 @@
+{
+    "id": "cad66ee10558",
+    "strategy": null,
+    "steps": [],
+    "metadata": {},
+    "lineage": {
+        "parents": [
+            "e63ce5bec827"
+        ],
+        "mutation_type": "tweak",
+        "generation": 1
+    },
+    "fitness": {
+        "profit": 0,
+        "validated": true,
+        "confidence": 0.0
+    }
+}

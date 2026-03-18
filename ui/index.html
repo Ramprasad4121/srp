@@ -327,7 +327,7 @@ const AGENT_MAP = {
   MIRROR:'MIRROR',DELTA:'DELTA',COMMAND:'COMMAND',LEDGER:'LEDGER',
 };
 
-let lastLogCount=0, pollInterval=null, auditStarted=false, auditComplete=false;
+let lastLogCount=0, pollInterval=null, auditStarted=false, auditComplete=false, currentRunId=null;
 
 function $(id){return document.getElementById(id);}
 function safe(id,fn){const el=$(id);if(el)fn(el);}
@@ -394,13 +394,34 @@ function addLogLine(text){
 }
 
 /* ─── INTENT SECTION ─── */
-function showIntentSection(intent){
+function resetIntentSection(){
+  safe('intent-protocol-name',el=>{el.textContent='Unknown Protocol';});
+  safe('intent-protocol-type',el=>{el.textContent='GENERIC';});
+  safe('intent-summary',el=>{el.textContent='';});
+  const invList=$('intent-invariants-list');
+  const invContainer=$('intent-invariants-container');
+  if(invList)invList.innerHTML='';
+  if(invContainer)invContainer.style.display='none';
+  const rulesList=$('intent-access-list');
+  const rulesContainer=$('intent-access-rules');
+  if(rulesList)rulesList.innerHTML='';
+  if(rulesContainer)rulesContainer.style.display='none';
+}
+
+function resolveIntentProtocolType(intent, plannerResult){
+  if(plannerResult && !plannerResult.fallback && plannerResult.protocol_type){
+    return plannerResult.protocol_type;
+  }
+  return intent.protocol_type || 'generic';
+}
+
+function showIntentSection(intent, plannerResult){
   if(!intent)return;
 
   // Protocol name + type + summary
   safe('intent-protocol-name',el=>{el.textContent=intent.protocol_name||'Unknown Protocol';});
   safe('intent-protocol-type',el=>{
-    const t=(intent.protocol_type||'generic').toUpperCase();
+    const t=resolveIntentProtocolType(intent, plannerResult).toUpperCase();
     el.textContent=t;
   });
   safe('intent-summary',el=>{el.textContent=intent.summary||'';});
@@ -426,6 +447,9 @@ function showIntentSection(intent){
         </div>`;
     }).join('');
     if(invContainer)invContainer.style.display='block';
+  }else{
+    if(invList)invList.innerHTML='';
+    if(invContainer)invContainer.style.display='none';
   }
 
   // Access control rules
@@ -435,6 +459,9 @@ function showIntentSection(intent){
   if(rulesList&&rules.length>0){
     rulesList.innerHTML=rules.map(r=>`<li>${escapeHtml(r)}</li>`).join('');
     if(rulesContainer)rulesContainer.style.display='block';
+  }else{
+    if(rulesList)rulesList.innerHTML='';
+    if(rulesContainer)rulesContainer.style.display='none';
   }
 
   // Show the section
@@ -506,7 +533,7 @@ function showResults(data){
   // Show intent section — check both possible keys from server
   const intentData=data.protocol_intent||data.intent||null;
   if(intentData&&(intentData.protocol_name||intentData.invariants)){
-    showIntentSection(intentData);
+    showIntentSection(intentData, data.planner_result);
   }
 
   renderFindings(data.findings||[]);
@@ -540,6 +567,14 @@ async function pollStatus(){
     if(data.project)safe('project-name',el=>{el.textContent=data.project;});
     if(data.contracts_total!==undefined)safe('stat-contracts',el=>{el.textContent=data.contracts_total;});
     if(data.agent_statuses)Object.entries(data.agent_statuses).forEach(([id,st])=>setAgentStatus(id,st));
+
+    if(data.current_run_id && data.current_run_id !== currentRunId){
+      currentRunId = data.current_run_id;
+      lastLogCount = 0;
+      const stream=$('log-stream');
+      if(stream)stream.innerHTML='';
+      resetIntentSection();
+    }
 
     if(Array.isArray(data.logs)&&data.logs.length>lastLogCount){
       const newLogs=data.logs.slice(lastLogCount);
