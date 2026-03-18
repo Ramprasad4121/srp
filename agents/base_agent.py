@@ -99,35 +99,9 @@ class BaseAgent(ABC):
                 self.log_step("guardrail_blocked", {"reason": reason})
                 return json.dumps({"error": "guardrail_blocked", "reason": reason})
 
-        # BYOK: prefer passed api_key, fallback to env
-        resolved_key = api_key or os.environ.get("NVIDIA_API_KEY", "")
-        if not resolved_key:
-            raise ValueError("No API key provided. Pass api_key or set NVIDIA_API_KEY env var.")
-
-        # Soul first — this is WHO the agent is
-        # Skills second — this is WHAT the agent knows
-        # System extra third — this is WHAT the agent is doing right now
-        # Shared notes fourth — this is CONTEXT from previous agents
-        system_prompt = ""
-
-        # Add shared notes first
-        shared_notes = self.get_shared_notes()
-        if shared_notes:
-            system_prompt += "---\n\n# SHARED PROTOCOL NOTES\n\n"
-            system_prompt += shared_notes + "\n\n"
-
-        if self.soul_content:
-            system_prompt += self.soul_content + "\n\n"
-
-        if self.skill_content:
-            system_prompt += "---\n\n# YOUR SKILLS ARSENAL\n\n"
-            system_prompt += self.skill_content + "\n\n"
-
-        if system_extra:
-            system_prompt += "---\n\n# CURRENT TASK\n\n"
-            system_prompt += system_extra
-
+        # Multi-provider routing based on model string
         resolved_model = model or self.model
+        resolved_timeout = timeout or 240.0
 
         self.log_step(
             "llm_call_started",
@@ -138,44 +112,67 @@ class BaseAgent(ABC):
                 "budget_tokens": budget_tokens,
             },
         )
-        # OpenAI format requires system prompt as a message
-        oai_messages = [{"role": "system", "content": system_prompt}] + messages
-
-        import httpx
-
-        LLM_TIMEOUT_SECONDS = 240.0  # max 4 minutes per LLM call
 
         try:
-            client = AsyncOpenAI(
-                base_url="https://integrate.api.nvidia.com/v1",
-                api_key=resolved_key,
-                timeout=LLM_TIMEOUT_SECONDS,
-                max_retries=0,
-            )
+            if resolved_model.startswith("claude"):
+                resolved_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+                if not resolved_key:
+                    raise ValueError("ANTHROPIC_API_KEY not set.")
+                client = AsyncAnthropic(api_key=resolved_key, max_retries=0, timeout=resolved_timeout)
+                kwargs = {
+                    "model": resolved_model,
+                    "max_tokens": max_tokens,
+                    "system": system_prompt,
+                    "messages": messages,
+                    "temperature": 0.2,
+                }
+                if budget_tokens and budget_tokens > 0:
+                    kwargs["max_tokens"] = max(max_tokens, budget_tokens + 1000)
+                if int(kwargs["max_tokens"]) > 8192 and "sonnet" in resolved_model:
+                    kwargs["max_tokens"] = 8192 # Claude hard limit
 
-            kwargs: dict = {
-                "model": resolved_model,
-                "max_tokens": max_tokens,
-                "messages": oai_messages,
-                "temperature": 0.2,
-                "top_p": 0.7,
-            }
+                response = await asyncio.wait_for(client.messages.create(**kwargs), timeout=resolved_timeout)
+                response_text = response.content[0].text if response.content else ""
 
-            if budget_tokens and budget_tokens > 0:
-                kwargs["max_tokens"] = max(max_tokens, budget_tokens + 1000)
+            else:
+                oai_messages = [{"role": "system", "content": system_prompt}] + messages
+                kwargs = {
+                    "model": resolved_model,
+                    "messages": oai_messages,
+                    "temperature": 0.2,
+                    "top_p": 0.7,
+                }
+                # o1 and o3 models don't support max_tokens directly, they use max_completion_tokens
+                if resolved_model.startswith("o1") or resolved_model.startswith("o3"):
+                    if budget_tokens and budget_tokens > 0:
+                        kwargs["max_completion_tokens"] = max(max_tokens, budget_tokens + 1000)
+                    else:
+                        kwargs["max_completion_tokens"] = max_tokens
+                    # o models also have temperature fixed at 1
+                    kwargs.pop("temperature", None)
+                    kwargs.pop("top_p", None)
+                else:
+                    if budget_tokens and budget_tokens > 0:
+                        kwargs["max_tokens"] = max(max_tokens, budget_tokens + 1000)
+                    else:
+                        kwargs["max_tokens"] = max_tokens
 
+                if resolved_model.startswith("gpt-") or resolved_model.startswith("o1") or resolved_model.startswith("o3"):
+                    resolved_key = api_key or os.environ.get("OPENAI_API_KEY", "")
+                    if not resolved_key:
+                        raise ValueError("OPENAI_API_KEY not set.")
+                    from openai import AsyncOpenAI
+                    client = AsyncOpenAI(api_key=resolved_key, timeout=resolved_timeout, max_retries=0)
+                else:
+                    resolved_key = api_key or os.environ.get("NVIDIA_API_KEY", "")
+                    if not resolved_key:
+                        raise ValueError("NVIDIA_API_KEY not set.")
+                    from openai import AsyncOpenAI
+                    client = AsyncOpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=resolved_key, timeout=resolved_timeout, max_retries=0)
 
-            # Allow user timeouts or global defaults
-            resolved_timeout = timeout or LLM_TIMEOUT_SECONDS
-            
-            # Set the httpx timeout explicitly in the create call as requested
-            kwargs["timeout"] = resolved_timeout
+                response = await asyncio.wait_for(client.chat.completions.create(**kwargs), timeout=resolved_timeout)
+                response_text = response.choices[0].message.content or ""
 
-            response = await asyncio.wait_for(
-                client.chat.completions.create(**kwargs),
-                timeout=resolved_timeout,
-            )
-            response_text = response.choices[0].message.content or ""
         except (asyncio.TimeoutError, Exception) as exc:
             timeout_msg = f"LLM call timed out or failed after {resolved_timeout}s: {exc}"
             self.log_step("llm_call_timeout", {"error": timeout_msg, "model": resolved_model})

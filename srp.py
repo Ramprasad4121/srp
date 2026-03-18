@@ -1,6 +1,8 @@
 import os
 import sys
 import json
+from dotenv import load_dotenv
+load_dotenv()
 import asyncio
 import subprocess
 import webbrowser
@@ -466,18 +468,23 @@ def status():
         console.print(f"[red]❌ Skills error:[/red] {e}")
 
     env_checks = {
-        "NVIDIA_API_KEY": "NVIDIA API Key (required)",
         "SRP_WALLET_KEY": "Wallet Private Key (x402 payments)",
         "COINBASE_API_KEY_NAME": "Coinbase API Name (optional)",
         "COINBASE_API_KEY_PRIVATE_KEY": "Coinbase Private Key (optional)",
     }
     
+    # Check LLM Keys
+    has_llm = any(os.environ.get(k) for k in ["NVIDIA_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"])
+    if has_llm:
+        console.print("[green]✅ LLM API Key: set (NVIDIA/OpenAI/Anthropic)[/green]")
+    else:
+        console.print("[red]❌ LLM API Key: not set (NVIDIA_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY required)[/red]")
+
     for k, label in env_checks.items():
         if os.environ.get(k):
             console.print(f"[green]✅ {label}: set[/green]")
         else:
-            color = "red" if k == "NVIDIA_API_KEY" else "yellow"
-            console.print(f"[{color}]{'❌' if k == 'NVIDIA_API_KEY' else '⚠️ '} {label}: not set[/{color}]")
+            console.print(f"[yellow]⚠️  {label}: not set[/yellow]")
 
     console.print()
     for tool in ["slither", "aderyn", "echidna", "openclaw"]:
