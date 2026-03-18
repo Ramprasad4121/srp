@@ -75,6 +75,7 @@ def run_audit_background(context: dict, project: SRPProject) -> None:
             raw_input=context.get("raw_input", ""),
             contract_paths=context.get("contract_paths", []),
             budget_usd=context.get("budget_usd", 0),
+            api_key=context.get("api_key"),
         )
     )
     trace = result.get("trace", {})
@@ -411,6 +412,20 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
                 audit_state["logs"].append(f"🔄 [{agent}] Starting...")
             elif event == "agent_complete":
                 audit_state["logs"].append(f"✅ [{agent}] Complete")
+                if agent == "IntentAgent":
+                    p_intent = data.get("protocol_intent", data)
+                    audit_state["protocol_intent"] = {
+                        'protocol_name': p_intent.get('protocol_name', ''),
+                        'protocol_type': p_intent.get('protocol_type', ''),
+                        'summary': p_intent.get('summary', ''),
+                        'invariants': p_intent.get('invariants', []),
+                        'access_control_rules': p_intent.get('access_control_rules', []),
+                    }
+                    for q in sse_queues:
+                        asyncio.create_task(q.put({
+                            "event": "intent_ready",
+                            "data": audit_state["protocol_intent"]
+                        }))
             elif event == "step":
                 step_name = data.get("step", "") if isinstance(data, dict) else ""
                 if step_name and not step_name.endswith("_started"):
@@ -466,7 +481,13 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
             findings.append({
                 "title": original_vuln.get("title", rv.get("original_id", f"Finding {i+1}")),
                 "severity": rv.get("final_severity", original_vuln.get("severity", "medium")),
-                "description": original_vuln.get("description", rv.get("defense_notes", "")),
+                "summary": rv.get("summary", original_vuln.get("summary", "")),
+                "root_cause": rv.get("root_cause", original_vuln.get("root_cause", "")),
+                "internal_preconditions": rv.get("internal_preconditions", original_vuln.get("internal_preconditions", "")),
+                "external_preconditions": rv.get("external_preconditions", original_vuln.get("external_preconditions", "")),
+                "attack_path": rv.get("attack_path", original_vuln.get("attack_path", "")),
+                "impact": rv.get("impact", original_vuln.get("impact", "")),
+                "mitigation": rv.get("mitigation", original_vuln.get("mitigation", "")),
                 "affected_function": original_vuln.get("affected_function", ""),
                 "location": original_vuln.get("affected_function", ""),
                 "exploit_code": original_vuln.get("exploit_code", ""),
@@ -484,7 +505,13 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
                 findings.append({
                     "title": v.get("title", f"Finding {j+1}"),
                     "severity": v.get("severity", "medium"),
-                    "description": v.get("description", ""),
+                    "summary": v.get("summary", ""),
+                    "root_cause": v.get("root_cause", ""),
+                    "internal_preconditions": v.get("internal_preconditions", ""),
+                    "external_preconditions": v.get("external_preconditions", ""),
+                    "attack_path": v.get("attack_path", ""),
+                    "impact": v.get("impact", ""),
+                    "mitigation": v.get("mitigation", ""),
                     "affected_function": v.get("affected_function", ""),
                     "location": v.get("affected_function", ""),
                     "exploit_code": v.get("exploit_code", ""),

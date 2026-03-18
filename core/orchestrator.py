@@ -97,31 +97,8 @@ class SRPOrchestrator:
         return loaded
 
     def select_skill(self, intent: dict) -> str:
+        """Select the best skill for the given intent."""
         if not self.skills:
-            self.load_skills()
-
-    async def run_solodit_phase(self, context: dict) -> dict:
-        """Run Solodit intelligence phase to cross-reference with external findings."""
-        if not os.environ.get("CYFRIN_API_KEY"):
-            return {"status": "skipped", "reason": "CYFRIN_API_KEY not set"}
-
-        try:
-            from agents.audit.solodit import run_solodit_phase
-            return await run_solodit_phase(context)
-        except Exception as e:
-            return {"status": "error", "error": str(e)}
-
-    async def run_full_audit(self, raw_input: str, contract_paths: list[str], budget_usd: float, api_key: str | None = None) -> dict:
-        """Run full audit pipeline."""
-        # Phase 1: Intent Analysis
-        intent_result = await self.intent_agent.run({
-            "raw_input": raw_input,
-            "contract_paths": contract_paths,
-            "budget_usd": budget_usd,
-            "api_key": api_key,
-        })
-        if self.status_callback:
-            await self.status_callback("IntentAgent", "complete", intent_result)
             self.load_skills()
 
         available = sorted(self.skills.keys())
@@ -166,6 +143,19 @@ class SRPOrchestrator:
         if score_by_skill.get(best_skill, 0) == 0 and "solidity-auditor" in self.skills:
             return "solidity-auditor"
         return best_skill
+
+    async def run_solodit_phase(self, context: dict) -> dict:
+        """Run Solodit intelligence phase to cross-reference with external findings."""
+        if not os.environ.get("CYFRIN_API_KEY"):
+            await self._emit_status("SoloditIntelligence", "skipped", {"reason": "CYFRIN_API_KEY not set"})
+            return {"status": "skipped", "reason": "CYFRIN_API_KEY not set"}
+
+        try:
+            from agents.audit.solodit import run_solodit_phase
+            return await run_solodit_phase(context)
+        except Exception as e:
+            await self._emit_status("SoloditIntelligence", "failed", {"error": str(e)})
+            return {"status": "error", "error": str(e)}
 
     # ─────────────────────────────────────────────────────────
     # Domain Detection
@@ -287,13 +277,29 @@ class SRPOrchestrator:
             results["recon"] = recon
             context["recon_output"] = recon
             context.update({
-                "contract_map": recon.get("contract_map", {}),
                 "functions": recon.get("functions", []),
                 "state_vars": recon.get("state_vars", []),
                 "external_calls": recon.get("external_calls", []),
                 "entry_points": recon.get("entry_points", []),
                 "risk_surface": recon.get("risk_surface", []),
             })
+
+            # Build real contract_map: {stem_name: source_code} from .sol files
+            # This is what AttackAgent + domain armies expect
+            real_contract_map: dict[str, str] = {}
+            for sol_path in contract_paths:
+                try:
+                    p = Path(sol_path)
+                    if p.is_file() and p.suffix == ".sol":
+                        real_contract_map[p.stem] = p.read_text(encoding="utf-8")
+                    elif p.is_dir():
+                        for sol_file in sorted(p.rglob("*.sol")):
+                            real_contract_map[sol_file.stem] = sol_file.read_text(encoding="utf-8")
+                except OSError:
+                    pass
+            context["contract_map"] = real_contract_map
+            context["sol_sources"] = real_contract_map
+
             await self._emit_status("ReconAgent", "completed", recon)
         except Exception as exc:
             await self._emit_status("ReconAgent", "failed", {"error": str(exc)})
@@ -678,56 +684,7 @@ class SRPOrchestrator:
     def log_orchestrator(self, msg: str):
         print(f"[SRP] [Orchestrator] {msg}")
 
-    def _desloppify_findings(self, findings: list) -> tuple[list, list]:
-        """Filter weak findings using exact criteria."""
-        kept = []
-        dropped = []
 
-        # Track titles we've seen to detect duplicates
-        seen_titles = set()
-
-        for finding in findings:
-            title = finding.get("title")
-            description = finding.get("description", "")
-            location = finding.get("location", "unknown")
-            exploit_code = finding.get("exploit_code", "")
-            severity = finding.get("severity")
-
-            # Check each criterion
-            reasons = []
-
-            if not title or title.strip() == "" or title.strip().lower() == "untitled":
-                reasons.append("title_empty_or_untitled")
-
-            if len(description) < 50:
-                reasons.append("description_too_short")
-
-            if location.lower() == "unknown" and not any(
-                func in exploit_code.lower() for func in ["function", "call", "send", "transfer", "approve", "permit"]
-            ):
-                reasons.append("unknown_location_no_function_calls")
-
-            if any(placeholder in exploit_code.lower() for placeholder in ["// todo", "...", "placeholder"]):
-                reasons.append("placeholder_in_exploit_code")
-
-            if title and title in seen_titles:
-                reasons.append("duplicate_title")
-
-            if severity is None:
-                reasons.append("missing_severity")
-
-            if reasons:
-                dropped.append({
-                    "title": title,
-                    "reason": ", ".join(reasons),
-                    "finding": finding
-                })
-            else:
-                kept.append(finding)
-                if title:
-                    seen_titles.add(title)
-
-        return kept, dropped
 
     def _log_final_vulnerabilities(self, all_vulns: list) -> None:
         proven = sum(1 for v in all_vulns if v.get("poc_result", {}).get("status") == "proven")

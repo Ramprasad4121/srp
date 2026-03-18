@@ -71,7 +71,7 @@ class DefenseAgent(BaseAgent):
             "validate exploit realism, challenge assumptions, adjust severity with reasoning, "
             "and propose concrete Solidity remediations plus tests. "
             "Return ONLY valid JSON with keys: "
-            "status, final_severity, severity_reasoning, fix_code, test_code, defense_notes. "
+            "status, final_severity, severity_reasoning, summary, root_cause, internal_preconditions, external_preconditions, attack_path, impact, mitigation, fix_code, test_code, defense_notes. "
             "status must be one of: validated, false_positive, needs_more_info. "
             "final_severity must be one of: high, medium, low — no critical, no informational. "
             "Use Cyfrin severity matrix: https://support.cyfrin.io/codehawks/findings-severity "
@@ -157,6 +157,13 @@ class DefenseAgent(BaseAgent):
             "original_id": original_id,
             "status": status,
             "final_severity": final_severity,
+            "summary": str(parsed.get("summary", vulnerability.get("summary", ""))).strip(),
+            "root_cause": str(parsed.get("root_cause", vulnerability.get("root_cause", ""))).strip(),
+            "internal_preconditions": str(parsed.get("internal_preconditions", vulnerability.get("internal_preconditions", ""))).strip(),
+            "external_preconditions": str(parsed.get("external_preconditions", vulnerability.get("external_preconditions", ""))).strip(),
+            "attack_path": str(parsed.get("attack_path", vulnerability.get("attack_path", ""))).strip(),
+            "impact": str(parsed.get("impact", vulnerability.get("impact", ""))).strip(),
+            "mitigation": str(parsed.get("mitigation", vulnerability.get("mitigation", ""))).strip(),
             "fix_code": str(parsed.get("fix_code", "")).strip(),
             "test_code": str(parsed.get("test_code", "")).strip(),
             "defense_notes": defense_notes,

@@ -379,13 +379,15 @@ async def run_all_pocs(findings: list, project_root: str) -> list:
     import asyncio
     from concurrent.futures import ThreadPoolExecutor
     from core.toolchain import detect_toolchain
-    
+
     toolchain = detect_toolchain(project_root)
     print(f"[PoC Verifier] Toolchain detected: {toolchain['type']}")
 
     loop = asyncio.get_event_loop()
     with ThreadPoolExecutor(max_workers=4) as executor:
         tasks = []
+        task_findings = []  # parallel list — tasks[i] belongs to task_findings[i]
+
         for finding in findings:
             if toolchain["type"] == "forge":
                 if not toolchain.get("forge_std_present"):
@@ -394,28 +396,23 @@ async def run_all_pocs(findings: list, project_root: str) -> list:
                 if not check_forge_available():
                     finding["poc_result"] = {"status": "skipped", "reason": "forge not found", "output": ""}
                     continue
-                
-                # Wrap synchronous run_poc in executor
                 tasks.append(loop.run_in_executor(executor, run_poc, finding, project_root, toolchain))
-                
+                task_findings.append(finding)
+
             elif toolchain["type"] == "hardhat":
-                # Wrap synchronous run_poc_hardhat in executor
                 tasks.append(loop.run_in_executor(executor, run_poc_hardhat, finding, project_root, toolchain))
+                task_findings.append(finding)
             else:
                 finding["poc_result"] = {"status": "skipped", "reason": f"{toolchain['type']} not supported", "output": ""}
 
         if tasks:
-            results = await asyncio.gather(*tasks)
-            # Match results back to findings that were added to tasks
-            # Since we iterate in order, we can zip or just track indices
-            # Better: match by finding ID or just assign in order of tasks list
-            task_idx = 0
-            for finding in findings:
-                if toolchain["type"] in ["forge", "hardhat"] and "poc_result" not in finding:
-                     # Check if it was skipped before task creation
-                     if finding.get("poc_result"): continue
-                     finding["poc_result"] = results[task_idx]
-                     task_idx += 1
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            # Zip results exactly back to the findings that spawned them
+            for finding, result in zip(task_findings, results):
+                if isinstance(result, Exception):
+                    finding["poc_result"] = {"status": "skipped", "reason": str(result), "output": ""}
+                else:
+                    finding["poc_result"] = result
 
     proven = sum(1 for f in findings if f.get("poc_result", {}).get("status") == "proven")
     print(f"[PoC Verifier] {proven}/{len(findings)} PROVEN")

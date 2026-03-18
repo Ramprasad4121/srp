@@ -250,28 +250,29 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:
     <div class="log-stream" id="log-stream"></div>
   </div>
 
+  <!-- INTENT ANALYSIS SECTION -->
+  <div class="intent-section" id="intent-section">
+    <div class="section-header">Protocol Intent Analysis</div>
+    <div class="intent-protocol-info">
+      <div class="intent-protocol-header">
+        <h3 id="intent-protocol-name">—</h3>
+        <div id="intent-protocol-type" class="intent-type-badge">GENERIC</div>
+        <p id="intent-summary" class="intent-summary">—</p>
+      </div>
+      <div id="intent-invariants-container" class="intent-invariants" style="display:none">
+        <div class="intent-invariants-title">Extracted Invariants</div>
+        <div id="intent-invariants-list"></div>
+      </div>
+      <div id="intent-access-rules" class="intent-access-rules" style="display:none">
+        <div class="intent-access-title">Access Control Rules</div>
+        <ul id="intent-access-list" class="intent-access-list"></ul>
+      </div>
+    </div>
+  </div>
+
   <div class="results-section" id="results-section">
     <div class="section-header">Mission Results</div>
 
-    <!-- INTENT ANALYSIS SECTION -->
-    <div class="intent-section" id="intent-section">
-      <div class="section-header">Protocol Intent Analysis</div>
-      <div class="intent-protocol-info">
-        <div class="intent-protocol-header">
-          <h3 id="intent-protocol-name">—</h3>
-          <div id="intent-protocol-type" class="intent-type-badge">GENERIC</div>
-          <p id="intent-summary" class="intent-summary">—</p>
-        </div>
-        <div id="intent-invariants-container" class="intent-invariants" style="display:none">
-          <div class="intent-invariants-title">Extracted Invariants</div>
-          <div id="intent-invariants-list"></div>
-        </div>
-        <div id="intent-access-rules" class="intent-access-rules" style="display:none">
-          <div class="intent-access-title">Access Control Rules</div>
-          <ul id="intent-access-list" class="intent-access-list"></ul>
-        </div>
-      </div>
-    </div>
 
     <!-- SCORE -->
     <div class="score-display">
@@ -327,7 +328,7 @@ const AGENT_MAP = {
   MIRROR:'MIRROR',DELTA:'DELTA',COMMAND:'COMMAND',LEDGER:'LEDGER',
 };
 
-let lastLogCount=0, pollInterval=null, auditStarted=false, auditComplete=false;
+let lastLogCount=0, pollInterval=null, auditStarted=false, auditComplete=false, intentShown=false;
 
 function $(id){return document.getElementById(id);}
 function safe(id,fn){const el=$(id);if(el)fn(el);}
@@ -466,8 +467,12 @@ function renderFindings(findings){
     const pocStatus=(f.poc_result||{}).status||'skipped';
     const pocOut=(f.poc_result||{}).output||'';
     const rootCause=f.root_cause||f.description||f.defense_notes||'';
+    const summary=f.summary||'';
+    const internalPre=f.internal_preconditions||'';
+    const externalPre=f.external_preconditions||'';
     const attackPath=f.attack_path||'';
     const impact=f.impact||'';
+    const mitigation=f.mitigation||'';
     const loc=f.location||f.affected_function||f.contract||'';
     return `
       <div class="finding-card">
@@ -478,12 +483,16 @@ function renderFindings(findings){
         <div class="finding-content">
           <h3>${escapeHtml(f.title||`Finding ${i+1}`)}</h3>
           ${loc?`<div class="finding-meta">Location: ${escapeHtml(loc)}</div>`:''}
+          ${summary?`<div class="finding-section-label">Summary</div><div class="finding-description">${escapeHtml(summary)}</div>`:''}
           ${rootCause?`<div class="finding-section-label">Root Cause</div><div class="finding-description">${escapeHtml(rootCause)}</div>`:''}
+          ${internalPre?`<div class="finding-section-label">Internal Pre-conditions</div><div class="finding-description">${escapeHtml(internalPre)}</div>`:''}
+          ${externalPre?`<div class="finding-section-label">External Pre-conditions</div><div class="finding-description">${escapeHtml(externalPre)}</div>`:''}
           ${attackPath?`<div class="finding-section-label">Attack Path</div><div class="finding-attack-path">${escapeHtml(attackPath)}</div>`:''}
           ${impact?`<div class="finding-section-label">Impact</div><div class="finding-description">${escapeHtml(impact)}</div>`:''}
-          ${exploit?`<div class="finding-code-label">Exploit Code</div><div class="finding-code">${escapeHtml(exploit)}</div>`:''}
+          ${exploit?`<div class="finding-code-label">PoC Output (Exploit Code)</div><div class="finding-code">${escapeHtml(exploit)}</div>`:''}
+          ${mitigation?`<div class="finding-section-label">Mitigation</div><div class="finding-description">${escapeHtml(mitigation)}</div>`:''}
           ${fix?`<div class="finding-code-label">Recommended Fix</div><div class="finding-code fix">${escapeHtml(fix)}</div>`:''}
-          ${pocStatus==='proven'&&pocOut?`<div class="finding-code-label">PoC Output</div><div class="poc-output">${escapeHtml(pocOut.trim())}</div>`:''}
+          ${pocStatus==='proven'&&pocOut?`<div class="finding-code-label">PoC Test Results</div><div class="poc-output">${escapeHtml(pocOut.trim())}</div>`:''}
         </div>
       </div>`;
   }).join('');
@@ -503,11 +512,7 @@ function showResults(data){
   safe('status-dot',el=>{el.className=score>=70?'status-dot':'status-dot error';});
   Object.values(AGENTS).flat().forEach(a=>setAgentStatus(a.id,'complete'));
 
-  // Show intent section — check both possible keys from server
-  const intentData=data.protocol_intent||data.intent||null;
-  if(intentData&&(intentData.protocol_name||intentData.invariants)){
-    showIntentSection(intentData);
-  }
+  // Removed showIntentSection from end of audit, handled during polling instead
 
   renderFindings(data.findings||[]);
 
@@ -540,6 +545,11 @@ async function pollStatus(){
     if(data.project)safe('project-name',el=>{el.textContent=data.project;});
     if(data.contracts_total!==undefined)safe('stat-contracts',el=>{el.textContent=data.contracts_total;});
     if(data.agent_statuses)Object.entries(data.agent_statuses).forEach(([id,st])=>setAgentStatus(id,st));
+
+    if(data.protocol_intent && !intentShown){
+      intentShown = true;
+      showIntentSection(data.protocol_intent);
+    }
 
     if(Array.isArray(data.logs)&&data.logs.length>lastLogCount){
       const newLogs=data.logs.slice(lastLogCount);

@@ -87,7 +87,21 @@ Return JSON only:
 
     # Build result from original — only update debate fields
     result = copy.deepcopy(original)  # start from original, not mutated finding
-    result["severity"] = defender_result.get("adjusted_severity", severity)
+
+    # Normalize adjusted_severity to Cyfrin 3-tier: high / medium / low
+    SEVERITY_MAP = {
+        "critical": "high",
+        "informational": "low",
+        "info": "low",
+        "gas": "low",
+        "qa": "low",
+    }
+    raw_severity = defender_result.get("adjusted_severity", severity)
+    adjusted_severity = SEVERITY_MAP.get(str(raw_severity).lower(), str(raw_severity).lower())
+    if adjusted_severity not in {"high", "medium", "low"}:
+        adjusted_severity = severity  # fall back to original if still invalid
+
+    result["severity"] = adjusted_severity
     result["debate_verdict"] = defender_result.get("verdict", "needs_more_info")
     result["debate"] = {
         "attacker": attacker_result,

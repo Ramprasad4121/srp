@@ -154,27 +154,61 @@ def export_pdf(findings: list, report_summary: str, project_name: str, score: in
         ]))
         block.append(header_table)
 
-        # Contract + description
+        # Contract + fields
         contract = f.get("contract", "")
         if contract:
             block.append(Paragraph(f"<b>Contract:</b> {contract}", ParagraphStyle("contract", fontSize=8, textColor=GRAY, fontName="Helvetica", spaceBefore=3)))
-        block.append(Paragraph(f.get("description", ""), body))
 
-        # Vuln code
-        if f.get("vuln_code"):
-            block.append(Paragraph("Vulnerable Code:", h3))
-            code = f["vuln_code"][:800].replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
+        summary = f.get("summary", "")
+        if summary:
+            block.append(Paragraph("<b>Summary:</b>", h3))
+            block.append(Paragraph(summary, body))
+
+        root_cause = f.get("root_cause", f.get("description", ""))
+        if root_cause:
+            block.append(Paragraph("<b>Root Cause:</b>", h3))
+            block.append(Paragraph(root_cause, body))
+
+        internal_pre = f.get("internal_preconditions", "")
+        if internal_pre:
+            block.append(Paragraph("<b>Internal Pre-conditions:</b>", h3))
+            block.append(Paragraph(internal_pre, body))
+
+        external_pre = f.get("external_preconditions", "")
+        if external_pre:
+            block.append(Paragraph("<b>External Pre-conditions:</b>", h3))
+            block.append(Paragraph(external_pre, body))
+
+        attack_path = f.get("attack_path", "")
+        if attack_path:
+            block.append(Paragraph("<b>Attack Path:</b>", h3))
+            block.append(Paragraph(attack_path, body))
+
+        impact = f.get("impact", "")
+        if impact:
+            block.append(Paragraph("<b>Impact:</b>", h3))
+            block.append(Paragraph(impact, body))
+
+        exploit = f.get("exploit_code", "")
+        if exploit:
+            block.append(Paragraph("PoC Output (Exploit Code):", h3))
+            code = exploit[:800].replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
             block.append(Paragraph(code, mono))
 
-        # Fix code
-        if f.get("fix_code"):
+        mitigation = f.get("mitigation", "")
+        if mitigation:
+            block.append(Paragraph("<b>Mitigation:</b>", h3))
+            block.append(Paragraph(mitigation, body))
+
+        fix = f.get("fix_code", "")
+        if fix:
             block.append(Paragraph("Recommended Fix:", h3))
-            code = f["fix_code"][:800].replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
+            code = fix[:800].replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
             block.append(Paragraph(code, mono))
 
-        # PoC output
+        # PoC test results
         if poc_status == "proven" and f.get("poc_result", {}).get("output"):
-            block.append(Paragraph("PoC Output:", h3))
+            block.append(Paragraph("PoC Test Results:", h3))
             out = f["poc_result"]["output"][:400].replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
             block.append(Paragraph(out, mono))
 
