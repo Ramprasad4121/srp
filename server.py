@@ -590,7 +590,9 @@ if os.path.exists(ui_dir):
     app.mount("/ui", StaticFiles(directory=ui_dir), name="ui")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
-    app.mount("/reports", StaticFiles(directory=REPORTS_DIR), name="reports")
+
+REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/reports", StaticFiles(directory=REPORTS_DIR), name="reports")
 
 
 # ─── SSE STREAM ───────────────────────────────────────────────────────────────
