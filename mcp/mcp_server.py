@@ -1,8 +1,8 @@
 """
-MCP Server — Phase 1
+MCP Server — Phase 1 (Upgraded)
 
-A standalone FastAPI-based Model Context Protocol server that exposes
-core blockchain tools: fork_chain, simulate_tx, trace_transaction.
+FastAPI-based Model Context Protocol server with timing, enriched
+response metadata, and structured error handling.
 
 Run standalone:  python -m mcp.mcp_server
 """
@@ -13,6 +13,7 @@ import asyncio
 import json
 import os
 import subprocess
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
@@ -25,14 +26,12 @@ from pydantic import BaseModel
 
 @dataclass
 class ToolSchema:
-    """Describes the input schema for a Tool."""
     type: str = "object"
     properties: dict = field(default_factory=dict)
     required: list[str] = field(default_factory=list)
 
 
 class Tool(ABC):
-    """Base class for all MCP tools."""
     name: str
     description: str
     input_schema: ToolSchema
@@ -49,9 +48,9 @@ class ForkChainTool(Tool):
     description = "Fork a live chain locally using Anvil for safe simulation."
     input_schema = ToolSchema(
         properties={
-            "rpc_url": {"type": "string", "description": "RPC endpoint to fork from (e.g. https://eth-mainnet.g.alchemy.com/v2/KEY)"},
+            "rpc_url": {"type": "string", "description": "RPC endpoint to fork from"},
             "block_number": {"type": "integer", "description": "Optional block number to fork at"},
-            "port": {"type": "integer", "description": "Local port for the Anvil instance (default: 8545)"},
+            "port": {"type": "integer", "description": "Local port for Anvil (default: 8545)"},
         },
         required=["rpc_url"],
     )
@@ -68,12 +67,12 @@ class ForkChainTool(Tool):
 
         try:
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            await asyncio.sleep(2)  # give Anvil time to boot
+            await asyncio.sleep(2)
             if proc.poll() is not None:
                 stderr = proc.stderr.read().decode() if proc.stderr else ""
-                return {"status": "error", "message": f"Anvil exited early: {stderr}"}
+                return {"status": "error", "error": f"Anvil exited early: {stderr}"}
             return {
-                "status": "ok",
+                "status": "success",
                 "pid": proc.pid,
                 "port": port,
                 "rpc": f"http://127.0.0.1:{port}",
@@ -81,7 +80,7 @@ class ForkChainTool(Tool):
                 "block_number": block,
             }
         except FileNotFoundError:
-            return {"status": "error", "message": "Anvil binary not found. Install Foundry first."}
+            return {"status": "error", "error": "Anvil binary not found. Install Foundry first."}
 
 
 class SimulateTxTool(Tool):
@@ -110,13 +109,15 @@ class SimulateTxTool(Tool):
         }
         payload = {"jsonrpc": "2.0", "method": "eth_call", "params": [tx_obj, "latest"], "id": 1}
 
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(rpc, json=payload)
-            result = resp.json()
-
-        if "error" in result:
-            return {"status": "error", "error": result["error"]}
-        return {"status": "ok", "result": result.get("result")}
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                resp = await client.post(rpc, json=payload)
+                result = resp.json()
+            if "error" in result:
+                return {"status": "error", "error": result["error"]}
+            return {"status": "success", "result": result.get("result")}
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
 
 
 class TraceTransactionTool(Tool):
@@ -141,20 +142,20 @@ class TraceTransactionTool(Tool):
             "id": 1,
         }
 
-        async with httpx.AsyncClient(timeout=60) as client:
-            resp = await client.post(rpc, json=payload)
-            result = resp.json()
-
-        if "error" in result:
-            return {"status": "error", "error": result["error"]}
-        return {"status": "ok", "trace": result.get("result")}
+        try:
+            async with httpx.AsyncClient(timeout=60) as client:
+                resp = await client.post(rpc, json=payload)
+                result = resp.json()
+            if "error" in result:
+                return {"status": "error", "error": result["error"]}
+            return {"status": "success", "trace": result.get("result")}
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
 
 
 # ────────────────────────── Tool Registry ─────────────────────────────────
 
 class ToolRegistry:
-    """Central registry for all MCP tools."""
-
     def __init__(self) -> None:
         self._tools: dict[str, Tool] = {}
 
@@ -186,8 +187,7 @@ registry.register(ForkChainTool())
 registry.register(SimulateTxTool())
 registry.register(TraceTransactionTool())
 
-
-app = FastAPI(title="SRP MCP Server", version="1.0.0")
+app = FastAPI(title="SRP MCP Server", version="1.1.0")
 
 
 class ExecuteRequest(BaseModel):
@@ -197,21 +197,37 @@ class ExecuteRequest(BaseModel):
 
 @app.get("/tools")
 async def list_tools():
-    """List all available MCP tools and their schemas."""
     return {"tools": registry.list_tools()}
 
 
 @app.post("/execute")
 async def execute_tool(req: ExecuteRequest):
-    """Execute a named tool with the given parameters."""
     tool = registry.get(req.tool)
     if not tool:
-        raise HTTPException(status_code=404, detail=f"Tool '{req.tool}' not found")
+        return {
+            "status": "error",
+            "tool": req.tool,
+            "error": f"Tool '{req.tool}' not found",
+            "execution_time": 0.0,
+        }
+    t0 = time.monotonic()
     try:
         result = await tool.execute(req.params)
-        return {"tool": req.tool, "result": result}
+        elapsed = round(time.monotonic() - t0, 4)
+        return {
+            "status": result.get("status", "success"),
+            "tool": req.tool,
+            "result": result,
+            "execution_time": elapsed,
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        elapsed = round(time.monotonic() - t0, 4)
+        return {
+            "status": "error",
+            "tool": req.tool,
+            "error": str(e),
+            "execution_time": elapsed,
+        }
 
 
 # ────────────────────────── Standalone ────────────────────────────────────

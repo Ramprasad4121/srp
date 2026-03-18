@@ -454,6 +454,42 @@ def blast_radius(exploit_url):
 
 
 @cli.command()
+@click.argument("path", default=".")
+def graph(path):
+    """Build and display the Security Reasoning Graph for a project.\n\n  Example: srp graph /path/to/contracts"""
+    from sol_parser.solidity_parser import SolidityParser
+    from srg.graph import SecurityReasoningGraph
+
+    console.print(f"[cyan]Building SRG from:[/cyan] {path}\n")
+    parser = SolidityParser(path)
+    parsed = parser.parse_all()
+    srg = SecurityReasoningGraph.from_parser_output(parsed)
+    s = srg.summary()
+
+    table = Table(title="SRG Summary", show_header=True)
+    table.add_column("Metric", style="cyan")
+    table.add_column("Count", style="green", justify="right")
+    table.add_row("Contracts", str(s["contracts"]))
+    table.add_row("Functions", str(s["functions"]))
+    table.add_row("States", str(s["states"]))
+    table.add_row("Edges", str(s["edges"]))
+    console.print(table)
+
+    console.print("\n[bold]Edge Breakdown:[/bold]")
+    for etype, count in s["edge_breakdown"].items():
+        if count > 0:
+            console.print(f"  {etype}: [green]{count}[/green]")
+
+    console.print("\n[bold]Sample Relationships (first 10):[/bold]")
+    for e in srg.edges[:10]:
+        console.print(f"  [{e.edge_type.value}] {e.source} → {e.target}")
+
+    density = s["edges"] / max(s["functions"], 1)
+    color = "green" if density >= 2 else "yellow" if density >= 1 else "red"
+    console.print(f"\n[{color}]Edge density: {density:.1f}x functions (target: ≥2.0x)[/{color}]")
+
+
+@cli.command()
 def status():
     """Show SRP system status — agents, skills, watchdog."""
     from core.skill_loader import SkillLoader
