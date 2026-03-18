@@ -2,7 +2,7 @@
 ---
 # Protocol: SecondSwap
 # Type: generic
-# Detected: 2026-03-18T14:03:44.357680
+# Detected: 2026-03-18T14:34:52.923936
 ---
 
 
