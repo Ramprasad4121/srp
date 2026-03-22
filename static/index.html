@@ -165,6 +165,23 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:
 .finding-code-label{font-family:var(--mono);font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-top:12px;margin-bottom:4px;}
 .poc-output{margin-top:4px;background:var(--bg-surface);border:1px solid rgba(0,255,136,0.15);padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--accent);white-space:pre-wrap;border-radius:2px;}
 
+/* H2: Solodit badge */
+.solodit-badge{font-family:var(--mono);font-size:0.6rem;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:2px;white-space:nowrap;color:var(--blue);background:rgba(68,136,255,0.12);border:1px solid rgba(68,136,255,0.3);text-decoration:none;}
+.solodit-badge:hover{background:rgba(68,136,255,0.2);}
+/* H3: Economic impact */
+.economic-impact{font-family:var(--mono);font-size:0.62rem;color:var(--text-dim);background:var(--bg-surface);border:1px solid var(--border);border-radius:2px;padding:4px 10px;margin-top:6px;display:inline-flex;align-items:center;gap:6px;}
+.economic-impact .impact-val{color:var(--text);}
+.economic-impact .impact-confirm{color:var(--accent);}
+.economic-impact .impact-likely{color:var(--amber);}
+/* H5: Domain badge */
+#domain-badge{display:none;}
+/* H6: Regression panel */
+.regression-panel{background:var(--bg-surface);border:1px solid var(--border);padding:20px 24px;margin-top:24px;border-radius:2px;}
+.regression-panel-title{font-family:var(--mono);font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;}
+.regression-item{font-family:var(--mono);font-size:0.72rem;display:flex;gap:12px;padding:4px 0;border-bottom:1px solid var(--border);}
+.regression-item:last-child{border-bottom:none;}
+.regression-pass{color:var(--accent);}.regression-fail{color:var(--red);}.regression-skip{color:var(--text-muted);}
+
 .skills-panel{border-top:1px solid var(--border);margin-top:40px;padding:24px 0;}
 .skills-toggle{font-family:var(--mono);font-size:0.7rem;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:8px;background:none;border:none;padding:0;}
 .skills-toggle:hover{color:var(--text);}
@@ -219,8 +236,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:
     <div class="stat-label">Contracts</div>
   </div>
   <div class="stat-block">
+    <!-- H4: Dynamic agent count -->
     <div class="stat-number" id="stat-agents">13</div>
     <div class="stat-label">Agents Deployed</div>
+    <!-- H5: Detected domain badge -->
+    <div id="domain-badge" style="display:none;font-family:var(--mono);font-size:0.65rem;color:var(--accent);background:var(--accent-dim);padding:3px 10px;border-radius:2px;border:1px solid rgba(0,255,136,0.25);text-transform:uppercase;letter-spacing:1px;margin-top:8px;display:inline-block;"></div>
   </div>
   <div class="stat-block">
     <div class="stat-number" id="stat-findings">0</div>
@@ -296,6 +316,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:
 
     <!-- FINDINGS -->
     <div class="findings-grid" id="findings-grid"></div>
+
+    <!-- H6: Regression test results panel -->
+    <div id="regression-panel" class="regression-panel" style="display:none">
+      <div class="regression-panel-title">Regression Test Results</div>
+      <div id="regression-list"></div>
+    </div>
   </div>
 
   <div class="skills-panel">
@@ -476,9 +502,29 @@ function showIntentSection(intent, plannerResult){
 /* ─── FINDINGS ─── */
 function pocBadge(f){
   const status=(f.poc_result||{}).status||'skipped';
-  const M={proven:['proven','✅ PROVEN ON FORK'],unproven:['unproven','⚠️ UNPROVEN'],compile_error:['compile_error','❌ COMPILE ERROR'],skipped:['skipped','— SKIPPED']};
+  const M={proven:['proven','✅ PROVEN ON FORK'],unproven:['unproven','⚠️ UNPROVEN'],compile_error:['compile_error','❌ COMPILE ERROR'],compile_error_scaffold:['compile_error','⚠️ COMPILE SCAFFOLD'],skipped:['skipped','— SKIPPED']};
   const[cls,label]=M[status]||M.skipped;
   return `<span class="poc-badge ${cls}">${label}</span>`;
+}
+
+/* H2: Solodit badge */
+function solodBadge(f){
+  const sid=f.solodit_id||f.solodit_url||'';
+  if(!sid)return '';
+  const url=f.solodit_url||`https://solodit.cyfrin.io/issues/${sid}`;
+  return `<a class="solodit-badge" href="${escapeHtml(url)}" target="_blank" rel="noopener">🔎 SOLODIT</a>`;
+}
+
+/* H3: Economic impact badge */
+function economicImpactBadge(f){
+  const ei=f.economic_impact||(f.poc_result||{}).economic_impact;
+  if(!ei)return '';
+  const min=ei.estimated_min_usd;
+  const max=ei.estimated_max_usd;
+  if(min===undefined||max===undefined)return '';
+  const fmt=n=>n>=1e6?`$${(n/1e6).toFixed(1)}M`:n>=1e3?`$${(n/1e3).toFixed(0)}K`:`$${n}`;
+  const exploitClass=ei.exploitability==='confirmed'?'impact-confirm':ei.exploitability==='likely'?'impact-likely':'';
+  return `<div class="economic-impact"><span>💰 Impact:</span><span class="impact-val ${exploitClass}">${fmt(min)}–${fmt(max)}</span><span style="color:var(--text-muted)">(${ei.exploitability||'theoretical'})</span>${ei.note?`<span style="color:var(--text-muted);font-size:0.58rem">${escapeHtml(ei.note.substring(0,50))}</span>`:''}</div>`;
 }
 
 function renderFindings(findings){
@@ -506,10 +552,12 @@ function renderFindings(findings){
         <div class="finding-left">
           <div class="finding-severity ${sev}">${sev.toUpperCase()}</div>
           ${pocBadge(f)}
+          ${solodBadge(f)}
         </div>
         <div class="finding-content">
           <h3>${escapeHtml(f.title||`Finding ${i+1}`)}</h3>
           ${loc?`<div class="finding-meta">Location: ${escapeHtml(loc)}</div>`:''}
+          ${economicImpactBadge(f)}
           ${summary?`<div class="finding-section-label">Summary</div><div class="finding-description">${escapeHtml(summary)}</div>`:''}
           ${rootCause?`<div class="finding-section-label">Root Cause</div><div class="finding-description">${escapeHtml(rootCause)}</div>`:''}
           ${internalPre?`<div class="finding-section-label">Internal Pre-conditions</div><div class="finding-description">${escapeHtml(internalPre)}</div>`:''}
@@ -523,11 +571,14 @@ function renderFindings(findings){
         </div>
       </div>`;
   }).join('');
+
+  // H6: Render regression test results panel
+  renderRegressionPanel(findings);
 }
 
 /* ─── SHOW RESULTS ─── */
 function showResults(data){
-  const score=typeof data.score==='number'?data.score:0;
+  const score=typeof data.score==='number'?data.score:(!data.findings || data.findings.length === 0 ? 100 : 0);
   safe('stat-score',el=>{el.textContent=score;});
   safe('final-score',el=>{el.textContent=score;});
   safe('status-text',el=>{el.textContent='AUDIT COMPLETE';});
@@ -555,6 +606,25 @@ function showResults(data){
   setTimeout(()=>{if(results)results.scrollIntoView({behavior:'smooth'});},150);
 }
 
+/* H6: Regression panel renderer */
+function renderRegressionPanel(findings){
+  const panel=$('regression-panel');
+  const list=$('regression-list');
+  if(!panel||!list)return;
+  const items=findings.filter(f=>f.poc_result&&f.poc_result.status);
+  if(!items.length){panel.style.display='none';return;}
+  panel.style.display='block';
+  const statusIcon={proven:'✅',unproven:'⚠️',compile_error:'❌',compile_error_scaffold:'⚠️',skipped:'—'};
+  const statusClass={proven:'regression-pass',unproven:'regression-fail',compile_error:'regression-fail',skipped:'regression-skip'};
+  list.innerHTML=items.map(f=>{
+    const st=(f.poc_result||{}).status||'skipped';
+    const icon=statusIcon[st]||'—';
+    const cls=statusClass[st]||'regression-skip';
+    const sev=normalizeSev(f.severity||'medium');
+    return `<div class="regression-item"><span class="${cls}">${icon}</span><span style="color:var(--text-dim)">${escapeHtml((f.title||'Finding').substring(0,60))}</span><span class="sev-tag ${sev}" style="margin-left:auto">${sev.toUpperCase()}</span></div>`;
+  }).join('');
+}
+
 /* ─── POLL ─── */
 async function pollStatus(){
   if(auditComplete)return;
@@ -574,6 +644,16 @@ async function pollStatus(){
     if(data.project)safe('project-name',el=>{el.textContent=data.project;});
     if(data.contracts_total!==undefined)safe('stat-contracts',el=>{el.textContent=data.contracts_total;});
     if(data.agent_statuses)Object.entries(data.agent_statuses).forEach(([id,st])=>setAgentStatus(id,st));
+
+    // H4: Dynamic agent count
+    const allAgents=Object.values(AGENTS).flat();
+    safe('stat-agents',el=>{el.textContent=allAgents.length;});
+
+    // H5: Show detected domain badge during audit
+    if(data.detected_domain&&data.detected_domain!=='unknown'&&data.detected_domain!=='generic'){
+      const db=$('domain-badge');
+      if(db){db.textContent=data.detected_domain.toUpperCase();db.style.display='inline-block';}
+    }
 
     if(data.current_run_id && data.current_run_id !== currentRunId){
       currentRunId = data.current_run_id;

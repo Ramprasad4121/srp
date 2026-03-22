@@ -1,37 +1,37 @@
-# SRP Security Reasoning Protocol
-.srp/
-.env
-thoughts.md
-PROMPT.md
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Local Data/Artifacts
-reports/*.md
-traces/*.json
-
-# Node
-node_modules/
+*.py[cod]
+*.egg-info/
+*.egg
 dist/
-artifacts/
-cache/
-typechain/
-typechain-types/
+build/
+*.whl
 
-# Virtual Environment
+# Environment
+.env
 venv/
 .venv/
-env/
-.env/
 
-# Telegram Bot
-*.pid
-tg_bot.log
-tg_claude.py
-CLAUDE.md
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Foundry
+out/
+cache/
+
+# Runtime artifacts
+.runtime/
+traces/
+outputs/
+evolution_history/
+reports/*.json
+
+# SRP ephemeral
+.srp-assumptions.json
+.srp-context.json

@@ -1,0 +1,6 @@
+{"timestamp": "2026-03-22T05:43:37.921400Z", "role": "system", "content": "Agent run started for UpgradeSafetyCheckerV2"}
+{"timestamp": "2026-03-22T05:43:37.940709Z", "role": "error", "content": "Agent run failed: \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""}
+{"timestamp": "2026-03-22T05:47:50.846273Z", "role": "system", "content": "Agent run started for UpgradeSafetyCheckerV2"}
+{"timestamp": "2026-03-22T05:47:50.876005Z", "role": "error", "content": "Agent run failed: \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""}
+{"timestamp": "2026-03-22T05:48:07.197172Z", "role": "system", "content": "Agent run started for UpgradeSafetyCheckerV2"}
+{"timestamp": "2026-03-22T05:48:07.217895Z", "role": "error", "content": "Agent run failed: \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""}

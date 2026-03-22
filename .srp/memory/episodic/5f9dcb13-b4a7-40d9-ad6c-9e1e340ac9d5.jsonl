@@ -1,0 +1,6 @@
+{"timestamp": "2026-03-22T05:43:37.885400Z", "role": "system", "content": "Agent run started for SimpleV2Agent"}
+{"timestamp": "2026-03-22T05:43:37.903618Z", "role": "error", "content": "Agent run failed: \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""}
+{"timestamp": "2026-03-22T05:47:50.803469Z", "role": "system", "content": "Agent run started for SimpleV2Agent"}
+{"timestamp": "2026-03-22T05:47:50.824757Z", "role": "error", "content": "Agent run failed: \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""}
+{"timestamp": "2026-03-22T05:48:07.156413Z", "role": "system", "content": "Agent run started for SimpleV2Agent"}
+{"timestamp": "2026-03-22T05:48:07.177254Z", "role": "error", "content": "Agent run failed: \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""}

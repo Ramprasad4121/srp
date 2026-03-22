@@ -5,8 +5,8 @@ setup(
     name="srp-protocol",
     version="0.1.0",
     description="Security Reasoning Protocol",
-    packages=find_packages(),
-    py_modules=["srp"],
+    package_dir={"": "src"},
+    packages=find_packages(where="src"),
     python_requires=">=3.10",
     install_requires=[
         "fastapi",
@@ -23,7 +23,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "srp=srp:cli",
+            "srp=srp.cli.srp:cli",
         ],
     },
 )

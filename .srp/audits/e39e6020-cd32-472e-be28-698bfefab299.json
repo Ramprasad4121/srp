@@ -1,0 +1,813 @@
+{
+  "current_run_id": "ed825d6cd72d43e2ae9e6d2e5f41a86d",
+  "project": "srp",
+  "project_name": "srp",
+  "intent": {
+    "intent_id": "2bada6f5-99ed-44f8-89fb-118e50dfa7ea",
+    "task": "Audit all contracts in /Users/ramprasadgoud/Desktop/eth/srp/contracts. Focus on reentrancy, access control, invariant violations, oracle manipulation.",
+    "scope": "/Users/ramprasadgoud/Desktop/eth/srp/contracts",
+    "risk_level": "medium",
+    "skills": [],
+    "budget": 0.0,
+    "created_at": "2026-03-22T05:37:43.736639+00:00",
+    "protocol_intent": {
+      "protocol_name": "SRP \u2014 Security Reasoning Protocol",
+      "protocol_type": "generic",
+      "summary": "Protocol intent extracted from 1 documentation sources.",
+      "invariants": [],
+      "access_control_rules": [],
+      "trust_assumptions": [],
+      "critical_functions": [],
+      "economic_model": ""
+    }
+  },
+  "recon": {
+    "contract_map": {
+      "contracts": [],
+      "risk_contracts": []
+    },
+    "entry_points": {},
+    "external_calls": [],
+    "access_control": [],
+    "functions": [],
+    "state_vars": [],
+    "risk_surface": []
+  },
+  "srg_summary": {
+    "contracts": 2,
+    "functions": 13,
+    "states": 18,
+    "edges": 100,
+    "edge_breakdown": {
+      "CALLS": 2,
+      "READS": 48,
+      "WRITES": 19,
+      "INHERITS": 0,
+      "EXTERNAL_CALL": 2,
+      "HAS_FUNCTION": 11,
+      "HAS_STATE": 18
+    }
+  },
+  "plan": {
+    "protocol_type": "unknown",
+    "confidence": 0.4,
+    "attack_surfaces": [
+      "LLM failed \u2014 using rule-based fallback"
+    ],
+    "plan": [
+      {
+        "priority": 1,
+        "target": "all_contracts",
+        "action": "automated security review",
+        "reason": "fallback plan triggered"
+      }
+    ],
+    "fallback": true,
+    "error": "llm_failed"
+  },
+  "attacks": [
+    {
+      "strategy": "flashloan",
+      "status": "no_exploit",
+      "profit": 0,
+      "confidence": 0.0
+    },
+    {
+      "strategy": "oracle",
+      "status": "no_exploit",
+      "profit": 0,
+      "confidence": 0.0
+    },
+    {
+      "strategy": "reentrancy",
+      "status": "no_exploit",
+      "profit": 0,
+      "confidence": 0.0
+    }
+  ],
+  "attack": {
+    "vulnerabilities": [],
+    "attack_summary": "Courtroom Debate finalized 0 findings."
+  },
+  "defense": {
+    "reviewed_vulnerabilities": [],
+    "overall_security_score": 100,
+    "security_score": 100
+  },
+  "trace": {
+    "trace_id": "e39e6020-cd32-472e-be28-698bfefab299",
+    "input_hash": "95bbe159445fe84419318644acdbe8a471fdf02fa376ef6934ea57436d101ebb",
+    "output_hash": "66de9f7b909105f4eb825246370aad9b4c778530ad192998f5c2e52f774e0248",
+    "agent_version": "srp-2026.1",
+    "model": "gpt-4o-mini",
+    "skill_sequence": [
+      "IntentAgent",
+      "ReconAgent",
+      "AttackAgent",
+      "DefenseAgent",
+      "TraceAgent"
+    ],
+    "skills_used": [
+      {
+        "name": "solidity-auditor",
+        "source": "audit-skills",
+        "git_hash": "unknown",
+        "applied_to": [
+          "AttackAgent",
+          "DefenseAgent"
+        ]
+      }
+    ],
+    "all_steps": [
+      {
+        "timestamp": "2026-03-22T05:37:43.005589+00:00",
+        "agent": "IntentAgent",
+        "step": "intent_run_started",
+        "data": {
+          "context_keys": [
+            "current_run_id",
+            "api_key",
+            "raw_input",
+            "contract_paths",
+            "budget_usd",
+            "project_root",
+            "project_name",
+            "project",
+            "shared_notes_path",
+            "available_skills",
+            "findings",
+            "skills",
+            "srg",
+            "srg_summary",
+            "plan",
+            "planner_result",
+            "detected_domain",
+            "attack_surfaces",
+            "protocol_type",
+            "protocol_intent",
+            "solodit_findings",
+            "solodit_intelligence",
+            "assumptions"
+          ]
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:43.005677+00:00",
+        "agent": "IntentAgent",
+        "step": "intent_inputs_extracted",
+        "data": {
+          "raw_input_preview": "Audit all contracts in /Users/ramprasadgoud/Desktop/eth/srp/contracts. Focus on reentrancy, access control, invariant violations, oracle manipulation.",
+          "contract_paths": [
+            "/Users/ramprasadgoud/Desktop/eth/srp/contracts"
+          ]
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:43.005694+00:00",
+        "agent": "IntentAgent",
+        "step": "intent_prompt_built",
+        "data": {
+          "system_preview": "You are an intent parser for a smart contract security workflow. Extract structured intent fields from user instructions. Return ONLY valid JSON with keys: task_description, audit_scope, risk_level, skills_needed, estimated_budget_usd. risk_level must be one of: low, medium, high, critical. skills_n",
+          "message_count": 1
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:43.249385+00:00",
+        "agent": "IntentAgent",
+        "step": "llm_call_started",
+        "data": {
+          "model": "moonshot/kimi-k2.5",
+          "message_count": 1,
+          "system_preview": "---\n\n# CURRENT TASK\n\nYou are an intent parser for a smart contract security workflow. Extract structured intent fields from user instructions. Return ONLY valid JSON with keys: task_description, audit_scope, risk_level, skills_needed, estimated_budget_usd. risk_level must be one of: low, medium, high, critical. skills_needed must be a JSON array of strings. estimated_budget_usd must be a number.",
+          "budget_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:43.736280+00:00",
+        "agent": "IntentAgent",
+        "step": "llm_call_failed",
+        "data": {
+          "error": "LLM call failed: NotFoundError: 404 page not found",
+          "model": "gpt-4o-mini",
+          "error_type": "NotFoundError"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:43.736335+00:00",
+        "agent": "IntentAgent",
+        "step": "intent_llm_response_received",
+        "data": {
+          "response_preview": "{\"vulnerabilities\": []}"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:43.736562+00:00",
+        "agent": "IntentAgent",
+        "step": "intent_llm_response_parsed",
+        "data": {
+          "parsed": {
+            "vulnerabilities": []
+          }
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:43.736598+00:00",
+        "agent": "IntentAgent",
+        "step": "intent_fields_normalized",
+        "data": {
+          "normalized": {
+            "task_description": "Audit all contracts in /Users/ramprasadgoud/Desktop/eth/srp/contracts. Focus on reentrancy, access control, invariant violations, oracle manipulation.",
+            "audit_scope": "/Users/ramprasadgoud/Desktop/eth/srp/contracts",
+            "risk_level": "medium",
+            "skills_needed": [],
+            "estimated_budget_usd": 0.0
+          }
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:43.739799+00:00",
+        "agent": "IntentAgent",
+        "step": "protocol_intent_engine_started",
+        "data": {
+          "project_root": "/Users/ramprasadgoud/Desktop/eth/srp"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.046500+00:00",
+        "agent": "IntentAgent",
+        "step": "llm_call_started",
+        "data": {
+          "model": "moonshot/kimi-k2.5",
+          "message_count": 1,
+          "system_preview": "---\n\n# CURRENT TASK\n\nYou are a protocol security analyst. Your task is to extract what a DeFi protocol PROMISES to guarantee \u2014 its invariants, security assumptions, and trust boundaries.\n\nRead all provided documentation (README, whitepaper, docs, NatSpec comments, SPEC files) and extract the protocol's intended behavior as structured data.\n\nBased on this protocol documentation and function signatu",
+          "budget_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.176631+00:00",
+        "agent": "IntentAgent",
+        "step": "llm_call_failed",
+        "data": {
+          "error": "LLM call failed: NotFoundError: 404 page not found",
+          "model": "gpt-4o-mini",
+          "error_type": "NotFoundError"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.178507+00:00",
+        "agent": "IntentAgent",
+        "step": "protocol_intent_engine_completed",
+        "data": {
+          "protocol_name": "SRP \u2014 Security Reasoning Protocol",
+          "protocol_type": "generic",
+          "invariant_count": 0,
+          "trust_boundary_count": 0,
+          "assumption_count": 0,
+          "collection_stats": {
+            "docs_collected": 1,
+            "doc_sources": [
+              "README:README.md"
+            ],
+            "natspec_entries": 5,
+            "invariant_natspec": 0,
+            "total_doc_chars": 987
+          }
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.178981+00:00",
+        "agent": "IntentAgent",
+        "step": "shared_notes_written",
+        "data": {
+          "path": "/Users/ramprasadgoud/Desktop/eth/srp/outputs/SHARED_TASK_NOTES.md",
+          "lines": 41
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.179010+00:00",
+        "agent": "IntentAgent",
+        "step": "intent_built",
+        "data": {
+          "intent_keys": [
+            "intent_id",
+            "task",
+            "scope",
+            "risk_level",
+            "skills",
+            "budget",
+            "created_at",
+            "protocol_intent"
+          ]
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.183533+00:00",
+        "agent": "ReconAgent",
+        "step": "recon_run_started",
+        "data": {
+          "context_keys": [
+            "current_run_id",
+            "api_key",
+            "raw_input",
+            "contract_paths",
+            "budget_usd",
+            "project_root",
+            "project_name",
+            "project",
+            "shared_notes_path",
+            "available_skills",
+            "findings",
+            "skills",
+            "srg",
+            "srg_summary",
+            "plan",
+            "planner_result",
+            "detected_domain",
+            "attack_surfaces",
+            "protocol_type",
+            "protocol_intent",
+            "solodit_findings",
+            "solodit_intelligence",
+            "assumptions",
+            "intent_output",
+            "intent_id",
+            "task",
+            "scope",
+            "risk_level",
+            "budget",
+            "created_at",
+            "selected_skill_name",
+            "selected_skill_content",
+            "selected_skill"
+          ]
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.183581+00:00",
+        "agent": "ReconAgent",
+        "step": "recon_inputs_extracted",
+        "data": {
+          "contract_path_count": 1,
+          "contract_paths": [
+            "/Users/ramprasadgoud/Desktop/eth/srp/contracts"
+          ]
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.183955+00:00",
+        "agent": "ReconAgent",
+        "step": "recon_sol_files_discovered",
+        "data": {
+          "sol_file_count": 2,
+          "sol_files": [
+            "/Users/ramprasadgoud/Desktop/eth/srp/contracts/SRPBudget.sol",
+            "/Users/ramprasadgoud/Desktop/eth/srp/contracts/SRPPolicy.sol"
+          ]
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.184204+00:00",
+        "agent": "ReconAgent",
+        "step": "recon_sol_sources_loaded",
+        "data": {
+          "loaded_file_count": 2,
+          "total_source_chars": 7141,
+          "failed_files": []
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.184237+00:00",
+        "agent": "ReconAgent",
+        "step": "recon_prompt_built",
+        "data": {
+          "system_preview": "Analyze the provided Solidity sources and map the contract architecture. Return ONLY this compact JSON, nothing else, no preamble:\n{\n  \"contracts\": [\"ContractName1\", \"ContractName2\", ...],\n  \"risk_contracts\": [\"HighRiskContract1\", ...],\n  \"entry_points\": {\"ContractName\": [\"func1\", \"func2\"]},\n  \"external_calls\": [\"Contr",
+          "message_count": 1,
+          "user_prompt_chars": 7464
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.185196+00:00",
+        "agent": "ReconAgent",
+        "step": "llm_call_started",
+        "data": {
+          "model": "moonshot/kimi-k2.5",
+          "message_count": 1,
+          "system_preview": "---\n\n# SHARED PROTOCOL NOTES\n\n\n---\n# Protocol: SRP \u2014 Security Reasoning Protocol\n# Type: generic\n# Detected: 2026-03-22T11:07:52.178672\n---\n\n\n## What This Protocol Does\nProtocol intent extracted from 1 documentation sources.\n\n\n\n## Key Invariants\n- No invariants detected\n\n\n\n## Critical Functions to Hunt\n- No critical functions identified\n\n\n\n## Trust Assumptions\n- No trust assumptions identified\n\n\n\n",
+          "budget_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.354054+00:00",
+        "agent": "ReconAgent",
+        "step": "llm_call_failed",
+        "data": {
+          "error": "LLM call failed: NotFoundError: 404 page not found",
+          "model": "gpt-4o-mini",
+          "error_type": "NotFoundError"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.354086+00:00",
+        "agent": "ReconAgent",
+        "step": "recon_llm_response_received",
+        "data": {
+          "response_preview": "{\"vulnerabilities\": []}"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.354128+00:00",
+        "agent": "ReconAgent",
+        "step": "recon_llm_response_parsed",
+        "data": {
+          "parsed_keys": [
+            "vulnerabilities"
+          ]
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.354148+00:00",
+        "agent": "ReconAgent",
+        "step": "recon_result_normalized",
+        "data": {
+          "result": {
+            "contract_map": {
+              "contracts": [],
+              "risk_contracts": []
+            },
+            "entry_points": {},
+            "external_calls": [],
+            "access_control": [],
+            "functions": [],
+            "state_vars": [],
+            "risk_surface": []
+          }
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.732191+00:00",
+        "agent": "AttackAgent",
+        "step": "attack_run_started",
+        "data": {
+          "context_keys": [
+            "current_run_id",
+            "api_key",
+            "raw_input",
+            "contract_paths",
+            "budget_usd",
+            "project_root",
+            "project_name",
+            "project",
+            "shared_notes_path",
+            "available_skills",
+            "findings",
+            "skills",
+            "srg",
+            "srg_summary",
+            "plan",
+            "planner_result",
+            "detected_domain",
+            "attack_surfaces",
+            "protocol_type",
+            "protocol_intent",
+            "solodit_findings",
+            "solodit_intelligence",
+            "assumptions",
+            "intent_output",
+            "intent_id",
+            "task",
+            "scope",
+            "risk_level",
+            "budget",
+            "created_at",
+            "selected_skill_name",
+            "selected_skill_content",
+            "selected_skill",
+            "recon_output",
+            "functions",
+            "state_vars",
+            "external_calls",
+            "entry_points",
+            "risk_surface",
+            "contract_map",
+            "sol_sources",
+            "matched_skills",
+            "evolved_strategies",
+            "attacks",
+            "secondary_domain",
+            "secondary_confidence"
+          ]
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.732215+00:00",
+        "agent": "AttackAgent",
+        "step": "attack_skill_loaded",
+        "data": {
+          "skill": "solidity-auditor",
+          "source": "audit-skills",
+          "version": "1"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:52.732223+00:00",
+        "agent": "AttackAgent",
+        "step": "attack_inputs_extracted",
+        "data": {
+          "contract_map_keys": [
+            "SRPBudget",
+            "SRPPolicy"
+          ],
+          "entry_points_count": 1
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:56.637846+00:00",
+        "agent": "AttackAgent",
+        "step": "business_logic_pass_started",
+        "data": {
+          "entry_points_count": 1
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:56.638811+00:00",
+        "agent": "AttackAgent",
+        "step": "llm_call_started",
+        "data": {
+          "model": "moonshot/kimi-k2.5",
+          "message_count": 1,
+          "system_preview": "---\n\n# SHARED PROTOCOL NOTES\n\n\n---\n# Protocol: SRP \u2014 Security Reasoning Protocol\n# Type: generic\n# Detected: 2026-03-22T11:07:52.178672\n---\n\n\n## What This Protocol Does\nProtocol intent extracted from 1 documentation sources.\n\n\n\n## Key Invariants\n- No invariants detected\n\n\n\n## Critical Functions to Hunt\n- No critical functions identified\n\n\n\n## Trust Assumptions\n- No trust assumptions identified\n\n\n\n",
+          "budget_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:56.763002+00:00",
+        "agent": "AttackAgent",
+        "step": "llm_call_failed",
+        "data": {
+          "error": "LLM call failed: NotFoundError: 404 page not found",
+          "model": "meta/llama-3.1-405b-instruct",
+          "error_type": "NotFoundError"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:56.763099+00:00",
+        "agent": "AttackAgent",
+        "step": "business_logic_pass_completed",
+        "data": {
+          "logic_flaw_count": 0
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:56.763121+00:00",
+        "agent": "AttackAgent",
+        "step": "invariant_pass_started",
+        "data": {}
+      },
+      {
+        "timestamp": "2026-03-22T05:37:56.763534+00:00",
+        "agent": "AttackAgent",
+        "step": "llm_call_started",
+        "data": {
+          "model": "moonshot/kimi-k2.5",
+          "message_count": 1,
+          "system_preview": "---\n\n# SHARED PROTOCOL NOTES\n\n\n---\n# Protocol: SRP \u2014 Security Reasoning Protocol\n# Type: generic\n# Detected: 2026-03-22T11:07:52.178672\n---\n\n\n## What This Protocol Does\nProtocol intent extracted from 1 documentation sources.\n\n\n\n## Key Invariants\n- No invariants detected\n\n\n\n## Critical Functions to Hunt\n- No critical functions identified\n\n\n\n## Trust Assumptions\n- No trust assumptions identified\n\n\n\n",
+          "budget_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:56.886501+00:00",
+        "agent": "AttackAgent",
+        "step": "llm_call_failed",
+        "data": {
+          "error": "LLM call failed: NotFoundError: 404 page not found",
+          "model": "meta/llama-3.1-405b-instruct",
+          "error_type": "NotFoundError"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:56.886580+00:00",
+        "agent": "AttackAgent",
+        "step": "invariant_pass_completed",
+        "data": {
+          "invariant_count": 0
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:56.886601+00:00",
+        "agent": "AttackAgent",
+        "step": "hypothesis_pass_started",
+        "data": {}
+      },
+      {
+        "timestamp": "2026-03-22T05:37:56.886915+00:00",
+        "agent": "AttackAgent",
+        "step": "llm_call_started",
+        "data": {
+          "model": "moonshot/kimi-k2.5",
+          "message_count": 1,
+          "system_preview": "---\n\n# SHARED PROTOCOL NOTES\n\n\n---\n# Protocol: SRP \u2014 Security Reasoning Protocol\n# Type: generic\n# Detected: 2026-03-22T11:07:52.178672\n---\n\n\n## What This Protocol Does\nProtocol intent extracted from 1 documentation sources.\n\n\n\n## Key Invariants\n- No invariants detected\n\n\n\n## Critical Functions to Hunt\n- No critical functions identified\n\n\n\n## Trust Assumptions\n- No trust assumptions identified\n\n\n\n",
+          "budget_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.077394+00:00",
+        "agent": "AttackAgent",
+        "step": "llm_call_failed",
+        "data": {
+          "error": "LLM call failed: NotFoundError: 404 page not found",
+          "model": "meta/llama-3.1-405b-instruct",
+          "error_type": "NotFoundError"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.077585+00:00",
+        "agent": "AttackAgent",
+        "step": "hypothesis_pass_completed",
+        "data": {
+          "hypothesis_count": 0
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.077761+00:00",
+        "agent": "AttackAgent",
+        "step": "agent_log",
+        "data": {
+          "message": "[ZERO] Skipped \u2014 no signature/arithmetic patterns detected"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.077941+00:00",
+        "agent": "AttackAgent",
+        "step": "courtroom_debate_pass_started",
+        "data": {
+          "hypothesis_count": 0
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.078065+00:00",
+        "agent": "AttackAgent",
+        "step": "courtroom_debate_pass_completed",
+        "data": {
+          "vulnerability_count": 0
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.078140+00:00",
+        "agent": "AttackAgent",
+        "step": "ghost_pass_started",
+        "data": {}
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.078578+00:00",
+        "agent": "AttackAgent",
+        "step": "agent_log",
+        "data": {
+          "message": "ghost_skills_loaded \u2014 0 chars"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.079382+00:00",
+        "agent": "AttackAgent",
+        "step": "llm_call_started",
+        "data": {
+          "model": "moonshot/kimi-k2.5",
+          "message_count": 1,
+          "system_preview": "---\n\n# SHARED PROTOCOL NOTES\n\n\n---\n# Protocol: SRP \u2014 Security Reasoning Protocol\n# Type: generic\n# Detected: 2026-03-22T11:07:52.178672\n---\n\n\n## What This Protocol Does\nProtocol intent extracted from 1 documentation sources.\n\n\n\n## Key Invariants\n- No invariants detected\n\n\n\n## Critical Functions to Hunt\n- No critical functions identified\n\n\n\n## Trust Assumptions\n- No trust assumptions identified\n\n\n\n",
+          "budget_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.206422+00:00",
+        "agent": "AttackAgent",
+        "step": "llm_call_failed",
+        "data": {
+          "error": "LLM call failed: NotFoundError: 404 page not found",
+          "model": "meta/llama-3.1-405b-instruct",
+          "error_type": "NotFoundError"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.206549+00:00",
+        "agent": "AttackAgent",
+        "step": "ghost_pass_completed",
+        "data": {
+          "vulnerability_count": 0
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.206658+00:00",
+        "agent": "AttackAgent",
+        "step": "agent_log",
+        "data": {
+          "message": "vulns_passed_to_defense \u2014 0 total"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.206690+00:00",
+        "agent": "AttackAgent",
+        "step": "attack_run_completed",
+        "data": {
+          "vulnerability_count": 0,
+          "attack_summary_preview": "Courtroom Debate finalized 0 findings."
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.209239+00:00",
+        "agent": "DefenseAgent",
+        "step": "defense_run_started",
+        "data": {
+          "context_keys": [
+            "current_run_id",
+            "api_key",
+            "raw_input",
+            "contract_paths",
+            "budget_usd",
+            "project_root",
+            "project_name",
+            "project",
+            "shared_notes_path",
+            "available_skills",
+            "findings",
+            "skills",
+            "srg",
+            "srg_summary",
+            "plan",
+            "planner_result",
+            "detected_domain",
+            "attack_surfaces",
+            "protocol_type",
+            "protocol_intent",
+            "solodit_findings",
+            "solodit_intelligence",
+            "assumptions",
+            "intent_output",
+            "intent_id",
+            "task",
+            "scope",
+            "risk_level",
+            "budget",
+            "created_at",
+            "selected_skill_name",
+            "selected_skill_content",
+            "selected_skill",
+            "recon_output",
+            "functions",
+            "state_vars",
+            "external_calls",
+            "entry_points",
+            "risk_surface",
+            "contract_map",
+            "sol_sources",
+            "matched_skills",
+            "evolved_strategies",
+            "attacks",
+            "secondary_domain",
+            "secondary_confidence",
+            "attack_output",
+            "vulnerabilities",
+            "attack_summary"
+          ]
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.209303+00:00",
+        "agent": "DefenseAgent",
+        "step": "defense_skill_loaded",
+        "data": {
+          "skill": "solidity-auditor",
+          "role": "defense"
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.209326+00:00",
+        "agent": "DefenseAgent",
+        "step": "defense_inputs_extracted",
+        "data": {
+          "vulnerability_count": 0
+        }
+      },
+      {
+        "timestamp": "2026-03-22T05:37:57.209360+00:00",
+        "agent": "DefenseAgent",
+        "step": "defense_run_completed",
+        "data": {
+          "reviewed_count": 0,
+          "overall_security_score": 100
+        }
+      }
+    ],
+    "assumptions": [
+      "selected_skill_name: solidity-auditor",
+      "selected_skill_content:"
+    ],
+    "confidence": 1.0,
+    "timestamp": "2026-03-22T05:37:57.217793+00:00",
+    "erc8004_agent_id": null,
+    "x402_tx": null
+  },
+  "report": {
+    "report_md": "{\"vulnerabilities\": []}\n\n## Executive Summary\nContent unavailable in initial model output.\n\n## Scope & Methodology\nContent unavailable in initial model output.\n\n## High-Impact Findings (from AttackAgent, validated by DefenseAgent)\nContent unavailable in initial model output.\n\n## Risk Matrix Table (severity \u00d7 likelihood)\nContent unavailable in initial model output.\n\n## Detailed Vulnerability Breakdown (per finding with code snippets and fix)\nContent unavailable in initial model output.\n\n## Security Score (from DefenseAgent)\nContent unavailable in initial model output.\n\n## Recommendations\nContent unavailable in initial model output.\n\n## Appendix: Reasoning Trace Hash\nReasoning trace hash: `66de9f7b909105f4eb825246370aad9b4c778530ad192998f5c2e52f774e0248`\n",
+    "report_path": "/Users/ramprasadgoud/Desktop/eth/srp/reports/e39e6020-cd32-472e-be28-698bfefab299.md",
+    "summary": "Content unavailable in initial model output."
+  }
+}

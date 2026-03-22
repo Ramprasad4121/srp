@@ -1,2 +1,0 @@
-[console_scripts]
-srp = srp_pkg.main:main

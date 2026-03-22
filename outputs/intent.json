@@ -1,41 +1,63 @@
 {
-  "protocol_name": "SRP — Security Reasoning Protocol",
+  "protocol_name": "SRP (Security Reasoning Protocol)",
   "protocol_type": "generic",
-  "summary": "AI agent army for smart contract security",
+  "summary": "AI-powered smart contract security analysis protocol featuring x402-compatible budget management for agent services, ERC-8004 style policy registries, and intent-based approval systems for autonomous security agents.",
   "invariants": [
     {
       "id": "INV-001",
-      "description": "The total budget locked in SRPBudget contract should always be equal to the sum of individual budgets.",
-      "formal": "sum(budgets) == totalBudget",
+      "description": "Budget solvency: Locked funds must always cover all settled and pending obligations. The contract must never allow settlement amounts to exceed the locked budget balance.",
+      "formal": "lockedBalance >= totalSettled + sum(pendingIntents[i].amount) for all i",
       "severity_if_broken": "high",
       "category": "economic"
     },
     {
       "id": "INV-002",
-      "description": "The SRPPolicy contract should only allow approved intents to be executed.",
-      "formal": "approveIntent(intent) == true => executeIntent(intent) == true",
+      "description": "Intent approval consistency: The view function approveIntent() and the state-changing approveIntentWithEvent() must return identical boolean approval decisions for identical intent parameters to prevent state divergence.",
+      "formal": "approveIntent(intent) == approveIntentWithEvent(intent).approvalState",
+      "severity_if_broken": "high",
+      "category": "state"
+    },
+    {
+      "id": "INV-003",
+      "description": "Policy-authorized settlement: Budget settlement can only be triggered by agents registered in SRPPolicy with active authorization for the specific intent type, preventing unauthorized fund drainage.",
+      "formal": "settle(intent) requires SRPPolicy.isAuthorized(msg.sender, intent) == true ∧ SRPPolicy.isActiveAgent(msg.sender) == true",
       "severity_if_broken": "high",
       "category": "access"
     },
     {
-      "id": "INV-003",
-      "description": "The VulnerableVault contract should not allow unauthorized access to its funds.",
-      "formal": "balanceOf(unauthorizedUser) == 0",
-      "severity_if_broken": "high",
-      "category": "access"
+      "id": "INV-004",
+      "description": "Event-state correspondence: approveIntentWithEvent must emit exactly one IntentApproved or IntentRejected event per invocation, and the event parameters must match the actual approval decision and consumed budget amount.",
+      "formal": "∀ calls: emitCount ∈ {1} ∧ event.decision == internalDecision ∧ event.caller == msg.sender",
+      "severity_if_broken": "medium",
+      "category": "ordering"
+    },
+    {
+      "id": "INV-005",
+      "description": "Budget immutability during pending settlement: Locked budget amounts associated with pending intents cannot be withdrawn or reallocated until the intent is either settled or explicitly rejected.",
+      "formal": "intent.status == PENDING → budget.lockedAmount[intent.id] == constant",
+      "severity_if_broken": "medium",
+      "category": "state"
     }
   ],
   "access_control_rules": [
-    "Only approved intents can be executed by SRPPolicy contract",
-    "Only authorized users can access funds in VulnerableVault contract"
+    "Only the budget owner can lock and unlock funds in SRPBudget",
+    "Only agents registered in SRPPolicy with valid ERC-8004 credentials can call approveIntentWithEvent",
+    "Only the SRPPolicy contract or its designated oracle can update agent authorization statuses",
+    "Settlement execution requires dual authorization from both the budget contract (sufficient funds) and policy contract (intent approval)"
   ],
   "trust_assumptions": [
-    "The SRPBudget contract is assumed to be secure and trustworthy",
-    "The SRPPolicy contract is assumed to be secure and trustworthy"
+    "AI agents registered in the policy registry act according to their declared capabilities and do not collude to drain budgets",
+    "The x402 payment rail provides accurate settlement confirmations",
+    "The approveIntentWithEvent function is called atomically with off-chain agent execution to prevent intent replay",
+    "Budget oracle prices (if any) are accurate and tamper-resistant"
   ],
   "critical_functions": [
     "approveIntentWithEvent",
-    "executeIntent"
+    "settle",
+    "lockBudget",
+    "unlockBudget",
+    "registerAgent",
+    "updatePolicy"
   ],
-  "economic_model": "The SRP protocol does not have a clear economic model, but it is designed to provide security auditing services for smart contracts."
+  "economic_model": "Pay-per-use security analysis with escrow-based budget management. Users lock funds in x402-compatible budget contracts. Autonomous AI agents consume locked funds based on policy-approved intents (audit tasks). Settlement occurs after service delivery with event-logged approval trails. Fees are deducted from locked amounts upon successful intent fulfillment."
 }
