@@ -10,14 +10,14 @@
 Security Reasoning Protocol — AI Agent Army for Smart Contracts
 
   ✅ Scope detected: 
-/Users/ramprasadgoud/Desktop/eth/srp/contracts (2 contracts 
+/Users/ramprasadgoud/Downloads/building/srp/2026-03-NFT-dealers/src (2 contracts
 direct in folder)
-╭────────────────────── Mission Briefing ───────────────────────╮
-│ SRP AUDIT                                                     │
-│                                                               │
-│   Project:   srp                                              │
-│   Target:    .                                                │
-│   Contracts: 2 Solidity files                                 │
-│   Agents:    13 deploying...                                  │
-│   Dashboard: http://localhost:7337                            │
-╰───────────────────────────────────────────────────────────────╯
+╭────────────────────────────── Mission Briefing ──────────────────────────────╮
+│ SRP AUDIT                                                                    │
+│                                                                              │
+│   Project:   2026-03-NFT-dealers                                             │
+│   Target:    2026-03-NFT-dealers                                             │
+│   Contracts: 2 Solidity files                                                │
+│   Agents:    13 deploying...                                                 │
+│   Dashboard: http://localhost:7337                                           │
+╰──────────────────────────────────────────────────────────────────────────────╯

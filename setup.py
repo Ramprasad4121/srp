@@ -21,6 +21,11 @@ setup(
         "click",
         "networkx",
     ],
+    extras_require={
+        "dev": [
+            "gstack",
+        ],
+    },
     entry_points={
         "console_scripts": [
             "srp=srp.cli.srp:cli",

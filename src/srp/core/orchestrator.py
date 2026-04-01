@@ -71,8 +71,13 @@ DOMAIN_KEYWORDS: dict[str, set[str]] = {
 }
 
 
+from srp.core.store import SRPStore
+from srp.core.mcp.mcp_server import SRPMCPServer
+
 class SRPOrchestrator:
     def __init__(self) -> None:
+        self.store = SRPStore()
+        self.mcp_server = SRPMCPServer()
         self.intent_agent = IntentAgent()
         self.recon_agent = ReconAgent()
         self.attack_agent = AttackAgent()
@@ -83,8 +88,26 @@ class SRPOrchestrator:
         self.skills: dict[str, str] = {}
         self.mcp = MCPWrapper()
         self.evolution = EvolutionEngine(mcp=self.mcp)
-        self.context: dict[str, Any] = {}
-        self.current_run_id: str | None = None
+        
+        # Register tools
+        self.mcp_server.register_tool("run_full_audit", self.run_full_audit)
+        self.mcp_server.register_tool("get_findings", self.store.get_findings)
+
+    @property
+    def current_run_id(self):
+        return self.store.current_run_id
+
+    @current_run_id.setter
+    def current_run_id(self, value):
+        self.store.current_run_id = value
+
+    @property
+    def context(self):
+        return self.store.context
+    
+    @context.setter
+    def context(self, value):
+        self.store.context = value
 
     def set_status_callback(self, fn) -> None:
         self.status_callback = fn

@@ -1,0 +1,70 @@
+name: SRP Attack Philosophy
+philosophy: | 
+  ---
+  # SRP Attack Philosophy
+  # Where Critical Bugs Actually Live
+  
+  ## 1. Business Logic (THE #1 KILLER)
+  Not Solidity quirks. Not compiler bugs. The protocol does exactly what
+  the code says, but what the code says is wrong relative to what the
+  whitepaper intended.
+  
+  Hunt for:
+  - Reward calculation that double-counts under specific deposit/withdraw ordering
+  - Liquidation logic that becomes unprofitable at certain collateral ratios
+  - Fee accounting that rounds in the wrong direction and is drainable over time
+  
+  Static tools don't catch this. You must hold the entire state machine in
+  context and reason about what the protocol PROMISED vs what the code DOES.
+  
+  ## 2. Access Control
+  - Functions that should be onlyOwner but aren't
+  - Initializers callable by anyone (classic proxy bug)
+  - Two-step processes where step 2 doesn't verify step 1 happened
+  - Admin functions that bypass all safety checks user-facing functions have
+  
+  Every protocol has 3-4 functions one missing modifier away from full drain.
+  
+  ## 3. External Call Handling
+  - Reentrancy on ETH transfers and ERC777 token hooks
+  - Assuming external call succeeded without checking return value
+  - Calling untrusted contract mid-state (checks-effects-interactions violated)
+  - Low-level .call() that silently fails and code continues anyway
+  
+  ## 4. Oracle and Price Feed Integration
+  - Spot price from thin Uniswap pool used as collateral value
+  - No staleness check on Chainlink — feed hasn't updated in 6 hours
+  - TWAP window too short to resist flashloan manipulation
+  - Price from reserve0/reserve1 directly — one sync() call away from wrong
+  
+  ## 5. Arithmetic at Boundary Values
+  - Division before multiplication causing precision loss
+  - Rounding consistently in user's favor instead of protocol's — drainable
+  - uint underflow in unchecked blocks
+  - First depositor / share inflation attack when totalSupply == 0
+  
+  ## 6. State Synchronization in Multi-Contract Systems
+  - Vault knows total assets, strategy also tracks separately — desync after failed harvest
+  - Bridge tracks locked funds on chain A and minted on chain B — inconsistency = free money
+  - Any two contracts holding state that must stay in sync
+  
+  ## 7. Upgrade and Initialization Logic
+  - Storage slot collisions in proxy patterns
+  - initialize() not protected, callable after deployment
+  - New implementation storage layout incompatible with old one
+  - Constructor logic that doesn't run in proxy deployments
+  
+  ## Core Principle
+  The bugs that drain protocols are almost never what junior auditors
+  spend time on. They are in the INTERACTION between correct-looking
+  components — where reward math meets withdrawal logic, where oracle
+  meets liquidation trigger, where upgrade meets access control.
+  
+  Build a complete mental model of how the system is supposed to behave.
+  Then actively try to break that model.
+  Everything else is just tooling.
+  ---
+methodology: | 
+  See philosophy.
+guardrails:
+  - "Follow the philosophy."
