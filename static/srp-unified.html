@@ -57,9 +57,12 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); height:
 
 <header class="header">
   <div class="logo">SRP // MISSION CONTROL</div>
-  <div class="status">
-    <div class="status-dot"></div>
-    <span id="status-text">AUDITING: <span id="project-label">PROJECT</span></span>
+  <div style="display:flex; align-items:center; gap:20px;">
+    <button id="start-audit-btn" style="background:var(--accent-dim); border:1px solid var(--accent); color:var(--accent); font-family:var(--mono); font-size:0.6rem; padding:4px 12px; cursor:pointer; border-radius:4px; text-transform:uppercase; letter-spacing:1px;">Start New Audit</button>
+    <div class="status">
+      <div class="status-dot"></div>
+      <span id="status-text">AUDITING: <span id="project-label">PROJECT</span></span>
+    </div>
   </div>
 </header>
 
@@ -102,10 +105,47 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); height:
     stream.scrollTop = stream.scrollHeight;
   }
 
+  function updateIntentUI(data) {
+    document.getElementById('active-note-title').textContent = 'Phase 1: Reconnaissance';
+    const summary = data.summary || '';
+    const invariants = data.invariants || [];
+    document.getElementById('active-note-content').innerHTML = `
+      <p>${summary}</p><br>
+      <p><strong>PROMISES IDENTIFIED:</strong></p>
+      <ul>${invariants.map(i => `<li>${i.description}</li>`).join('')}</ul>
+    `;
+    document.getElementById('project-label').textContent = data.protocol_name || 'PROJECT';
+  }
+
   // SSE Listener
   const eventSource = new EventSource('/stream');
   eventSource.onmessage = (event) => {
     const data = JSON.parse(event.data);
+    
+    if (data.event === 'sync') {
+      // Clear and populate logs
+      stream.innerHTML = '';
+      data.data.logs.forEach(log => {
+        // Extract agent name if present in [AGENT] format
+        const match = log.match(/^[^\[]*\[([^\]]+)\] (.*)/);
+        if (match) {
+          addLog(match[1], match[2]);
+        } else {
+          addLog('SYSTEM', log);
+        }
+      });
+      
+      // Update other UI elements if intent/plan ready
+      if (data.data.protocol_intent) {
+        updateIntentUI(data.data.protocol_intent);
+      }
+      return;
+    }
+
+    if (data.event === 'intent_ready') {
+      updateIntentUI(data.data);
+      return;
+    }
     
     if (data.event === 'agent_start') {
       addLog(data.agent, 'Analyzing protocol logic...');
@@ -124,17 +164,26 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); height:
       addLog(data.agent, 'Phase complete.');
       
       // Expert Note Handoff
-      if (data.agent === 'Phase1:Recon') {
-        document.getElementById('active-note-title').textContent = 'Phase 1: Reconnaissance';
-        document.getElementById('active-note-content').innerHTML = `<p>${data.data.summary}</p><br><p><strong>PROMISES IDENTIFIED:</strong></p><ul>${data.data.invariants.map(i => `<li>${i.description}</li>`).join('')}</ul>`;
+      if (data.agent === 'IntentAgent' || data.agent === 'Phase1:Recon') {
+        updateIntentUI(data.data.protocol_intent || data.data);
       }
-      if (data.agent === 'Phase2:Mapping') {
+      if (data.agent === 'ReconAgent' || data.agent === 'Phase2:Mapping') {
         document.getElementById('active-note-title').textContent = 'Phase 2: Architecture Mapping';
-        document.getElementById('active-note-content').innerHTML = `<p><strong>CONTRACTS:</strong> ${data.data.contracts.join(', ')}</p><br><p><strong>TRUST BOUNDARIES:</strong></p><ul>${data.data.external_calls.map(c => `<li>${c}</li>`).join('')}</ul>`;
+        const contracts = data.data.contracts || [];
+        const external = data.data.external_calls || [];
+        document.getElementById('active-note-content').innerHTML = `
+          <p><strong>CONTRACTS:</strong> ${contracts.join(', ')}</p><br>
+          <p><strong>TRUST BOUNDARIES:</strong></p>
+          <ul>${external.map(c => `<li>${c}</li>`).join('')}</ul>
+        `;
       }
-      if (data.agent === 'Phase3:Notes') {
+      if (data.agent === 'AttackAgent' || data.agent === 'Phase3:Notes') {
         document.getElementById('active-note-title').textContent = 'Phase 3: Attack Hypotheses';
-        document.getElementById('active-note-content').innerHTML = `<p><strong>HUNTING LIST (Top 20-30):</strong></p><br>${data.data.hypotheses ? data.data.hypotheses : 'Generating hypotheses...'}`;
+        const hypotheses = data.data.hypotheses || 'Generating hypotheses...';
+        document.getElementById('active-note-content').innerHTML = `
+          <p><strong>HUNTING LIST (Top 20-30):</strong></p><br>
+          ${hypotheses}
+        `;
       }
     }
 
@@ -145,6 +194,23 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); height:
 
   document.addEventListener('DOMContentLoaded', () => {
     theater = new ProtocolTheater('theater-container');
+
+    document.getElementById('start-audit-btn').addEventListener('click', () => {
+      const contract = prompt("Enter contract path or code:", "contracts/SRPBudget.sol");
+      if (contract) {
+        fetch('/api/audit/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contract_code: contract, description: `Audit of ${contract}` })
+        }).then(r => r.json()).then(data => {
+          if (data.status === 'started') {
+            addLog('SYSTEM', '🚀 Manual audit trigger accepted.');
+          } else {
+            alert('Error: ' + (data.error || 'Failed to start audit'));
+          }
+        });
+      }
+    });
   });
 </script>
 </body>

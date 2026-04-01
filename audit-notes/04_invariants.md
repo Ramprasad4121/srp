@@ -1,0 +1,5 @@
+- INV-001: x402 Settlement Ceiling: For any budget identifier in SRPBudget, the cumulative amount settled must never exceed the initially locked amount. This prevents over-drawing of agent execution budgets.
+- INV-002: View Function Purity: The approveIntent() function in SRPPolicy must remain a strict view method that does not modify storage state or emit events. State-changing operations must only occur in approveIntentWithEvent().
+- INV-003: Policy-Based Authorization: Intent approval must only succeed (return true) if the agent is registered in the SRPPolicy registry and the intent parameters satisfy the active policy constraints for that agent.
+- INV-004: Budget Conservation: For any user account, the sum of available balance, total locked budgets across all budget IDs, and total settled amounts must always equal the total deposits made by that user.
+- INV-005: Budget Ownership and Delegation: Settlement and withdrawal operations on a locked budget must only be executable by the budget owner or addresses explicitly authorized as delegates for that specific budget.

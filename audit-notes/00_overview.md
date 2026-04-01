@@ -1,0 +1,1 @@
+AI agent security auditing infrastructure featuring x402-compatible on-chain budget locking for agent resource payments and ERC-8004 style policy registry for agent authorization and intent validation. Enables automated smart contract auditing via AI agents with micropayment settlement based on policy-compliant execution.

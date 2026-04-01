@@ -1,4 +1,11 @@
-INFO:     Started server process [48959]
+/Users/ramprasadgoud/Downloads/building/srp/src/srp/server/server.py:180: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+INFO:     Started server process [69468]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:7337 (Press CTRL+C to quit)
@@ -8,17 +15,12 @@ INFO:     Uvicorn running on http://0.0.0.0:7337 (Press CTRL+C to quit)
 ║  13 Agents Active | Skills Loaded: 27 ║
 ║  http://localhost:7337                ║
 ╚═══════════════════════════════════════╝
-  → Auto-starting audit on target: /Users/ramprasadgoud/Downloads/building/srp/test_projects/2026-03-NFT-dealers/src
+INFO:     127.0.0.1:50762 - "POST /api/audit/start HTTP/1.1" 200 OK
 [SRP] [Orchestrator] Methodology Phase 3: NotesEngine Initialized
-[DEBUG] project: 2026-03-NFT-dealers
+[DEBUG] project: srp
 [Anvil] Using binary: /Users/ramprasadgoud/.foundry/bin/anvil
-[Anvil] Started on port 8545 (pid 48977)
+[Anvil] Started on port 8545 (pid 69480)
 [SRP] [Orchestrator] anvil_started
-[Attack] Running strategies (Methodology Hunting List)...
-INFO:     127.0.0.1:59668 - "GET /stream HTTP/1.1" 200 OK
-[PoC Verifier] Toolchain detected: forge
-[PoC Verifier] 0/0 PROVEN
-[Anvil] Stopped
-INFO:     127.0.0.1:59672 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59672 - "GET /static/ProtocolTheater.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59672 - "GET /stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50773 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50773 - "GET /static/ProtocolTheater.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50773 - "GET /stream HTTP/1.1" 200 OK

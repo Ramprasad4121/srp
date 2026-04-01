@@ -449,7 +449,7 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
                     }
             elif event == "step":
                 step_name = data.get("step", "") if isinstance(data, dict) else ""
-                if step_name and not step_name.endswith("_started"):
+                if step_name:
                     preview = ""
                     if isinstance(data, dict):
                         d = data.get("data", data)
@@ -470,6 +470,11 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
 
         audit_state["logs"].append("🕷️  [SPIDER] Mapping contract dependencies...")
         audit_state["logs"].append("🔍 [WATCHDOG] Classifying threat surface...")
+        
+        # Broadcast initial logs to existing clients
+        for msg in ["🕷️  [SPIDER] Mapping contract dependencies...", "🔍 [WATCHDOG] Classifying threat surface..."]:
+            for q in sse_queues:
+                await q.put({"event": "step", "agent": "SYSTEM", "data": {"step": msg}})
 
         result = await _run_audit(audit_req, emit=emit)
 
@@ -677,6 +682,21 @@ sse_queues: list[asyncio.Queue] = []
 async def stream_audit(request: Request):
     async def event_generator():
         q: asyncio.Queue = asyncio.Queue()
+        
+        # Send existing logs and current state as a 'sync' event
+        initial_payload = {
+            "event": "sync",
+            "data": {
+                "logs": audit_state.get("logs", []),
+                "status": audit_state.get("status", "idle"),
+                "protocol_intent": audit_state.get("protocol_intent"),
+                "planner_result": audit_state.get("planner_result"),
+                "score": audit_state.get("score", 100),
+                "findings": audit_state.get("findings", []),
+            }
+        }
+        yield f"data: {json.dumps(initial_payload, default=str)}\n\n"
+
         sse_queues.append(q)
         try:
             while True:
