@@ -404,7 +404,16 @@ class SRPOrchestrator:
             context.update(recon)
 
             # Update Notes: Architecture & Value Flows
-            self.notes.write_note("01_architecture.md", f"Contracts: {', '.join(recon.get('contracts', []))}", append=False)
+            contracts = recon.get("contracts", [])
+            # Robustly handle if LLM returns dicts or strings
+            contract_names = []
+            for c in contracts:
+                if isinstance(c, dict):
+                    contract_names.append(c.get("name", str(c)))
+                else:
+                    contract_names.append(str(c))
+            
+            self.notes.write_note("01_architecture.md", f"Contracts: {', '.join(contract_names)}", append=False)
             
             await self._emit_status("Phase2:Mapping", "completed", recon)
         except Exception as exc:
@@ -418,8 +427,17 @@ class SRPOrchestrator:
             context["hypotheses"] = hypo_result.get("hypotheses", [])
             
             # Populate Hypotheses in Notes
-            hypo_text = "\n".join([f"- {h['id']}: {h['title']} ({h['affected_function']})" for h in context["hypotheses"]])
-            self.notes.write_note("05_attack_hypotheses.md", hypo_text, append=False)
+            hypo_lines = []
+            for h in context["hypotheses"]:
+                if isinstance(h, dict):
+                    h_id = h.get("id", "HYP-000")
+                    h_title = h.get("title", "No Title")
+                    h_fn = h.get("affected_function", "all")
+                    hypo_lines.append(f"- {h_id}: {h_title} ({h_fn})")
+                else:
+                    hypo_lines.append(f"- {str(h)}")
+            
+            self.notes.write_note("05_attack_hypotheses.md", "\n".join(hypo_lines), append=False)
             
             await self._emit_status("Phase3:Notes", "completed", {"hypotheses": len(context["hypotheses"])})
         except Exception as exc:
