@@ -699,6 +699,9 @@ async def stream_audit(request: Request):
 
 @app.get("/")
 async def root():
+    unified_index = os.path.join(static_dir, "srp-unified.html")
+    if os.path.exists(unified_index):
+        return FileResponse(unified_index)
     static_index = os.path.join(static_dir, "index.html")
     if os.path.exists(static_index):
         return FileResponse(static_index)

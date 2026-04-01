@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRP — Mission Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#050505; --bg-surface:#0a0a0a; --bg-card:#0f0f0f;
+  --border:#1a1a1a; --border-bright:#2a2a2a;
+  --text:#e0e0e0; --text-dim:#666; --text-muted:#444;
+  --accent:#00ff88; --accent-dim:rgba(0,255,136,0.15);
+  --red:#ff4444; --red-dim:rgba(255,68,68,0.15);
+  --amber:#ffaa00; --amber-dim:rgba(255,170,0,0.15);
+  --mono:'JetBrains Mono',monospace; --sans:'Inter',sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:var(--sans); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+.header { height:60px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 24px; flex-shrink:0; }
+.logo { font-family:var(--mono); font-weight:700; color:var(--accent); font-size:1.2rem; }
+.status { display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:0.7rem; color:var(--text-dim); }
+.status-dot { width:8px; height:8px; background:var(--accent); border-radius:50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+.main { display:flex; flex:1; overflow:hidden; }
+
+/* Mission Control (Left) */
+.mission-control { width:300px; border-right:1px solid var(--border); display:flex; flex-direction:column; background:var(--bg-surface); }
+.panel-label { font-family:var(--mono); font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:2px; padding:16px 20px; border-bottom:1px solid var(--border); }
+.log-stream { flex:1; overflow-y:auto; padding:10px 0; font-family:var(--mono); font-size:0.7rem; }
+.log-line { padding:4px 20px; display:flex; gap:10px; border-bottom:1px solid rgba(255,255,255,0.02); }
+.log-agent { color:var(--accent); font-weight:600; min-width:70px; }
+
+/* SRG Graph (Center) */
+.srg-canvas { flex:1; background:var(--bg); position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.srg-placeholder { text-align:center; color:var(--text-muted); font-family:var(--mono); }
+.contract-node { border:1px solid var(--border-bright); background:var(--bg-card); padding:12px 20px; border-radius:2px; font-family:var(--mono); font-size:0.8rem; position:absolute; }
+.finding-pin { width:12px; height:12px; border-radius:50%; background:var(--red); position:absolute; cursor:pointer; box-shadow:0 0 10px var(--red); }
+
+/* Deep Dive (Right) */
+.deep-dive { width:350px; border-left:1px solid var(--border); background:var(--bg-surface); display:flex; flex-direction:column; }
+.deep-dive-content { padding:24px; flex:1; overflow-y:auto; }
+.finding-title { font-family:var(--mono); font-weight:700; color:var(--red); margin-bottom:12px; }
+.finding-meta { font-size:0.75rem; color:var(--text-dim); margin-bottom:20px; }
+.tab-container { display:flex; border-bottom:1px solid var(--border); }
+.tab { padding:10px 16px; font-family:var(--mono); font-size:0.65rem; color:var(--text-muted); cursor:pointer; }
+.tab.active { color:var(--accent); border-bottom:2px solid var(--accent); }
+
+.footer { height:30px; border-top:1px solid var(--border); display:flex; align-items:center; padding:0 24px; font-family:var(--mono); font-size:0.6rem; color:var(--text-muted); flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">SRP // MISSION CONTROL</div>
+  <div class="status">
+    <div class="status-dot"></div>
+    <span id="status-text">AUDITING: 2026-03-NFT-DEALERS</span>
+  </div>
+</header>
+
+<div class="main">
+  <aside class="mission-control">
+    <div class="panel-label">Mission Control</div>
+    <div class="log-stream" id="log-stream">
+      <div class="log-line"><span class="log-agent">SYSTEM</span> <span>Initializing agent army...</span></div>
+      <div class="log-line"><span class="log-agent">VIPER</span> <span>Analyzing NFTDealers.sol logic</span></div>
+      <div class="log-line"><span class="log-agent">GHOST</span> <span>Checking for reentrancy vectors</span></div>
+    </div>
+  </aside>
+
+  <section class="srg-canvas">
+    <div class="contract-node" style="top:40%; left:20%;">MockUSDC.sol</div>
+    <div class="contract-node" style="top:40%; right:20%;">NFTDealers.sol</div>
+    <div class="finding-pin" style="top:42%; right:18%;" title="Click to investigate"></div>
+    <div class="srg-placeholder">
+      <p>[ SECURITY REASONING GRAPH ]</p>
+      <p style="font-size:0.6rem; margin-top:10px;">PROVEN FINDINGS HIGHLIGHTED IN RED</p>
+    </div>
+  </section>
+
+  <aside class="deep-dive">
+    <div class="panel-label">Deep Dive</div>
+    <div class="deep-dive-content">
+      <div class="finding-title">#R1: Reentrancy Vulnerability</div>
+      <div class="finding-meta">LOCATION: NFTDealers.sol::buyNFT()</div>
+      <div class="tab-container">
+        <div class="tab active">PROOF</div>
+        <div class="tab">REASONING</div>
+        <div class="tab">FIX</div>
+      </div>
+      <div style="margin-top:20px; font-family:var(--mono); font-size:0.7rem; color:var(--accent);">
+        // Foundry trace shows state change after external call...
+        // [PASS] testReentrancyBuy()
+      </div>
+    </div>
+  </aside>
+</div>
+
+<footer class="footer">
+  C0 / H1 / M0 / L0 | SRG: 12 NODES | MCP: 13 AGENTS | SYSTEM: STABLE
+</footer>
+
+<script>
+  // Simple simulation for QA
+  const stream = document.getElementById('log-stream');
+  const agents = ['VIPER', 'GHOST', 'SHIELD', 'ZERO', 'COMMAND'];
+  const msgs = ['Scanning entry points...', 'Generating exploit...', 'Verification failed, retrying...', 'Invariant violation found', 'Finalizing report...'];
+  
+  setInterval(() => {
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    const agent = agents[Math.floor(Math.random() * agents.length)];
+    const msg = msgs[Math.floor(Math.random() * msgs.length)];
+    line.innerHTML = `<span class="log-agent">${agent}</span> <span>${msg}</span>`;
+    stream.appendChild(line);
+    stream.scrollTop = stream.scrollHeight;
+  }, 3000);
+</script>
+</body>
+</html>
