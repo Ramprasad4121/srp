@@ -1,14 +1,16 @@
 import asyncio
 import os
 import sys
-
-sys.path.insert(0, "/Users/ramprasadgoud/Desktop/ETH/srp")
-from agents.recon_agent import ReconAgent
-from server import get_project, _write_contract_source
 from pathlib import Path
 
+# Add src/srp to sys.path
+srp_root = Path(__file__).parent.parent
+sys.path.insert(0, str(srp_root / "src" / "srp"))
+from agents.recon_agent import ReconAgent
+from server.server import get_project, _write_contract_source
+
 def test():
-    project_root = "/Users/ramprasadgoud/Desktop/ETH/2026-03-intuition"
+    project_root = str(srp_root / "test_projects" / "2026-03-NFT-dealers")
     target_path = project_root + "/src"
     sources = {}
     exclude = {"node_modules", ".git", "lib", "cache", "out", "artifacts", ".srp"}

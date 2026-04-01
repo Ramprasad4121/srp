@@ -73,73 +73,8 @@ SRP uses Foundry for smart contract testing. The project structure supports:
 ## Security Notes
 SRP handles sensitive blockchain data and API keys. All secrets should be stored in `.env` files and excluded from version control via `.gitignore`.
 
-## gstack Integration
+## gstack
 
-### Installation
-```bash
-# Already installed in ~/.claude/skills/gstack
-# Run setup if needed: cd ~/.claude/skills/gstack && ./setup
-```
+Use the /browse skill from gstack for all web browsing. Never use mcp__claude-in-chrome__* tools.
 
-### Usage Guidelines
-- Use the `/browse` skill from gstack for all web browsing tasks
-- Never use mcp__claude-in-chrome__* tools
-- For Chrome automation, use `/connect-chrome` instead
-
-### Available gstack Skills
-- /office-hours: YC-style startup consultation
-- /plan-ceo-review: CEO/founder-mode plan review
-- /plan-eng-review: Engineering manager plan review
-- /plan-design-review: Designer's eye plan review
-- /design-consultation: Complete design system proposal
-- /design-shotgun: Generate multiple design variants
-- /design-html: Design to HTML conversion
-- /review: Pre-landing PR review
-- /ship: Ship workflow (detect, test, review, deploy)
-- /land-and-deploy: Merge PR + verify production health
-- /canary: Post-deploy monitoring
-- /benchmark: Performance regression detection
-- /browse: Fast headless browser for QA testing
-- /connect-chrome: Real Chrome controlled by gstack
-- /qa: Systematic QA testing and bug fixing
-- /qa-only: Report-only QA testing
-- /design-review: Designer's eye visual QA
-- /setup-browser-cookies: Import cookies from real Chrome
-- /setup-deploy: Configure deployment settings
-- /retro: Weekly engineering retrospective
-- /investigate: Systematic debugging with root cause analysis
-- /document-release: Post-ship documentation updates
-- /codex: OpenAI Codex CLI wrapper
-- /cso: Chief Security Officer mode
-- /autoplan: Auto-review pipeline with sequential skills
-- /careful: Safety guardrails for destructive commands
-- /freeze: Restrict file edits to specific directory
-- /guard: Full safety mode (destructive warnings + directory scope)
-- /unfreeze: Clear freeze boundary
-- /gstack-upgrade: Upgrade gstack to latest version
-- /learn: Manage project learnings
-
-### Troubleshooting
-If gstack skills aren't working, run `cd .claude/skills/gstack && ./setup` to build the binary and register skills.
-
-## Also Add to Project?
-
-Yes - gstack has been added to the project as a development dependency. All teammates will get it automatically when they install the project with development dependencies:
-
-```bash
-pip install -e ".[dev]"
-```
-
-See the README.md for usage instructions and available gstack skills.
-
-### Quick gstack Commands
-
-```bash
-# Use skills with /skill-name
-/browse         # Fast headless browser for QA testing
-/office-hours    # YC-style startup consultation
-/plan-ceo-review # CEO/founder-mode plan review
-/ship           # Ship workflow (detect, test, review, deploy)
-/review         # Pre-landing PR review
-/investigate    # Systematic debugging with root cause analysis
-```
+Available skills: /office-hours, /plan-ceo-review, /plan-eng-review, /plan-design-review, /design-consultation, /design-shotgun, /design-html, /review, /ship, /land-and-deploy, /canary, /benchmark, /browse, /connect-chrome, /qa, /qa-only, /design-review, /setup-browser-cookies, /setup-deploy, /retro, /investigate, /document-release, /codex, /cso, /autoplan, /careful, /freeze, /guard, /unfreeze, /gstack-upgrade, /learn

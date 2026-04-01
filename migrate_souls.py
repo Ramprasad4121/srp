@@ -75,7 +75,7 @@ def migrate():
         print(f"Migrated {filename} to {yaml_filename}")
 
 def extract_section(content, section_name):
-    pattern = rf"{re.escape(section_name)}(.*?)(?=^## |$)"
+    pattern = rf"^{re.escape(section_name)}\s*\n(.*?)(?=\n## |\Z)"
     match = re.search(pattern, content, re.MULTILINE | re.DOTALL)
     if match:
         return match.group(1).strip()

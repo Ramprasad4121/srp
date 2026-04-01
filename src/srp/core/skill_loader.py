@@ -70,17 +70,77 @@ class SkillLoader:
     }
 
     def __init__(self, root_dir: str | Path | None = None) -> None:
-        self.root_dir = Path(root_dir) if root_dir is not None else Path(__file__).resolve().parents[1]
+        self.root_dir = Path(root_dir) if root_dir is not None else Path(__file__).resolve().parents[3]
 
     def load_soul(self, agent_name: str) -> str:
-        """Load the soul file for an agent. Returns empty string if not found."""
-        soul_path = self.SOUL_REGISTRY.get(agent_name)
-        if not soul_path:
+        """Load the soul file for an agent. Returns empty string if not found.
+        Supports both .md and .yaml formats, reconstructing Markdown from YAML if needed.
+        """
+        soul_path_rel = self.SOUL_REGISTRY.get(agent_name)
+        if not soul_path_rel:
             return ""
-        full_path = self.root_dir / soul_path
-        if not full_path.exists():
+
+        # Try both .md and .yaml extensions
+        base_path = self.root_dir / soul_path_rel
+        paths_to_try = [base_path, base_path.with_suffix(".yaml"), base_path.with_suffix(".md")]
+        
+        full_path = None
+        for p in paths_to_try:
+            if p.exists() and p.is_file():
+                full_path = p
+                break
+                
+        if not full_path:
             return ""
-        return full_path.read_text()
+
+        if full_path.suffix == ".yaml":
+            try:
+                import yaml
+                data = yaml.safe_load(full_path.read_text(encoding="utf-8"))
+                if not data:
+                    return ""
+                
+                # Reconstruct Markdown for backward compatibility with tests and agents
+                lines = []
+                lines.append(f"# {data.get('name', agent_name)} Soul\n")
+                
+                # Reconstruct sections from philosophy/methodology
+                # Note: migrate_souls.py combined sections, so we try to split them back
+                # or just provide them under generic headers if we can't.
+                
+                philosophy = data.get("philosophy", "")
+                methodology = data.get("methodology", "")
+                guardrails = data.get("guardrails", [])
+                
+                lines.append("## WHO YOU ARE")
+                lines.append(philosophy if philosophy else "No philosophy provided.")
+                lines.append("")
+                
+                lines.append("## YOUR HUNTING GROUND")
+                lines.append(methodology if methodology else "No methodology provided.")
+                lines.append("")
+                
+                lines.append("## YOUR METHODOLOGY")
+                lines.append("See hunting ground.")
+                lines.append("")
+                
+                lines.append("## YOUR STANDARDS")
+                if guardrails:
+                    for g in guardrails:
+                        lines.append(f"- {g}")
+                else:
+                    lines.append("- No standards provided.")
+                lines.append("")
+                
+                lines.append("## YOUR PHILOSOPHY")
+                lines.append("See who you are.")
+                lines.append("")
+                
+                return "\n".join(lines)
+            except Exception:
+                return ""
+        
+        return full_path.read_text(encoding="utf-8")
 
     def load(self, skill_key: str) -> str:
         rel_path = self.SKILL_REGISTRY.get(skill_key)

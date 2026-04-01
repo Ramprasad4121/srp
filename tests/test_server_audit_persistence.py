@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import server
+import server.server as srp_server
 from core.project import SRPProject
 
 
@@ -67,13 +67,13 @@ class ServerAuditPersistenceTests(unittest.TestCase):
                 return result
 
             original_root = os.environ.get("SRP_PROJECT_ROOT")
-            server._project = None
+            srp_server._project = None
             os.environ["SRP_PROJECT_ROOT"] = str(project_root)
             try:
-                with patch("server._run_audit", new=fake_run_audit):
-                    asyncio.run(server.run_audit(str(contract_path), "Audit the sample contract"))
+                with patch("server.server._run_audit", new=fake_run_audit):
+                    asyncio.run(srp_server.run_audit(str(contract_path), "Audit the sample contract"))
             finally:
-                server._project = None
+                srp_server._project = None
                 if original_root is None:
                     os.environ.pop("SRP_PROJECT_ROOT", None)
                 else:

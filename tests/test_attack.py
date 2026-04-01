@@ -1,10 +1,12 @@
 import asyncio
 import os
 import sys
+from pathlib import Path
 
-# Change to srp directory
-sys.path.insert(0, "/Users/ramprasadgoud/Desktop/ETH/srp")
-os.chdir("/Users/ramprasadgoud/Desktop/ETH/srp")
+# Add src/srp to sys.path
+srp_root = Path(__file__).parent.parent
+sys.path.insert(0, str(srp_root / "src" / "srp"))
+os.chdir(str(srp_root))
 
 from agents.attack_agent import AttackAgent
 from dotenv import load_dotenv

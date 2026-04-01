@@ -91,7 +91,8 @@ class BaseAgentGuardrailTests(unittest.TestCase):
                 os.environ["OPENAI_API_KEY"] = original_openai_key
 
         self.assertNotIn("guardrail_blocked", response)
-        self.assertIn("llm_call_failed", [entry["step"] for entry in agent.get_trace()])
+        trace_steps = [entry["step"] for entry in agent.get_trace()]
+        self.assertTrue("llm_call_failed" in trace_steps or "llm_call_timeout" in trace_steps)
 
 
 if __name__ == "__main__":

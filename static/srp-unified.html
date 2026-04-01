@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="/static/ProtocolTheater.js"></script>
 <style>
 :root {
   --bg:#050505; --bg-surface:#0a0a0a; --bg-card:#0f0f0f;
@@ -36,10 +38,8 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); height:
 .log-agent { color:var(--accent); font-weight:600; min-width:70px; }
 
 /* SRG Graph (Center) */
-.srg-canvas { flex:1; background:var(--bg); position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; }
-.srg-placeholder { text-align:center; color:var(--text-muted); font-family:var(--mono); }
-.contract-node { border:1px solid var(--border-bright); background:var(--bg-card); padding:12px 20px; border-radius:2px; font-family:var(--mono); font-size:0.8rem; position:absolute; }
-.finding-pin { width:12px; height:12px; border-radius:50%; background:var(--red); position:absolute; cursor:pointer; box-shadow:0 0 10px var(--red); }
+.srg-canvas { flex:1; background:var(--bg); position:relative; overflow:hidden; }
+#theater-container { width:100%; height:100%; }
 
 /* Deep Dive (Right) */
 .deep-dive { width:350px; border-left:1px solid var(--border); background:var(--bg-surface); display:flex; flex-direction:column; }
@@ -59,7 +59,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); height:
   <div class="logo">SRP // MISSION CONTROL</div>
   <div class="status">
     <div class="status-dot"></div>
-    <span id="status-text">AUDITING: 2026-03-NFT-DEALERS</span>
+    <span id="status-text">AUDITING: <span id="project-label">PROJECT</span></span>
   </div>
 </header>
 
@@ -67,59 +67,85 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); height:
   <aside class="mission-control">
     <div class="panel-label">Mission Control</div>
     <div class="log-stream" id="log-stream">
-      <div class="log-line"><span class="log-agent">SYSTEM</span> <span>Initializing agent army...</span></div>
-      <div class="log-line"><span class="log-agent">VIPER</span> <span>Analyzing NFTDealers.sol logic</span></div>
-      <div class="log-line"><span class="log-agent">GHOST</span> <span>Checking for reentrancy vectors</span></div>
+      <div class="log-line"><span class="log-agent">SYSTEM</span> <span>Initializing expert audit protocol...</span></div>
     </div>
   </aside>
 
   <section class="srg-canvas">
-    <div class="contract-node" style="top:40%; left:20%;">MockUSDC.sol</div>
-    <div class="contract-node" style="top:40%; right:20%;">NFTDealers.sol</div>
-    <div class="finding-pin" style="top:42%; right:18%;" title="Click to investigate"></div>
-    <div class="srg-placeholder">
-      <p>[ SECURITY REASONING GRAPH ]</p>
-      <p style="font-size:0.6rem; margin-top:10px;">PROVEN FINDINGS HIGHLIGHTED IN RED</p>
-    </div>
+    <div id="theater-container"></div>
   </section>
 
   <aside class="deep-dive">
-    <div class="panel-label">Deep Dive</div>
-    <div class="deep-dive-content">
-      <div class="finding-title">#R1: Reentrancy Vulnerability</div>
-      <div class="finding-meta">LOCATION: NFTDealers.sol::buyNFT()</div>
-      <div class="tab-container">
-        <div class="tab active">PROOF</div>
-        <div class="tab">REASONING</div>
-        <div class="tab">FIX</div>
-      </div>
-      <div style="margin-top:20px; font-family:var(--mono); font-size:0.7rem; color:var(--accent);">
-        // Foundry trace shows state change after external call...
-        // [PASS] testReentrancyBuy()
+    <div class="panel-label">Intelligence Handoff</div>
+    <div id="notes-view" class="deep-dive-content">
+      <div class="finding-title" id="active-note-title">Reconnaissance Notes</div>
+      <div id="active-note-content" style="font-family:var(--mono); font-size:0.75rem; color:var(--text-dim); line-height:1.6;">
+        Waiting for Phase 1 output...
       </div>
     </div>
   </aside>
 </div>
 
-<footer class="footer">
-  C0 / H1 / M0 / L0 | SRG: 12 NODES | MCP: 13 AGENTS | SYSTEM: STABLE
+<footer class="footer" id="footer-status">
+  PHASE: INITIALIZING | SRG: 0 NODES | MCP: 13 AGENTS | SYSTEM: STABLE
 </footer>
 
 <script>
-  // Simple simulation for QA
+  let theater;
   const stream = document.getElementById('log-stream');
-  const agents = ['VIPER', 'GHOST', 'SHIELD', 'ZERO', 'COMMAND'];
-  const msgs = ['Scanning entry points...', 'Generating exploit...', 'Verification failed, retrying...', 'Invariant violation found', 'Finalizing report...'];
   
-  setInterval(() => {
+  function addLog(agent, msg) {
     const line = document.createElement('div');
     line.className = 'log-line';
-    const agent = agents[Math.floor(Math.random() * agents.length)];
-    const msg = msgs[Math.floor(Math.random() * msgs.length)];
     line.innerHTML = `<span class="log-agent">${agent}</span> <span>${msg}</span>`;
     stream.appendChild(line);
     stream.scrollTop = stream.scrollHeight;
-  }, 3000);
+  }
+
+  // SSE Listener
+  const eventSource = new EventSource('/stream');
+  eventSource.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    
+    if (data.event === 'agent_start') {
+      addLog(data.agent, 'Analyzing protocol logic...');
+    }
+    
+    if (data.event === 'step') {
+      addLog(data.agent, data.data.step || data.data.status);
+      
+      // Update Diagrams from DiagramEngine data
+      if (data.agent === 'Phase5:Diagrams' && data.data.details && data.data.details.system_map) {
+        theater.renderSystemMap(data.data.details.system_map);
+      }
+    }
+
+    if (data.event === 'agent_complete') {
+      addLog(data.agent, 'Phase complete.');
+      
+      // Expert Note Handoff
+      if (data.agent === 'Phase1:Recon') {
+        document.getElementById('active-note-title').textContent = 'Phase 1: Reconnaissance';
+        document.getElementById('active-note-content').innerHTML = `<p>${data.data.summary}</p><br><p><strong>PROMISES IDENTIFIED:</strong></p><ul>${data.data.invariants.map(i => `<li>${i.description}</li>`).join('')}</ul>`;
+      }
+      if (data.agent === 'Phase2:Mapping') {
+        document.getElementById('active-note-title').textContent = 'Phase 2: Architecture Mapping';
+        document.getElementById('active-note-content').innerHTML = `<p><strong>CONTRACTS:</strong> ${data.data.contracts.join(', ')}</p><br><p><strong>TRUST BOUNDARIES:</strong></p><ul>${data.data.external_calls.map(c => `<li>${c}</li>`).join('')}</ul>`;
+      }
+      if (data.agent === 'Phase3:Notes') {
+        document.getElementById('active-note-title').textContent = 'Phase 3: Attack Hypotheses';
+        document.getElementById('active-note-content').innerHTML = `<p><strong>HUNTING LIST (Top 20-30):</strong></p><br>${data.data.hypotheses ? data.data.hypotheses : 'Generating hypotheses...'}`;
+      }
+    }
+
+    if (data.event === 'broadcast' && data.type === 'value_flow') {
+      theater.animateValueFlow(data.data);
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    theater = new ProtocolTheater('theater-container');
+  });
 </script>
 </body>
 </html>
