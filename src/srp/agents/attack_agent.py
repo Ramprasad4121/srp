@@ -46,6 +46,26 @@ class AttackAgent(BaseAgent):
 
         contract_map = context.get("contract_map", {})
         entry_points = context.get("entry_points", [])
+        protocol_intent = context.get("protocol_intent", {})
+        
+        # Load shared notes for deeper context (Fix 6)
+        shared_notes = ""
+        shared_notes_path = context.get("shared_notes_path")
+        if shared_notes_path and Path(shared_notes_path).exists():
+            try:
+                shared_notes = Path(shared_notes_path).read_text(encoding="utf-8")
+            except Exception:
+                pass
+        
+        # Build consolidated protocol context
+        protocol_context = f"""
+# PROTOCOL INTENT (From Phase 1 Recon)
+{json.dumps(protocol_intent, indent=2)}
+
+# SHARED PROTOCOL NOTES
+{shared_notes}
+"""
+        context["protocol_context"] = protocol_context
 
         if not isinstance(contract_map, dict):
             contract_map = {}

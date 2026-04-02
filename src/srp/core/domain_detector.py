@@ -60,6 +60,11 @@ class DomainDetector:
             "IRouterClient", "EVM2AnyMessage", "ccipReceive",
             "sourceChain", "destChain", "selector", "messageId",
         ],
+        "nft": [
+            "ERC721", "ERC1155", "mint", "safeMint", "tokenURI", "baseURI",
+            "marketplace", "listing", "buy", "seller", "royalty", "floor",
+            "collection", "reveal", "whitelist", "metadata",
+        ],
     }
 
     SKIP_DIRS = {"/node_modules/", "/lib/", "/forge-std/", "/test/", "/mock/"}

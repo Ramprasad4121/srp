@@ -1,8 +1,0 @@
-{
-    "name": "solskill",
-    "description": "A plugin to help claude code solidity better",
-    "version": "1.0.3",
-    "author": {
-        "name": "Cyfrin"
-    }
-}

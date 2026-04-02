@@ -79,11 +79,27 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); height:
   </section>
 
   <aside class="deep-dive">
-    <div class="panel-label">Intelligence Handoff</div>
-    <div id="notes-view" class="deep-dive-content">
+    <div class="tab-container">
+      <div class="tab active" data-tab="notes">Notes</div>
+      <div class="tab" data-tab="findings">Findings</div>
+      <div class="tab" data-tab="architecture">Arch</div>
+    </div>
+    <div id="notes-view" class="deep-dive-content tab-content active">
       <div class="finding-title" id="active-note-title">Reconnaissance Notes</div>
       <div id="active-note-content" style="font-family:var(--mono); font-size:0.75rem; color:var(--text-dim); line-height:1.6;">
         Waiting for Phase 1 output...
+      </div>
+    </div>
+    <div id="findings-view" class="deep-dive-content tab-content">
+      <div class="finding-title">Audit Findings</div>
+      <div id="findings-list" style="font-family:var(--mono); font-size:0.75rem;">
+        <p style="color:var(--text-muted);">No findings yet. Audit in progress...</p>
+      </div>
+    </div>
+    <div id="architecture-view" class="deep-dive-content tab-content">
+      <div class="finding-title">System Architecture</div>
+      <div id="arch-details" style="font-family:var(--mono); font-size:0.75rem; color:var(--text-dim);">
+        <p>Analyzing contract relationships...</p>
       </div>
     </div>
   </aside>
@@ -92,6 +108,15 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); height:
 <footer class="footer" id="footer-status">
   PHASE: INITIALIZING | SRG: 0 NODES | MCP: 13 AGENTS | SYSTEM: STABLE
 </footer>
+
+<style>
+.tab-content { display: none; flex: 1; overflow-y: auto; padding: 24px; }
+.tab-content.active { display: block; }
+.finding-card { border: 1px solid var(--border); padding: 12px; margin-bottom: 12px; border-radius: 4px; }
+.sev-high { border-left: 4px solid var(--red); }
+.sev-medium { border-left: 4px solid var(--amber); }
+.sev-low { border-left: 4px solid var(--accent); }
+</style>
 
 <script>
   let theater;
@@ -117,6 +142,37 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); height:
     document.getElementById('project-label').textContent = data.protocol_name || 'PROJECT';
   }
 
+  function addFinding(f) {
+    const list = document.getElementById('findings-list');
+    if (list.querySelector('p')) list.innerHTML = '';
+    
+    const card = document.createElement('div');
+    const sevClass = `sev-${(f.severity || 'low').toLowerCase()}`;
+    card.className = `finding-card ${sevClass}`;
+    card.innerHTML = `
+      <div style="font-weight:700; color:var(--text);">${f.title}</div>
+      <div style="font-size:0.6rem; color:var(--text-muted); text-transform:uppercase; margin:4px 0;">${f.severity} | ${f.location || 'GLOBAL'}</div>
+      <div style="color:var(--text-dim); margin-top:8px;">${f.summary}</div>
+    `;
+    list.prepend(card);
+  }
+
+  function updateArchUI(data) {
+    const arch = document.getElementById('arch-details');
+    const nodes = data.nodes || [];
+    const links = data.links || [];
+    arch.innerHTML = `
+      <p><strong>CONTRACTS:</strong> ${nodes.filter(n => n.type === 'CONTRACT').length}</p>
+      <p><strong>FUNCTIONS:</strong> ${nodes.filter(n => n.type === 'FUNCTION').length}</p>
+      <p><strong>RELATIONSHIPS:</strong> ${links.length}</p>
+      <div style="margin-top:12px;">
+        <ul style="list-style:none; opacity:0.7;">
+          ${nodes.filter(n => n.type === 'CONTRACT').map(n => `<li>◆ ${n.name}</li>`).join('')}
+        </ul>
+      </div>
+    `;
+  }
+
   // SSE Listener
   const eventSource = new EventSource('/stream');
   eventSource.onmessage = (event) => {
@@ -126,19 +182,24 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); height:
       // Clear and populate logs
       stream.innerHTML = '';
       data.data.logs.forEach(log => {
-        // Extract agent name if present in [AGENT] format
         const match = log.match(/^[^\[]*\[([^\]]+)\] (.*)/);
-        if (match) {
-          addLog(match[1], match[2]);
-        } else {
-          addLog('SYSTEM', log);
-        }
+        if (match) addLog(match[1], match[2]);
+        else addLog('SYSTEM', log);
       });
       
-      // Update other UI elements if intent/plan ready
-      if (data.data.protocol_intent) {
-        updateIntentUI(data.data.protocol_intent);
+      if (data.data.protocol_intent) updateIntentUI(data.data.protocol_intent);
+      if (data.data.findings) data.data.findings.forEach(addFinding);
+      if (data.data.diagram_data && data.data.diagram_data.system_map) {
+        updateArchUI(data.data.diagram_data.system_map);
+        theater.renderSystemMap(data.data.diagram_data.system_map);
       }
+      return;
+    }
+
+    if (data.event === 'complete') {
+      const findings = data.findings || (data.result && data.result.defense && data.result.defense.reviewed_vulnerabilities) || [];
+      findings.forEach(addFinding);
+      addLog('SYSTEM', 'Audit cycle complete.');
       return;
     }
 
@@ -185,6 +246,10 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); height:
           ${hypotheses}
         `;
       }
+      if (data.agent === 'Phase5:Diagrams') {
+        updateArchUI(data.data.system_map);
+        theater.renderSystemMap(data.data.system_map);
+      }
     }
 
     if (data.event === 'broadcast' && data.type === 'value_flow') {
@@ -194,6 +259,15 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); height:
 
   document.addEventListener('DOMContentLoaded', () => {
     theater = new ProtocolTheater('theater-container');
+
+    // Tab Switching
+    document.querySelectorAll('.tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
+        t.classList.add('active');
+        document.getElementById(`${t.dataset.tab}-view`).classList.add('active');
+      });
+    });
 
     document.getElementById('start-audit-btn').addEventListener('click', () => {
       const contract = prompt("Enter contract path or code:", "contracts/SRPBudget.sol");

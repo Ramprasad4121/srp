@@ -68,3 +68,5 @@ pip install -e ".[dev]"
 ```
 
 For web browsing tasks, use the `/browse` skill from gstack and avoid mcp__claude-in-chrome__* tools.
+
+   

@@ -157,6 +157,18 @@ async def _run_audit(
                     "agent": step_name,
                     "data": _json_safe(data),
                 })
+            elif status == "started":
+                await emit({
+                    "event": "agent_start",
+                    "agent": step_name,
+                    "data": _json_safe(data),
+                })
+            elif status == "failed":
+                await emit({
+                    "event": "agent_failed",
+                    "agent": step_name,
+                    "data": _json_safe(data),
+                })
             elif status == "broadcast":
                 await emit({"event": "broadcast", "type": step_name, "data": _json_safe(data)})
             else:
@@ -425,7 +437,7 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
                 audit_state["logs"].append(f"🔄 [{agent}] Starting...")
             elif event == "agent_complete":
                 audit_state["logs"].append(f"✅ [{agent}] Complete")
-                if agent == "IntentAgent":
+                if agent == "IntentAgent" or agent == "Phase1:Recon":
                     p_intent = data.get("protocol_intent", data)
                     audit_state["protocol_intent"] = {
                         'protocol_name': p_intent.get('protocol_name', ''),
@@ -439,7 +451,7 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
                             "event": "intent_ready",
                             "data": audit_state["protocol_intent"]
                         }))
-                elif agent == "Planner":
+                elif agent == "Planner" or agent == "Phase4:CodeReading":
                     audit_state["planner_result"] = {
                         "protocol_type": data.get("protocol_type", ""),
                         "confidence": data.get("confidence"),
@@ -447,6 +459,8 @@ async def run_audit(contract_code: str, description: str = "", api_key: str | No
                         "plan_steps": data.get("plan_steps"),
                         "fallback": bool(data.get("fallback", False)),
                     }
+                elif agent == "Phase5:Diagrams":
+                    audit_state["diagram_data"] = data
             elif event == "step":
                 step_name = data.get("step", "") if isinstance(data, dict) else ""
                 if step_name:
@@ -691,6 +705,7 @@ async def stream_audit(request: Request):
                 "status": audit_state.get("status", "idle"),
                 "protocol_intent": audit_state.get("protocol_intent"),
                 "planner_result": audit_state.get("planner_result"),
+                "diagram_data": audit_state.get("diagram_data"),
                 "score": audit_state.get("score", 100),
                 "findings": audit_state.get("findings", []),
             }

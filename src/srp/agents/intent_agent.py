@@ -38,6 +38,7 @@ class IntentAgent(BaseAgent):
         raw_input = context.get("raw_input", "")
         project_root = context.get("project_root", ".")
         contract_paths = context.get("contract_paths", [])
+        print(f"[DEBUG] IntentAgent project_root: {project_root}")
 
         # ── Step 1: Run Protocol Intent Engine ──
         # This performs document reconnaissance and NatSpec extraction

@@ -222,10 +222,6 @@ class SRPOrchestrator:
     # ─────────────────────────────────────────────────────────
 
     def _resolve_project_root(self, contract_paths: list[Any]) -> str:
-        env_root = os.environ.get("SRP_PROJECT_ROOT", "").strip()
-        if env_root:
-            return str(Path(env_root).resolve())
-
         if contract_paths and isinstance(contract_paths, list):
             first_path = Path(str(contract_paths[0])).resolve()
             if first_path.is_dir():
@@ -236,6 +232,10 @@ class SRPOrchestrator:
                 if first_path.parent.name in {"contracts", "src", "contract", "test", "tests"}:
                     return str(first_path.parent.parent)
                 return str(first_path.parent)
+
+        env_root = os.environ.get("SRP_PROJECT_ROOT", "").strip()
+        if env_root:
+            return str(Path(env_root).resolve())
 
         return os.getcwd()
 
@@ -327,8 +327,10 @@ class SRPOrchestrator:
     async def run_full_audit(
         self, raw_input: str, contract_paths: list, budget_usd: float, api_key: str | None = None
     ) -> dict:
+        print(f"[DEBUG] Orchestrator.run_full_audit: contract_paths={contract_paths}")
         loaded_skills = self.load_skills()
         project_root = self._resolve_project_root(contract_paths)
+        print(f"[DEBUG] Orchestrator resolved project_root: {project_root}")
         project_name = self._detect_project_name(project_root, contract_paths)
         shared_notes_path = Path(project_root) / "outputs" / "SHARED_TASK_NOTES.md"
 

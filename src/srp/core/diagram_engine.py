@@ -13,10 +13,10 @@ class DiagramEngine:
         nodes = []
         links = []
         
-        for node in self.srg.nodes:
+        for node in self.srg.nodes.values():
             nodes.append({
                 "id": node.id,
-                "type": node.type,
+                "type": node.node_type.value if hasattr(node.node_type, 'value') else node.node_type,
                 "name": node.name
             })
             
@@ -24,7 +24,7 @@ class DiagramEngine:
             links.append({
                 "source": edge.source,
                 "target": edge.target,
-                "type": edge.type
+                "type": edge.edge_type.value if hasattr(edge.edge_type, 'value') else edge.edge_type
             })
             
         return {"nodes": nodes, "links": links}
@@ -50,7 +50,9 @@ class DiagramEngine:
         """Identifies external call trust boundaries."""
         boundaries = []
         for edge in self.srg.edges:
-            if edge.type == "external_call":
+            # edge_type is an Enum (str, Enum)
+            et = edge.edge_type.value if hasattr(edge.edge_type, 'value') else edge.edge_type
+            if et == "EXTERNAL_CALL":
                 boundaries.append({
                     "contract": edge.source,
                     "external": edge.target,
