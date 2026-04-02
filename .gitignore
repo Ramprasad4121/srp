@@ -38,3 +38,4 @@ reports/*.json
 .gstack/
 
 test_projects/
+test_project/
