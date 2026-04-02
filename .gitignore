@@ -36,3 +36,5 @@ reports/*.json
 .srp-assumptions.json
 .srp-context.json
 .gstack/
+
+test_projects/
