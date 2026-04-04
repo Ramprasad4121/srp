@@ -30,26 +30,57 @@ export async function callProvider(
   }
 }
 
-function getOpenAIKey(): string | undefined {
-  return process.env["OPENAI_API_KEY"] || process.env["OPENAI_COMPATIBLE_API_KEY"];
+function getProviderConfig(kind: string): { apiKey?: string; baseURL?: string } {
+  switch (kind) {
+    case "nvidia":
+      return {
+        apiKey: process.env["NVIDIA_API_KEY"],
+        baseURL: "https://integrate.api.nvidia.com/v1"
+      };
+    case "openrouter":
+      return {
+        apiKey: process.env["OPENROUTER_API_KEY"],
+        baseURL: "https://openrouter.ai/api/v1"
+      };
+    case "hugging-face":
+      return {
+        apiKey: process.env["HUGGINGFACE_API_KEY"]
+      };
+    case "openai":
+      return {
+        apiKey: process.env["OPENAI_API_KEY"]
+      };
+    case "openai-compatible":
+      return {
+        apiKey: process.env["OPENAI_COMPATIBLE_API_KEY"] || process.env["OPENAI_API_KEY"],
+        baseURL: process.env["OPENAI_COMPATIBLE_BASE_URL"]
+      };
+    default:
+      return {
+        apiKey: process.env["OPENAI_API_KEY"] || process.env["OPENAI_COMPATIBLE_API_KEY"],
+        baseURL: process.env["OPENAI_COMPATIBLE_BASE_URL"]
+      };
+  }
 }
 
 async function callOpenAICompatible(
   provider: ProviderSelection,
   messages: readonly ChatMessage[]
 ): Promise<string> {
-  const apiKey = getOpenAIKey();
-  const baseURL = process.env["OPENAI_COMPATIBLE_BASE_URL"];
+  const config = getProviderConfig(provider.kind);
+  const apiKey = config.apiKey;
+  const baseURL = config.baseURL;
 
-  if (!apiKey && provider.kind !== "openai-compatible" && provider.kind !== "openrouter") {
-    throw new Error("OPENAI_API_KEY is required for OpenAI-compatible providers");
+  if (!apiKey && provider.kind !== "openai-compatible") {
+    throw new Error(`${provider.kind.toUpperCase()}_API_KEY is required for ${provider.kind} provider`);
   }
 
-  const clientConfig: Record<string, unknown> = {};
-  if (apiKey) clientConfig["apiKey"] = apiKey;
-  if (baseURL) clientConfig["baseURL"] = baseURL;
+  const clientConfig: any = {
+    apiKey: apiKey || "missing",
+  };
+  if (baseURL) clientConfig.baseURL = baseURL;
 
-  const client = new OpenAI(clientConfig as ConstructorParameters<typeof OpenAI>[0]);
+  const client = new OpenAI(clientConfig);
 
   const completion = await client.chat.completions.create({
     model: provider.model,

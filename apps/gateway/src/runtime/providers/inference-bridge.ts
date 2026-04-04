@@ -104,9 +104,10 @@ Current Mode: ${role}
 You have access to the local Workspace files.
 Architecture Components: ${sessionState.architectureSummary?.keyComponents.join(", ") ?? "None"}
 
-You have the following Action Tools available. If you need to read a file or search the internet to answer the query, supply exactly one of these commands on its own line:
+You have the following Action Tools available. If you need to read a file, search the internet, or list files in a directory to answer the query, supply exactly one of these commands on its own line:
 [TOOL: READ_FILE] <relative_file_path>
 [TOOL: SEARCH] <search_query>
+[TOOL: LIST_FILES] <relative_directory_path>
 
 If you output a tool command, stop generating. The system will return the output to you in the next message, and then you can answer the user.
 
@@ -167,14 +168,48 @@ Provide a comprehensive, accurate, and actionable response.`;
            const query = match[1].trim();
            let searchData = "";
            try {
-             // Fast fallback websearch mechanism
-             const pyScript = `import urllib.request, urllib.parse, json; req = urllib.request.Request('https://html.duckduckgo.com/html/?q=' + urllib.parse.quote('${query}')); req.add_header('User-Agent', 'Mozilla/5.0'); html=urllib.request.urlopen(req).read().decode('utf-8'); print(html[:2000])`;
-             searchData = execSync("python3 -c \"" + pyScript.replace(/"/g, '\\"') + "\"").toString();
+             // Fast fallback websearch mechanism using native fetch
+             const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+             const response = await fetch(searchUrl, {
+               headers: {
+                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+               }
+             });
+             const html = await response.text();
+             const results = Array.from(html.matchAll(/<a class="result__a" href="([^"]*)">(.*?)<\/a>/g))
+               .slice(0, 5)
+               .map(m => `- ${m[2].replace(/<[^>]+>/g, '')}: ${m[1]}`)
+               .join('\\n');
+             const snippets = Array.from(html.matchAll(/<a class="result__snippet[^>]*>(.*?)<\/a>/g))
+               .slice(0, 5)
+               .map(m => m[1].replace(/<[^>]+>/g, ''))
+               .join('\\n');
+             searchData = `TOP_TITLES:\\n${results}\\n\\nSNIPPETS:\\n${snippets}`;
+             if (!results && !snippets) {
+               searchData = html.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').substring(0, 2000);
+             }
            } catch(e: any) {
              searchData = "Error searching web: " + String(e);
            }
            messages.push({ role: "assistant", content: responseContent });
            messages.push({ role: "user", content: "Internet Search Result Snapshot: " + searchData });
+           continue;
+        }
+      }
+
+      if (responseContent.includes("[TOOL: LIST_FILES]")) {
+        const match = responseContent.match(/\\[TOOL: LIST_FILES\\]\\s+(.+)/);
+        if (match && match[1]) {
+           const dirPath = match[1].trim();
+           let dirData = "";
+           try {
+             const items = fs.readdirSync(dirPath, { withFileTypes: true });
+             dirData = items.map(i => `${i.isDirectory() ? '[DIR] ' : '- '}${i.name}`).join('\\n');
+           } catch(e: any) {
+             dirData = `Error listing directory: ${e.message}`;
+           }
+           messages.push({ role: "assistant", content: responseContent });
+           messages.push({ role: "user", content: `Files in ${dirPath}: \n${dirData}` });
            continue;
         }
       }

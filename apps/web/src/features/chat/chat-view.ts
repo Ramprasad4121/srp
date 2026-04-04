@@ -16,33 +16,12 @@ export class ChatView extends LitElement {
       display: flex;
       flex-direction: column;
       height: 100vh;
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
       box-sizing: border-box;
       position: relative;
-      background-color: transparent; /* Inherits from parent */
+      background-color: transparent;
       color: #000;
       overflow: hidden;
-    }
-
-    /* Subtle background glows */
-    .glow-top, .glow-bottom {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 50vh;
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.6;
-    }
-
-    .glow-top {
-      top: -20vh;
-      background: radial-gradient(ellipse at top, rgba(121, 158, 255, 0.4) 0%, transparent 60%);
-    }
-
-    .glow-bottom {
-      bottom: -20vh;
-      background: radial-gradient(ellipse at bottom, rgba(147, 126, 255, 0.3) 0%, transparent 60%);
     }
 
     .content-wrapper {
@@ -50,16 +29,35 @@ export class ChatView extends LitElement {
       z-index: 1;
       display: flex;
       flex-direction: column;
-      height: calc(100% - 3rem);
-      max-width: 750px;
-      margin: 1.5rem auto;
+      height: 100%;
+      max-width: 900px;
+      margin: 0 auto;
       width: 100%;
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      border-radius: 16px;
-      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.06);
+      background: #fff;
+      border-left: 1px solid #eee;
+      border-right: 1px solid #eee;
       overflow: hidden;
+    }
+
+    /* x402 Style Header */
+    .x402-header {
+      padding: 12px 20px;
+      border-bottom: 1px solid #eee;
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      letter-spacing: 2px;
+      color: #999;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: #0052FF;
+      border-radius: 50%;
+      margin-right: 8px;
     }
 
     /* Chat Area */
@@ -68,78 +66,79 @@ export class ChatView extends LitElement {
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      padding: 1.5rem 1.5rem 2rem 1.5rem;
-      scrollbar-gutter: stable;
+      padding: 0;
+      scrollbar-width: thin;
+      scrollbar-color: #eee #fff;
     }
 
     .chat-history {
       flex: 1;
       display: flex;
       flex-direction: column;
-      justify-content: flex-end;
     }
 
     .empty-state {
       text-align: center;
-      font-family: 'JetBrains Mono', monospace;
-      color: #666;
+      color: #ccc;
       margin: auto;
+      font-size: 13px;
+      letter-spacing: 1px;
     }
 
     /* Chat Input Bar */
     .input-container {
       flex-shrink: 0;
-      padding: 1rem 0 2rem 0;
+      padding: 24px;
+      background: #fff;
+      border-top: 1px solid #f5f5f5;
     }
 
     .input-box {
       display: flex;
       align-items: center;
-      background: #fff;
-      border: 1px solid #000;
-      border-radius: 8px;
-      padding: 0.5rem 1rem;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
-      transition: box-shadow 0.2s ease;
+      background: #fcfcfc;
+      border: 1px solid #eee;
+      padding: 4px 4px 4px 16px;
+      transition: border-color 0.2s ease;
     }
 
     .input-box.disabled {
-      opacity: 0.6;
+      opacity: 0.5;
       pointer-events: none;
     }
 
     .input-box:focus-within {
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(0,0,0,0.1);
+      border-color: #ddd;
     }
 
     .input-box input {
       flex: 1;
       border: none;
       background: transparent;
-      padding: 1rem 0;
-      font-size: 1rem;
-      font-family: 'Inter', system-ui, sans-serif;
+      padding: 12px 0;
+      font-size: 14px;
+      font-family: 'JetBrains Mono', monospace;
       outline: none;
       color: #000;
     }
 
     .input-box input::placeholder {
-      color: #999;
+      color: #bbb;
     }
 
     .btn-send {
       background: #000;
       color: #fff;
       border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 4px;
-      font-size: 0.875rem;
-      font-weight: 600;
+      padding: 10px 20px;
+      font-size: 12px;
+      font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      transition: background 0.2s ease;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
     }
 
     .btn-send:hover {
@@ -147,13 +146,13 @@ export class ChatView extends LitElement {
     }
 
     .btn-send:active {
-      transform: scale(0.98);
+      background: #444;
     }
     
     .loading-indicator {
       display: inline-block;
-      width: 1rem;
-      height: 1rem;
+      width: 12px;
+      height: 12px;
       border: 2px solid #fff;
       border-top-color: transparent;
       border-radius: 50%;
@@ -270,14 +269,16 @@ export class ChatView extends LitElement {
 
   override render() {
     return html`
-      <div class="glow-top"></div>
-      <div class="glow-bottom"></div>
-      
       <div class="content-wrapper">
+        <header class="x402-header">
+          <div><span class="status-dot"></span>SRP_NETWORK_ACTIVE</div>
+          <div>PROTOCOL_V1.0</div>
+        </header>
+
         <main class="chat-container">
           <div class="chat-history">
             ${this._messages.length === 0 
-              ? html`<div class="empty-state">${this._isLoading ? 'Connecting to backend...' : 'System idle. Ready for input.'}</div>` 
+              ? html`<div class="empty-state">${this._isLoading ? 'INITIALIZING_PROTOCOL...' : 'SYSTEM_IDLE: READY_FOR_COMMAND'}</div>` 
               : this._messages.map(msg => html`
                   <chat-message .role=${msg.role} .content=${msg.content}></chat-message>
                 `)
@@ -289,20 +290,21 @@ export class ChatView extends LitElement {
           <div class="input-box ${this._isLoading ? 'disabled' : ''}">
             <input 
               type="text" 
-              placeholder=${this._isLoading ? "Waiting for response..." : "Ask AI or input command... (e.g., /scan, /analyze, /audit)"} 
+              placeholder=${this._isLoading ? "WAITING_FOR_RESPONSE..." : "EXECUTE_COMMAND (e.g., /scan, /analyze, /audit)..."} 
               .value=${this._chatInput}
               @input=${this.handleInput}
               @keydown=${this.handleKeydown}
               ?disabled=${this._isLoading}
             />
             <button class="btn-send" @click=${this.sendMessage} ?disabled=${this._isLoading}>
-              ${this._isLoading ? html`<span class="loading-indicator"></span>` : 'Send ↗'}
+              ${this._isLoading ? html`<span class="loading-indicator"></span>` : html`↵`}
             </button>
           </div>
         </footer>
       </div>
     `;
   }
+
 }
 
 customElements.define("chat-view", ChatView);

@@ -9,54 +9,65 @@ export class ChatMessage extends LitElement {
   static override styles = css`
     :host {
       display: block;
-      margin-bottom: 1.5rem;
-      font-family: 'Inter', system-ui, sans-serif;
+      margin: 0;
+      border-bottom: 1px solid #f5f5f5;
+      font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
     }
 
     .message {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      padding: 20px 24px;
     }
 
     .role-label {
-      font-size: 0.75rem;
+      font-size: 10px;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 2px;
       font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
     .role-user {
-      color: #000;
+      color: #0052FF;
     }
 
     .role-assistant {
       color: #000;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+    }
+
+    .role-system {
+      color: #f59e0b;
     }
     
-    .role-assistant::before {
-      content: "";
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      background: #000;
-      border-radius: 50%;
+    .timestamp {
+      color: #ccc;
+      font-weight: normal;
     }
 
     .content {
-      font-size: 1rem;
-      line-height: 1.6;
-      color: #000;
-      padding-left: 1rem;
-      border-left: 2px solid #e1e3e8;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #444;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
     .content.user {
-      border-left-color: #000;
-      font-weight: 500;
+      color: #000;
+    }
+
+    .role-assistant::before {
+      content: "●";
+      font-size: 8px;
+    }
+
+    .role-user::before {
+      content: "○";
+      font-size: 8px;
     }
   `;
 
@@ -70,13 +81,15 @@ export class ChatMessage extends LitElement {
   }
 
   override render() {
-    let name = this.role === 'assistant' ? 'AI Assistant' : 'You';
-    if (this.role === 'system') name = 'System';
+    let name = this.role === 'assistant' ? 'SRP_AGENT' : 'REMOTE_OPERATOR';
+    if (this.role === 'system') name = 'PROTOCOL_SYSTEM';
     
+    const timestamp = new Date().toLocaleTimeString([], { hour12: false });
+
     return html`
       <div class="message">
         <div class="role-label role-${this.role}">
-          ${name}
+          ${name} <span class="timestamp">[${timestamp}]</span>
         </div>
         <div class="content ${this.role}">
           ${this.content}
@@ -84,6 +97,7 @@ export class ChatMessage extends LitElement {
       </div>
     `;
   }
+
 }
 
 customElements.define("chat-message", ChatMessage);
