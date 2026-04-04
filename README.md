@@ -91,4 +91,5 @@ SRP supports a wide range of providers to ensure maximum reasoning depth:
 ## 📜 License & Credits
 
 Built with ❤️ by [@0xramprasad](https://x.com/0xramprasad).
-Part of the next generation of personal security agents.
+
+Inspired by the speed and autonomy of [OpenClaw](https://github.com/openclaw/openclaw). Part of the next generation of personal security agents.
