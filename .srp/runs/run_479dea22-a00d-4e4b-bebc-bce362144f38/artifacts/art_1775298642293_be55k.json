@@ -1,0 +1,15 @@
+{
+  "valueProposition": "A secure and transparent smart contract system for the SRP building",
+  "moneyFlow": {
+    "in": "User deposits (Ether or other cryptocurrencies)",
+    "out": "Smart contract transfers (Ether or other cryptocurrencies)"
+  },
+  "adversarialActors": [
+    "Malicious Users",
+    "Hackers",
+    "Insiders",
+    "Competitors"
+  ],
+  "worstCaseOutcome": "Catastrophic failure of the smart contract, resulting in total loss of user funds and irreparable damage to the project's reputation",
+  "initialThreatModel": "High-risk smart contract with potential for significant financial losses and reputational damage"
+}

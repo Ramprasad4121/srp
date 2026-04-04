@@ -47,6 +47,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.4.1
         version: 0.4.4
+      '@srp/cache':
+        specifier: file:../../packages/cache
+        version: link:../../packages/cache
       '@srp/chat-runtime':
         specifier: file:../../packages/chat-runtime
         version: link:../../packages/chat-runtime
@@ -131,6 +134,12 @@ importers:
         version: link:../shared-types
 
   packages/benchmark:
+    dependencies:
+      '@srp/shared-types':
+        specifier: file:../shared-types
+        version: link:../shared-types
+
+  packages/cache:
     dependencies:
       '@srp/shared-types':
         specifier: file:../shared-types

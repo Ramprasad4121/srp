@@ -29,6 +29,9 @@ import type {
 } from "@srp/shared-types";
 import type { ChatGroundingContext } from "../chat-grounding.js";
 import { callProvider } from "./provider-client.js";
+import { getInferenceCache } from "@srp/cache";
+
+const INFERENCE_CACHE = getInferenceCache(process.cwd());
 
 export interface InferenceContext {
   readonly workspace: WorkspaceAnalysis;
@@ -52,13 +55,27 @@ function parseJson(text: string): any {
     throw new Error("Unable to locate JSON payload");
   }
 
-  // Determine which one comes first or exists
   const start = (startObj !== -1 && (startArr === -1 || startObj < startArr)) ? startObj : startArr;
-  const endChar = text[start] === "{" ? "}" : "]";
-  const end = text.lastIndexOf(endChar);
+  const stack: string[] = [];
+  let end = -1;
 
-  if (end === -1 || end <= start) {
-    throw new Error("Malformed JSON payload");
+  for (let i = start; i < text.length; i++) {
+    const char = text[i];
+    if (char === "{" || char === "[") {
+      stack.push(char === "{" ? "}" : "]");
+    } else if (char === "}" || char === "]") {
+      if (stack.length > 0 && stack[stack.length - 1] === char) {
+        stack.pop();
+        if (stack.length === 0) {
+          end = i;
+          break;
+        }
+      }
+    }
+  }
+
+  if (end === -1) {
+    throw new Error("Malformed JSON payload: No closing brace found");
   }
 
   const payload = text.slice(start, end + 1);
@@ -85,8 +102,14 @@ Based on this project structure, provide:
 
 Output JSON with fields: valueProposition, moneyFlow, adversarialActors (string array), worstCaseOutcome, initialThreatModel.`;
   
+  const cacheKey = `methodology:prep:${workspace?.rootDirectory}:${files}`;
+  const cached = await INFERENCE_CACHE.get(cacheKey);
+  if (cached) return cached;
+
   const response = await callProvider(provider!, [{ role: "user", content: prompt }]);
-  return parseJson(response);
+  const result = parseJson(response);
+  await INFERENCE_CACHE.set(cacheKey, result);
+  return result;
 }
 
 export async function generateReconResult(
@@ -103,9 +126,16 @@ Files: ${files}
 Gather security guarantees from documentation and candidate invariants.
 Output JSON with fields: sources (string array), securityGuarantees (string array), candidateInvariants (string array).`;
   
+  const cacheKey = `methodology:recon:${workspace?.rootDirectory}:${files}`;
+  const cached = await INFERENCE_CACHE.get(cacheKey);
+  if (cached) return cached;
+
   const response = await callProvider(provider!, [{ role: "user", content: prompt }]);
-  return parseJson(response);
+  const result = parseJson(response);
+  await INFERENCE_CACHE.set(cacheKey, result);
+  return result;
 }
+
 
 
 export async function generateFunctionAnnotations(
@@ -244,7 +274,17 @@ Provide a comprehensive, accurate, and actionable response.`;
             modelName
          ).content;
       } else {
-         responseContent = await callProvider(activeProvider, messages);
+         // Generate cache key based on model and full message history
+         const cacheKey = `chat:${modelName}:${JSON.stringify(messages)}`;
+         const cached = await INFERENCE_CACHE.get<string>(cacheKey);
+         
+         if (cached) {
+           console.log(`[Inference] Cache Hit for ${modelName}`);
+           responseContent = cached;
+         } else {
+           responseContent = await callProvider(activeProvider, messages);
+           await INFERENCE_CACHE.set(cacheKey, responseContent);
+         }
       }
 
       if (responseContent.includes("[TOOL: READ_FILE]")) {
@@ -459,11 +499,11 @@ function generateMockProtocolDiagram(
   context: InferenceContext,
   modelName: string
 ): ProtocolDiagram {
-  const components = context.architecture?.keyComponents.length
+  const components = (context.architecture?.keyComponents && context.architecture.keyComponents.length > 0)
     ? context.architecture.keyComponents
-    : context.intent.mainContracts.length
+    : (context.intent?.mainContracts && context.intent.mainContracts.length > 0)
       ? context.intent.mainContracts
-      : (context.codebase.filesProcessed > 0 ? ["Unknown Root Contract"] : ["Workspace"]);
+      : (context.codebase?.filesProcessed && context.codebase.filesProcessed > 0 ? ["Unknown Root Contract"] : ["Workspace"]);
 
   const elements: ExcalidrawDiagramElement[] = [];
   const baseX = 120;
@@ -504,7 +544,7 @@ function generateMockProtocolDiagram(
       height: 28,
       angle: 0,
       seed: seed + 500,
-      text: component,
+      text: typeof component === 'string' ? component : (component as any).name || "Component",
       fontSize: 20,
       fontFamily: 1,
       strokeColor: "#e4e6eb",
@@ -556,14 +596,14 @@ function generateMockArchitectureSummary(
   context: InferenceContext,
   modelName: string
 ): ArchitectureSummary {
-  const { intent } = context;
+  const intent = context.intent || { mainContracts: [], interfaceCount: 0 };
   const components = intent.mainContracts.length > 0 
     ? [...intent.mainContracts] 
-    : (context.codebase.filesProcessed > 0 ? ["Unknown Root Contract"] : []);
+    : (context.codebase?.filesProcessed && context.codebase.filesProcessed > 0 ? ["Unknown Root Contract"] : []);
 
   const md = `## Synthesized Architecture
 
-Based on the initial ${context.codebase.filesProcessed} identified source files, the project's architecture appears to be structured around the following core components:
+Based on the initial ${context.codebase?.filesProcessed || 0} identified source files, the project's architecture appears to be structured around the following core components:
 
 ${components.length > 0 ? components.map(c => `- **${c}**: Core domain contract.`).join("\n") : "- *No primary contracts identified.*"}
 
@@ -571,7 +611,7 @@ ${components.length > 0 ? components.map(c => `- **${c}**: Core domain contract.
 Detected ${intent.interfaceCount} explicit interfaces, suggesting a composable or heavily integrated pattern. 
 
 ### Framework Context
-Operates within a ${context.workspace.isFoundry ? "Foundry" : "Standard"} toolchain environment, constrained to ${context.workspace.rootDirectory}.
+Operates within a ${context.workspace?.isFoundry ? "Foundry" : "Standard"} toolchain environment, constrained to ${context.workspace?.rootDirectory || "root"}.
 `;
 
   return {
@@ -623,9 +663,9 @@ function generateMockInvariants(
   context: InferenceContext,
   modelName: string
 ): InvariantRegistry {
-  const comps = context.architecture?.keyComponents || context.intent.mainContracts;
+  const comps = context.architecture?.keyComponents || context.intent?.mainContracts || [];
   const items: InvariantItem[] = [];
-  const mainComp = comps.length > 0 ? comps[0] : null;
+  const mainComp = comps.length > 0 ? (typeof comps[0] === 'string' ? comps[0] : (comps[0] as any).name) : null;
 
   if (mainComp) {
     items.push({
@@ -644,7 +684,7 @@ function generateMockInvariants(
       description: `Verify that incoming eth/erc20 assets cannot overflow expected accounting bounds inside components.`,
       category: "Accounting",
       priority: "Medium",
-      derivedFrom: [...comps],
+      derivedFrom: comps.map(c => typeof c === 'string' ? c : (c as any).name),
       suggestedVerification: "Formal verification suite on state bounds."
     });
   } else {
@@ -660,7 +700,7 @@ function generateMockInvariants(
   }
 
   return {
-    summary: `Extracted ${items.length} initial structural invariants from ${context.codebase.filesProcessed} source files.`,
+    summary: `Extracted ${items.length} initial structural invariants from ${context.codebase?.filesProcessed || 0} source files.`,
     invariants: items,
     generatedByModel: modelName
   };

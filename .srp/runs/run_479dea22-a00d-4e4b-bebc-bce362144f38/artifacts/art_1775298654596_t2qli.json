@@ -1,0 +1,13 @@
+{
+  "sources": [],
+  "securityGuarantees": [
+    "Confidentiality",
+    "Integrity",
+    "Availability"
+  ],
+  "candidateInvariants": [
+    "Authentication",
+    "Authorization",
+    "Data Encryption"
+  ]
+}

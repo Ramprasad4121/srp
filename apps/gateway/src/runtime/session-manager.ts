@@ -1,9 +1,30 @@
 import type { MethodologyPhase, PhaseStatus, PhaseState, RuntimeSessionState, WorkspaceAnalysis, CodebaseContextSummary, IntentSummary, ArchitectureSummary, InvariantRegistry, VerificationPlan, HypothesisRegistry, EconomicAnalysis, FormalReport, CrossContractAnalysis, FindingRegistry, RemediationPlan, ProtocolDiagram } from "@srp/shared-types";
 import { createArtifactCreatedEvent, createPhaseStatusChangedEvent, createSessionStartedEvent } from "@srp/events";
 import { sharedEventBus } from "../events/event-bus.js";
-import { analyzeWorkspace } from "./analyzers/workspace-analyzer.js";
-import { buildCodebaseContext } from "./analyzers/codebase-context.js";
-import { generateArchitectureSummary, generateProtocolDiagram, generateInvariants, generateVerificationPlan, generateHypotheses, generateEconomicAnalysis, generateFormalReport, generateCrossContractAnalysis, generateFindingRegistry, generateRemediationPlan } from "./providers/inference-bridge.js";
+import { 
+  analyzeWorkspace 
+} from "./analyzers/workspace-analyzer.js";
+import { 
+  buildCodebaseContext 
+} from "./analyzers/codebase-context.js";
+import { 
+  generateArchitectureSummary, 
+  generateProtocolDiagram, 
+  generateInvariants, 
+  generateVerificationPlan, 
+  generateHypotheses, 
+  generateEconomicAnalysis, 
+  generateFormalReport, 
+  generateCrossContractAnalysis, 
+  generateFindingRegistry, 
+  generateRemediationPlan,
+  generatePreAuditPrep,
+  generateReconResult,
+  generateFunctionAnnotations,
+  generateQuestionLog,
+  generateInteractionMatrix,
+  generateEconomicScenarios
+} from "./providers/inference-bridge.js";
 import type { ProviderSelection } from "@srp/shared-types";
 import { randomUUID } from "node:crypto";
 import { setTimeout } from "node:timers/promises";
@@ -307,11 +328,20 @@ async function runSimulatedPipeline(
       // PHASE 2: ARCHITECTURE
       else if (phaseName === "phase-2-architecture") {
         pendingArchitectureSummary = await generateArchitectureSummary(
-          { workspace: pendingWorkspaceAnalysis!, codebase: pendingCodebaseContext!, intent: pendingIntentSummary! },
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary! 
+          },
           activeProvider
         );
         pendingProtocolDiagram = await generateProtocolDiagram(
-          { workspace: pendingWorkspaceAnalysis!, architecture: pendingArchitectureSummary! },
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!,
+            architecture: pendingArchitectureSummary! 
+          },
           activeProvider
         );
         await persistArtifactAndEmit(runId, projectId, phaseName, "diagram", "System Architecture", pendingProtocolDiagram);
@@ -320,7 +350,12 @@ async function runSimulatedPipeline(
       // PHASE 3: INVARIANTS
       else if (phaseName === "phase-3-invariants") {
         pendingInvariantRegistry = await generateInvariants(
-          { architecture: pendingArchitectureSummary! },
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!,
+            architecture: pendingArchitectureSummary! 
+          },
           activeProvider
         );
         await persistArtifactAndEmit(runId, projectId, phaseName, "invariant", "Invariants Registry", pendingInvariantRegistry);
@@ -329,7 +364,13 @@ async function runSimulatedPipeline(
       // PHASE 4: HYPOTHESES
       else if (phaseName === "phase-4-hypotheses") {
         pendingHypothesisRegistry = await generateHypotheses(
-          { invariants: pendingInvariantRegistry! },
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!,
+            architecture: pendingArchitectureSummary!,
+            invariants: pendingInvariantRegistry! 
+          },
           activeProvider
         );
         await persistArtifactAndEmit(runId, projectId, phaseName, "hypothesis", "Hypothesis Registry", pendingHypothesisRegistry);
@@ -337,20 +378,41 @@ async function runSimulatedPipeline(
       
       // PHASE 5: CODE READING
       else if (phaseName === "phase-5-code-reading") {
-        const annotations = await generateFunctionAnnotations({ codebase: pendingCodebaseContext! }, activeProvider);
+        const annotations = await generateFunctionAnnotations(
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!,
+            architecture: pendingArchitectureSummary! 
+          }, 
+          activeProvider
+        );
         await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Function Annotations", annotations);
       } 
       
       // PHASE 6: NOTES & QUESTIONS
       else if (phaseName === "phase-6-notes") {
-        const questions = await generateQuestionLog({}, activeProvider);
+        const questions = await generateQuestionLog(
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary! 
+          }, 
+          activeProvider
+        );
         await persistArtifactAndEmit(runId, projectId, phaseName, "question", "Question Log", questions);
       } 
       
       // PHASE 7: SIMULATIONS
       else if (phaseName === "phase-7-simulations") {
         pendingEconomicAnalysis = await generateEconomicAnalysis(
-          { hypotheses: pendingHypothesisRegistry! },
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!,
+            architecture: pendingArchitectureSummary!,
+            hypotheses: pendingHypothesisRegistry! 
+          },
           activeProvider
         );
         await persistArtifactAndEmit(runId, projectId, phaseName, "finding", "Simulation Findings", pendingEconomicAnalysis);
@@ -358,20 +420,42 @@ async function runSimulatedPipeline(
       
       // PHASE 8: INTERACTION MATRIX
       else if (phaseName === "phase-8-interaction-matrix") {
-        const matrix = await generateInteractionMatrix({ architecture: pendingArchitectureSummary! }, activeProvider);
+        const matrix = await generateInteractionMatrix(
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!,
+            architecture: pendingArchitectureSummary! 
+          }, 
+          activeProvider
+        );
         await persistArtifactAndEmit(runId, projectId, phaseName, "diagram", "Interaction Matrix", matrix);
       } 
       
       // PHASE 9: ECONOMIC MODELING
       else if (phaseName === "phase-9-economic-modeling") {
-        const scenarios = await generateEconomicScenarios({ economicAnalysis: pendingEconomicAnalysis! }, activeProvider);
+        const scenarios = await generateEconomicScenarios(
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!,
+            architecture: pendingArchitectureSummary!,
+            economicAnalysis: pendingEconomicAnalysis! 
+          }, 
+          activeProvider
+        );
         await persistArtifactAndEmit(runId, projectId, phaseName, "finding", "Economic Scenarios", scenarios);
       } 
       
       // PHASE 10: CROSS-CONTRACT PATHS
       else if (phaseName === "phase-10-cross-contract-paths") {
         pendingCrossContractAnalysis = await generateCrossContractAnalysis(
-          { architecture: pendingArchitectureSummary! },
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!,
+            architecture: pendingArchitectureSummary! 
+          },
           activeProvider
         );
         await persistArtifactAndEmit(runId, projectId, phaseName, "diagram", "Cross-Contract Paths", pendingCrossContractAnalysis);
@@ -379,14 +463,41 @@ async function runSimulatedPipeline(
       
       // PHASE 11: REPORTING
       else if (phaseName === "phase-11-reporting") {
-        pendingFindingRegistry = await generateFindingRegistry({ economicAnalysis: pendingEconomicAnalysis! }, activeProvider);
-        pendingFormalReport = await generateFormalReport({ findingRegistry: pendingFindingRegistry! }, activeProvider);
+        pendingFindingRegistry = await generateFindingRegistry(
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!,
+            architecture: pendingArchitectureSummary!,
+            economicAnalysis: pendingEconomicAnalysis! 
+          }, 
+          activeProvider
+        );
+        pendingFormalReport = await generateFormalReport(
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!,
+            architecture: pendingArchitectureSummary!,
+            findingRegistry: pendingFindingRegistry! 
+          }, 
+          activeProvider
+        );
         await persistArtifactAndEmit(runId, projectId, phaseName, "report", "Audit Report", pendingFormalReport);
       } 
       
       // PHASE 12: REMEDIATION
       else if (phaseName === "phase-12-remediation") {
-        pendingRemediationPlan = await generateRemediationPlan({ findingRegistry: pendingFindingRegistry! }, activeProvider);
+        pendingRemediationPlan = await generateRemediationPlan(
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!,
+            architecture: pendingArchitectureSummary!,
+            findingRegistry: pendingFindingRegistry! 
+          }, 
+          activeProvider
+        );
         await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Remediation Plan", pendingRemediationPlan);
       }
 

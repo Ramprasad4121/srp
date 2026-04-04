@@ -15,6 +15,7 @@
     "@srp/security": "file:../../packages/security",
     "@srp/sessions": "file:../../packages/sessions",
     "@srp/shared-types": "file:../../packages/shared-types",
-    "@srp/skills": "file:../../packages/skills"
+    "@srp/skills": "file:../../packages/skills",
+    "@srp/cache": "file:../../packages/cache"
   }
 }
