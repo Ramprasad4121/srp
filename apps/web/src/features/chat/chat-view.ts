@@ -15,152 +15,181 @@ export class ChatView extends LitElement {
     :host {
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
-      box-sizing: border-box;
-      position: relative;
-      background-color: transparent;
-      color: #000;
+      height: 100%;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #ffffff;
+      color: #111827;
       overflow: hidden;
     }
 
-    .content-wrapper {
-      position: relative;
-      z-index: 1;
+    .chat-layout {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      height: 100%;
-      max-width: 900px;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+      padding-top: 2rem;
+    }
+
+    /* Centered content column */
+    .message-list {
+      flex: 1;
+      max-width: 800px;
       margin: 0 auto;
       width: 100%;
-      background: #fff;
-      border-left: 1px solid #eee;
-      border-right: 1px solid #eee;
-      overflow: hidden;
-    }
-
-    /* x402 Style Header */
-    .x402-header {
-      padding: 12px 20px;
-      border-bottom: 1px solid #eee;
-      font-size: 11px;
-      display: flex;
-      justify-content: space-between;
-      letter-spacing: 2px;
-      color: #999;
-      text-transform: uppercase;
-    }
-
-    .status-dot {
-      display: inline-block;
-      width: 6px;
-      height: 6px;
-      background: #0052FF;
-      border-radius: 50%;
-      margin-right: 8px;
-    }
-
-    /* Chat Area */
-    .chat-container {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      padding: 0;
-      scrollbar-width: thin;
-      scrollbar-color: #eee #fff;
-    }
-
-    .chat-history {
-      flex: 1;
+      padding: 0 1.5rem 10rem 1.5rem;
       display: flex;
       flex-direction: column;
     }
 
     .empty-state {
-      text-align: center;
-      color: #ccc;
       margin: auto;
-      font-size: 13px;
-      letter-spacing: 1px;
+      text-align: center;
+      padding: 4rem 2rem;
     }
 
-    /* Chat Input Bar */
+    .empty-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-subtitle {
+      font-size: 0.875rem;
+      color: #6b7280;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    /* Action bar / Input */
+    .input-wrapper {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, #ffffff 70%, transparent);
+      padding: 2rem 1.5rem 2rem 1.5rem;
+      z-index: 10;
+    }
+
     .input-container {
-      flex-shrink: 0;
-      padding: 24px;
+      max-width: 800px;
+      margin: 0 auto;
       background: #fff;
-      border-top: 1px solid #f5f5f5;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      padding: 0.5rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
 
-    .input-box {
+    .input-container:focus-within {
+      border-color: #0052FF;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(0, 82, 255, 0.1);
+    }
+
+    .input-row {
       display: flex;
-      align-items: center;
-      background: #fcfcfc;
-      border: 1px solid #eee;
-      padding: 4px 4px 4px 16px;
-      transition: border-color 0.2s ease;
+      align-items: flex-end;
+      gap: 0.5rem;
     }
 
-    .input-box.disabled {
-      opacity: 0.5;
-      pointer-events: none;
-    }
-
-    .input-box:focus-within {
-      border-color: #ddd;
-    }
-
-    .input-box input {
+    textarea {
       flex: 1;
       border: none;
       background: transparent;
-      padding: 12px 0;
-      font-size: 14px;
-      font-family: 'JetBrains Mono', monospace;
+      padding: 0.75rem 1rem;
+      font-size: 0.9375rem;
+      font-family: inherit;
+      line-height: 1.5;
       outline: none;
-      color: #000;
+      resize: none;
+      max-height: 200px;
+      color: #111827;
     }
 
-    .input-box input::placeholder {
-      color: #bbb;
+    textarea::placeholder {
+      color: #9ca3af;
     }
 
     .btn-send {
-      background: #000;
+      background: #111827;
       color: #fff;
       border: none;
-      padding: 10px 20px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-family: 'JetBrains Mono', monospace;
-      text-transform: uppercase;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.1s, background 0.2s;
+      flex-shrink: 0;
+      margin-bottom: 4px;
+      margin-right: 4px;
     }
 
     .btn-send:hover {
-      background: #333;
+      background: #374151;
     }
 
     .btn-send:active {
-      background: #444;
+      transform: scale(0.95);
     }
-    
-    .loading-indicator {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      border: 2px solid #fff;
-      border-top-color: transparent;
+
+    .btn-send:disabled {
+      background: #f3f4f6;
+      color: #d1d5db;
+      cursor: not-allowed;
+    }
+
+    /* Quick suggestions */
+    .quick-actions {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      overflow-x: auto;
+    }
+
+    .action-chip {
+      font-size: 11px;
+      font-weight: 600;
+      background: #f3f4f6;
+      color: #4b5563;
+      padding: 4px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .action-chip:hover {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    /* Loading state */
+    .loading-dots {
+      display: flex;
+      gap: 4px;
+      padding: 1rem;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      background: #d1d5db;
       border-radius: 50%;
-      animation: spin 1s linear infinite;
+      animation: bounce 1.4s infinite ease-in-out;
     }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+
+    .dot:nth-child(1) { animation-delay: -0.32s; }
+    .dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
     }
   `;
 
@@ -188,13 +217,11 @@ export class ChatView extends LitElement {
       this._isLoading = true;
       const res = await gatewayClient.getConversations();
       if (res.ok && res.data && res.data.length > 0) {
-        // Use latest conversation
         const latest = res.data[res.data.length - 1];
         this._conversationId = latest.id;
         this._messages = latest.messages || [];
       } else {
-        // Create new
-        const createRes = await gatewayClient.createConversation("Default Audit Thread");
+        const createRes = await gatewayClient.createConversation("New Analysis");
         if (createRes.ok) {
           this._conversationId = createRes.data.id;
           this._messages = createRes.data.messages || [];
@@ -209,8 +236,12 @@ export class ChatView extends LitElement {
   }
 
   private handleInput(e: Event) {
-    const target = e.target as HTMLInputElement;
+    const target = e.target as HTMLTextAreaElement;
     this._chatInput = target.value;
+    
+    // Auto-resize
+    target.style.height = 'auto';
+    target.style.height = `${target.scrollHeight}px`;
   }
 
   private handleKeydown(e: KeyboardEvent) {
@@ -220,14 +251,17 @@ export class ChatView extends LitElement {
     }
   }
 
-  private async sendMessage() {
-    if (!this._chatInput.trim() || !this._conversationId || this._isLoading) return;
+  private async sendMessage(text?: string) {
+    const content = text || this._chatInput.trim();
+    if (!content || !this._conversationId || this._isLoading) return;
     
-    const content = this._chatInput.trim();
     this._chatInput = "";
+    // Reset height if it was a textarea event
+    const textarea = this.shadowRoot?.querySelector('textarea');
+    if (textarea) textarea.style.height = 'auto';
+
     this._isLoading = true;
 
-    // Optimistic UI update
     this._messages = [
       ...this._messages, 
       { id: Date.now().toString(), role: "user", content }
@@ -236,22 +270,13 @@ export class ChatView extends LitElement {
 
     try {
       const res = await gatewayClient.addMessage(this._conversationId, content);
-      if (res.ok) {
-        if (res.data.assistantMessage) {
-           this._messages = [
-             ...this._messages,
-             res.data.assistantMessage
-           ];
-        }
-      } else {
-        console.error("Failed to send message", res.error);
-        this._messages = [
-          ...this._messages,
-          { id: "err", role: "system", content: `Error: ${res.error} - ${res.detail}` }
-        ];
+      if (res.ok && res.data.assistantMessage) {
+        this._messages = [...this._messages, res.data.assistantMessage];
+      } else if (!res.ok) {
+        this._messages = [...this._messages, { id: "err", role: "system", content: `System Error: ${res.error}` }];
       }
     } catch (e) {
-      console.error("Network failure sending message", e);
+      console.error("Network failure", e);
     } finally {
       this._isLoading = false;
       this.scrollToBottom();
@@ -260,50 +285,67 @@ export class ChatView extends LitElement {
   
   private scrollToBottom() {
     setTimeout(() => {
-      const container = this.shadowRoot?.querySelector('.chat-container');
-      if (container) {
-         container.scrollTop = container.scrollHeight;
+      const layout = this.shadowRoot?.querySelector('.chat-layout');
+      if (layout) {
+         layout.scrollTop = layout.scrollHeight;
       }
     }, 50);
   }
 
   override render() {
     return html`
-      <div class="content-wrapper">
-        <header class="x402-header">
-          <div><span class="status-dot"></span>SRP_NETWORK_ACTIVE</div>
-          <div>PROTOCOL_V1.0</div>
-        </header>
+      <main class="chat-layout">
+        <div class="message-list">
+          ${this._messages.length === 0 
+            ? html`
+              <div class="empty-state">
+                <div class="empty-title">Secure Reasoning Protocol</div>
+                <p class="empty-subtitle">
+                  Ask me to audit a contract, explain architecture, or generate exploit proofs. I'm connected to your local workspace and the internet.
+                </p>
+              </div>` 
+            : this._messages.map(msg => html`
+                <chat-message .role=${msg.role} .content=${msg.content}></chat-message>
+              `)
+          }
+          
+          ${this._isLoading ? html`
+            <div class="loading-dots">
+              <div class="dot"></div>
+              <div class="dot"></div>
+              <div class="dot"></div>
+            </div>
+          ` : ''}
+        </div>
+      </main>
 
-        <main class="chat-container">
-          <div class="chat-history">
-            ${this._messages.length === 0 
-              ? html`<div class="empty-state">${this._isLoading ? 'INITIALIZING_PROTOCOL...' : 'SYSTEM_IDLE: READY_FOR_COMMAND'}</div>` 
-              : this._messages.map(msg => html`
-                  <chat-message .role=${msg.role} .content=${msg.content}></chat-message>
-                `)
-            }
+      <div class="input-wrapper">
+        <div class="input-container">
+          <div class="quick-actions">
+            <div class="action-chip" @click=${() => this.sendMessage("/scan scope")}>/scan scope</div>
+            <div class="action-chip" @click=${() => this.sendMessage("/list contracts")}>/list contracts</div>
+            <div class="action-chip" @click=${() => this.sendMessage("Explain trust boundaries")}>Explain trust boundaries</div>
           </div>
-        </main>
-
-        <footer class="input-container">
-          <div class="input-box ${this._isLoading ? 'disabled' : ''}">
-            <input 
-              type="text" 
-              placeholder=${this._isLoading ? "WAITING_FOR_RESPONSE..." : "EXECUTE_COMMAND (e.g., /scan, /analyze, /audit)..."} 
+          <div class="input-row">
+            <textarea 
+              rows="1"
+              placeholder="Message SRP Agent..." 
               .value=${this._chatInput}
               @input=${this.handleInput}
               @keydown=${this.handleKeydown}
               ?disabled=${this._isLoading}
-            />
-            <button class="btn-send" @click=${this.sendMessage} ?disabled=${this._isLoading}>
-              ${this._isLoading ? html`<span class="loading-indicator"></span>` : html`↵`}
+            ></textarea>
+            <button class="btn-send" @click=${() => this.sendMessage()} ?disabled=${this._isLoading || !this._chatInput.trim()}>
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
             </button>
           </div>
-        </footer>
+        </div>
       </div>
     `;
   }
+
 
 }
 

@@ -45,14 +45,117 @@ export interface InferenceContext {
 }
 
 function parseJson(text: string): any {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
+  const startObj = text.indexOf("{");
+  const startArr = text.indexOf("[");
+  
+  if (startObj === -1 && startArr === -1) {
     throw new Error("Unable to locate JSON payload");
   }
+
+  // Determine which one comes first or exists
+  const start = (startObj !== -1 && (startArr === -1 || startObj < startArr)) ? startObj : startArr;
+  const endChar = text[start] === "{" ? "}" : "]";
+  const end = text.lastIndexOf(endChar);
+
+  if (end === -1 || end <= start) {
+    throw new Error("Malformed JSON payload");
+  }
+
   const payload = text.slice(start, end + 1);
   return JSON.parse(payload);
 }
+
+export async function generatePreAuditPrep(
+  context: Partial<InferenceContext>,
+  provider: ProviderSelection | undefined
+): Promise<any> {
+  const workspace = context.workspace;
+  const files = workspace?.solidityFiles?.join(", ") || "No files detected";
+  
+  const prompt = `Perform Phase 0: Pre-Audit Preparation.
+Project Root: ${workspace?.rootDirectory}
+Solidity Files: ${files}
+
+Based on this project structure, provide:
+1. Core Value Proposition (one sentence)
+2. Money Flow (In/Out)
+3. Adversarial Actor List
+4. Worst Possible Outcome
+5. Initial Threat Model
+
+Output JSON with fields: valueProposition, moneyFlow, adversarialActors (string array), worstCaseOutcome, initialThreatModel.`;
+  
+  const response = await callProvider(provider!, [{ role: "user", content: prompt }]);
+  return parseJson(response);
+}
+
+export async function generateReconResult(
+  context: Partial<InferenceContext>,
+  provider: ProviderSelection | undefined
+): Promise<any> {
+  const workspace = context.workspace;
+  const files = workspace?.solidityFiles?.join(", ") || "No files detected";
+
+  const prompt = `Perform Phase 1: Reconnaissance.
+Project: ${workspace?.rootDirectory}
+Files: ${files}
+
+Gather security guarantees from documentation and candidate invariants.
+Output JSON with fields: sources (string array), securityGuarantees (string array), candidateInvariants (string array).`;
+  
+  const response = await callProvider(provider!, [{ role: "user", content: prompt }]);
+  return parseJson(response);
+}
+
+
+export async function generateFunctionAnnotations(
+  context: Partial<InferenceContext>,
+  provider: ProviderSelection | undefined
+): Promise<any[]> {
+  const prompt = `Perform Phase 5: Structured Code Reading.
+Provide function annotations for significant functions.
+Output JSON array of objects with fields: functionName, contractPath, access, modifiers (string array), stateChanges (string array), externalCalls (string array), mathRisks, invariantsAffected (string array).`;
+  
+  const response = await callProvider(provider, [{ role: "user", content: prompt }]);
+  return parseJson(response);
+}
+
+export async function generateQuestionLog(
+  context: Partial<InferenceContext>,
+  provider: ProviderSelection | undefined
+): Promise<any[]> {
+  const prompt = `Perform Phase 6: Note-Making & Question Logging.
+Identify unresolved questions and security concerns.
+Output JSON array of objects with fields: id, question, status ("pending").`;
+  
+  const response = await callProvider(provider, [{ role: "user", content: prompt }]);
+  return parseJson(response);
+}
+
+export async function generateInteractionMatrix(
+  context: Partial<InferenceContext>,
+  provider: ProviderSelection | undefined
+): Promise<any[]> {
+  const prompt = `Perform Phase 8: Interaction Matrix.
+Compute contract-to-contract read/write matrix.
+Output JSON array of objects with fields: from, to, interaction ("read" | "write" | "none"), description.`;
+  
+  const response = await callProvider(provider, [{ role: "user", content: prompt }]);
+  return parseJson(response);
+}
+
+export async function generateEconomicScenarios(
+  context: Partial<InferenceContext>,
+  provider: ProviderSelection | undefined
+): Promise<any[]> {
+  const prompt = `Perform Phase 9: Economic Attack Modeling.
+Model flash loans, oracle manipulation, and slow accounting drift.
+Output JSON array of objects with fields: id, title, profitabilityAnalysis, capitalRequirements, oracleAssumptions.`;
+  
+  const response = await callProvider(provider, [{ role: "user", content: prompt }]);
+  return parseJson(response);
+}
+
 
 function buildArchitecturePrompt(context: InferenceContext): string {
   return `Output JSON with markdownSummary and keyComponents based on workspace ${context.workspace.rootDirectory} (Foundry=${context.workspace.isFoundry}, Hardhat=${context.workspace.isHardhat}), analyzed files ${context.workspace.solidityFileCount}, key intent goals ${context.intent.mainContracts.join(

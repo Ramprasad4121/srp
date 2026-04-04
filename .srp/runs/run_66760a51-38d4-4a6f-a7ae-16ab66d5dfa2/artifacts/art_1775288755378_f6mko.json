@@ -1,0 +1,15 @@
+{
+  "summary": "No architecture components identified.",
+  "invariants": [
+    {
+      "id": "INV-001",
+      "title": "No Invariants Identified",
+      "description": "No invariants were identified during the analysis.",
+      "category": "N/A",
+      "priority": "N/A",
+      "derivedFrom": "N/A",
+      "suggestedVerification": "N/A"
+    }
+  ],
+  "generatedByModel": "meta/llama-3.1-70b-instruct (Provider)"
+}

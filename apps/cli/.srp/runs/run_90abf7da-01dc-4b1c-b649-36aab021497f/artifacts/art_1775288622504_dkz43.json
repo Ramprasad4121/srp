@@ -1,0 +1,15 @@
+{
+  "summary": "Proposed 1 targeted remediation steps to resolve the identified finding registry.",
+  "actions": [
+    {
+      "id": "REM-FIND-GEN-01",
+      "relatedFindingId": "FIND-GEN-01",
+      "title": "Standardize NatSpec Documentation",
+      "description": "Apply the standard NatSpec format to all public methods to improve maintainability and auditability.",
+      "complexity": "Low",
+      "estimatedEffort": "1-2 days",
+      "technicalDebtImpact": "Decreased"
+    }
+  ],
+  "generatedByModel": "gpt-4.1-mini"
+}

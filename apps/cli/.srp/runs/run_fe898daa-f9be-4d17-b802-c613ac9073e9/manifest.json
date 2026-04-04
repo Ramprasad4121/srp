@@ -1,0 +1,146 @@
+{
+  "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+  "projectId": "default-project",
+  "sessionId": "session_f2561ecd-4941-4749-bfd0-b404b547cc04",
+  "status": "completed",
+  "createdAt": "2026-04-04T07:43:37.783Z",
+  "artifacts": [
+    {
+      "artifactId": "art_1775288617789_a52v3",
+      "kind": "note",
+      "title": "Workspace Analysis",
+      "phase": "phase-0-preparation",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:37.790Z"
+    },
+    {
+      "artifactId": "art_1775288617793_ltstx",
+      "kind": "note",
+      "title": "Codebase Context",
+      "phase": "phase-1-intent",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:37.794Z"
+    },
+    {
+      "artifactId": "art_1775288617796_et883",
+      "kind": "note",
+      "title": "Intent Summary",
+      "phase": "phase-1-intent",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:37.797Z"
+    },
+    {
+      "artifactId": "art_1775288618672_zunx8",
+      "kind": "diagram",
+      "title": "Architecture Summary",
+      "phase": "phase-2-architecture",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:38.673Z"
+    },
+    {
+      "artifactId": "art_1775288618675_1c4tg",
+      "kind": "diagram",
+      "title": "Protocol Map",
+      "phase": "phase-2-architecture",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:38.676Z"
+    },
+    {
+      "artifactId": "art_1775288619014_bc1u5",
+      "kind": "invariant",
+      "title": "Invariants Registry",
+      "phase": "phase-3-invariants",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:39.015Z"
+    },
+    {
+      "artifactId": "art_1775288619018_8lqc5",
+      "kind": "test",
+      "title": "Verification Plan",
+      "phase": "phase-4-code-reading",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:39.019Z"
+    },
+    {
+      "artifactId": "art_1775288619021_f1lh1",
+      "kind": "test",
+      "title": "Toolchain Execution",
+      "phase": "phase-4-code-reading",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:39.022Z"
+    },
+    {
+      "artifactId": "art_1775288619444_yhq40",
+      "kind": "hypothesis",
+      "title": "Hypothesis Registry",
+      "phase": "phase-5-attack-simulation",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:39.445Z"
+    },
+    {
+      "artifactId": "art_1775288619446_m8xgm",
+      "kind": "finding",
+      "title": "Economic Analysis",
+      "phase": "phase-6-economic-modeling",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:39.447Z"
+    },
+    {
+      "artifactId": "art_1775288619449_oa31l",
+      "kind": "diagram",
+      "title": "Cross-Contract Call Paths",
+      "phase": "phase-7-cross-contract-paths",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:39.450Z"
+    },
+    {
+      "artifactId": "art_1775288619452_84sdg",
+      "kind": "finding",
+      "title": "Finding Registry",
+      "phase": "phase-8-finding-verification",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:39.453Z"
+    },
+    {
+      "artifactId": "art_1775288619541_uu43c",
+      "kind": "test",
+      "title": "PoC FIND-GEN-01",
+      "phase": "phase-8-finding-verification",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:39.541Z"
+    },
+    {
+      "artifactId": "art_1775288619542_c1rtp",
+      "kind": "note",
+      "title": "Remediation Plan",
+      "phase": "phase-10-remediation",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:39.542Z"
+    },
+    {
+      "artifactId": "art_1775288619543_ty64c",
+      "kind": "report",
+      "title": "Formal Report",
+      "phase": "phase-9-reporting",
+      "runId": "run_fe898daa-f9be-4d17-b802-c613ac9073e9",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:43:39.543Z"
+    }
+  ],
+  "currentPhase": "phase-9-reporting",
+  "completedAt": "2026-04-04T07:43:39.544Z"
+}

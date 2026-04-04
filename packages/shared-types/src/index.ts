@@ -35,16 +35,66 @@ export type SessionStatus = "idle" | "running" | "completed" | "failed";
 
 export type MethodologyPhase =
   | "phase-0-preparation"
-  | "phase-1-intent"
+  | "phase-1-recon"
   | "phase-2-architecture"
   | "phase-3-invariants"
-  | "phase-4-code-reading"
-  | "phase-5-attack-simulation"
-  | "phase-6-economic-modeling"
-  | "phase-7-cross-contract-paths"
-  | "phase-8-finding-verification"
-  | "phase-9-reporting"
-  | "phase-10-remediation";
+  | "phase-4-hypotheses"
+  | "phase-5-code-reading"
+  | "phase-6-notes"
+  | "phase-7-simulations"
+  | "phase-8-interaction-matrix"
+  | "phase-9-economic-modeling"
+  | "phase-10-cross-contract-paths"
+  | "phase-11-reporting"
+  | "phase-12-remediation";
+
+export interface PreAuditPrep {
+  readonly valueProposition: string;
+  readonly moneyFlow: string;
+  readonly adversarialActors: readonly string[];
+  readonly worstCaseOutcome: string;
+  readonly initialThreatModel: string;
+}
+
+export interface ReconResult {
+  readonly sources: readonly string[];
+  readonly securityGuarantees: readonly string[];
+  readonly candidateInvariants: readonly string[];
+}
+
+export interface QuestionEntry {
+  readonly id: string;
+  readonly question: string;
+  readonly status: "pending" | "answered";
+  readonly answer?: string;
+}
+
+export interface FunctionAnnotation {
+  readonly functionName: string;
+  readonly contractPath: string;
+  readonly access: string;
+  readonly modifiers: readonly string[];
+  readonly stateChanges: readonly string[];
+  readonly externalCalls: readonly string[];
+  readonly mathRisks: string;
+  readonly invariantsAffected: readonly string[];
+}
+
+export interface InteractionMatrixEntry {
+  readonly from: string;
+  readonly to: string;
+  readonly interaction: "read" | "write" | "none";
+  readonly description: string;
+}
+
+export interface EconomicAttackScenario {
+  readonly id: string;
+  readonly title: string;
+  readonly profitabilityAnalysis: string;
+  readonly capitalRequirements: string;
+  readonly oracleAssumptions: string;
+}
+
 
 export type PhaseStatus = "pending" | "running" | "completed" | "failed";
 
@@ -352,6 +402,8 @@ export interface RuntimeSessionState {
   readonly runId: string | null;
   readonly currentPhase: MethodologyPhase | null;
   readonly phases: readonly PhaseState[];
+  readonly preAuditPrep?: PreAuditPrep;
+  readonly reconResult?: ReconResult;
   readonly workspaceAnalysis?: WorkspaceAnalysis;
   readonly codebaseContext?: CodebaseContextSummary;
   readonly intentSummary?: IntentSummary;
@@ -360,13 +412,18 @@ export interface RuntimeSessionState {
   readonly invariantRegistry?: InvariantRegistry;
   readonly verificationPlan?: VerificationPlan;
   readonly hypothesisRegistry?: HypothesisRegistry;
+  readonly functionAnnotations?: readonly FunctionAnnotation[];
+  readonly questionLog?: readonly QuestionEntry[];
   readonly economicAnalysis?: EconomicAnalysis;
+  readonly economicScenarios?: readonly EconomicAttackScenario[];
+  readonly interactionMatrix?: readonly InteractionMatrixEntry[];
   readonly crossContractAnalysis?: CrossContractAnalysis;
   readonly findingRegistry?: FindingRegistry;
   readonly remediationPlan?: RemediationPlan;
   readonly formalReport?: FormalReport;
   readonly toolchainExecution?: ToolchainExecution;
 }
+
 
 export interface IdentifiedRecord {
   readonly projectId: string;
@@ -577,6 +634,27 @@ export interface ForgeTestResult {
 }
 
 // ---------------------------------------------------------------------------
+// Team & Collaboration (Phase 14)
+// ---------------------------------------------------------------------------
+
+export interface TeamMember {
+  readonly id: string;
+  readonly name: string;
+  readonly role: RuntimeMode | "guest";
+  readonly status: "active" | "idle" | "offline";
+  readonly lastActiveAt: string;
+}
+
+export interface TeamRoom {
+  readonly id: string;
+  readonly name: string;
+  readonly members: readonly TeamMember[];
+  readonly activeAuditors: number;
+  readonly activeDevelopers: number;
+  readonly sharedActivity: readonly string[];
+}
+
+// ---------------------------------------------------------------------------
 // Web Research (Phase 4)
 // ---------------------------------------------------------------------------
 
@@ -593,3 +671,4 @@ export interface WebResearchRequest {
   readonly limit?: number;
   readonly includeDocumentation?: boolean;
 }
+

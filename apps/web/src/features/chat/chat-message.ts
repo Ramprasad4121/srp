@@ -9,65 +9,117 @@ export class ChatMessage extends LitElement {
   static override styles = css`
     :host {
       display: block;
-      margin: 0;
-      border-bottom: 1px solid #f5f5f5;
-      font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+      margin-bottom: 2.5rem;
+      animation: fadeIn 0.3s ease-out;
     }
 
-    .message {
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message-container {
       display: flex;
-      flex-direction: column;
-      padding: 20px 24px;
+      gap: 1.25rem;
     }
 
-    .role-label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      font-weight: 700;
-      margin-bottom: 12px;
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 14px;
+      font-weight: 700;
     }
 
-    .role-user {
-      color: #0052FF;
+    .avatar-user {
+      background: #f3f4f6;
+      color: #6b7280;
+      border: 1px solid #e5e7eb;
     }
 
-    .role-assistant {
-      color: #000;
+    .avatar-assistant {
+      background: #111827;
+      color: #fff;
     }
 
-    .role-system {
-      color: #f59e0b;
+    .avatar-system {
+      background: #fef3c7;
+      color: #d97706;
     }
-    
-    .timestamp {
-      color: #ccc;
-      font-weight: normal;
+
+    .body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .time {
+      font-size: 11px;
+      color: #9ca3af;
+      font-weight: 500;
     }
 
     .content {
-      font-size: 13px;
-      line-height: 1.7;
-      color: #444;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #374151;
       white-space: pre-wrap;
       word-break: break-word;
     }
 
-    .content.user {
-      color: #000;
+    /* Markdown-ish styling */
+    .content code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      background: #f3f4f6;
+      padding: 2px 4px;
+      border-radius: 4px;
+      color: #111827;
     }
 
-    .role-assistant::before {
-      content: "●";
-      font-size: 8px;
+    .content pre {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 1rem 0;
     }
 
-    .role-user::before {
-      content: "○";
-      font-size: 8px;
+    .content pre code {
+      background: transparent;
+      padding: 0;
+    }
+
+    .tool-call {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #f0f7ff;
+      border: 1px solid #cce3ff;
+      color: #0052FF;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 0.5rem 0;
+      font-family: 'JetBrains Mono', monospace;
     }
   `;
 
@@ -81,22 +133,31 @@ export class ChatMessage extends LitElement {
   }
 
   override render() {
-    let name = this.role === 'assistant' ? 'SRP_AGENT' : 'REMOTE_OPERATOR';
-    if (this.role === 'system') name = 'PROTOCOL_SYSTEM';
+    let name = this.role === 'assistant' ? 'SRP Agent' : 'You';
+    if (this.role === 'system') name = 'Protocol System';
     
-    const timestamp = new Date().toLocaleTimeString([], { hour12: false });
+    const isTool = this.content.startsWith('[TOOL:');
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     return html`
-      <div class="message">
-        <div class="role-label role-${this.role}">
-          ${name} <span class="timestamp">[${timestamp}]</span>
+      <div class="message-container">
+        <div class="avatar avatar-${this.role}">
+          ${this.role === 'assistant' ? 'S' : (this.role === 'system' ? 'P' : 'U')}
         </div>
-        <div class="content ${this.role}">
-          ${this.content}
+        <div class="body">
+          <div class="header">
+            <span class="name">${name}</span>
+            <span class="time">${timestamp}</span>
+          </div>
+          ${isTool 
+            ? html`<div class="tool-call">🛠️ ${this.content}</div>`
+            : html`<div class="content">${this.content}</div>`
+          }
         </div>
       </div>
     `;
   }
+
 
 }
 

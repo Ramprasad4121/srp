@@ -1,0 +1,6 @@
+{
+  "findingId": "FIND-GEN-01",
+  "status": "skipped",
+  "output": "python3: can't open file '/Users/ramprasadgoud/Downloads/building/srp/apps/cli/scripts/run_poc.py': [Errno 2] No such file or directory\n",
+  "generatedAt": "2026-04-04T07:43:39.541Z"
+}

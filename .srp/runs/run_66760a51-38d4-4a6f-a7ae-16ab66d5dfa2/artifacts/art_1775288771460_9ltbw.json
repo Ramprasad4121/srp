@@ -1,0 +1,6 @@
+{
+  "findingId": "FIND-HYP-001",
+  "status": "skipped",
+  "output": "python3: can't open file '/Users/ramprasadgoud/Downloads/building/srp/scripts/run_poc.py': [Errno 2] No such file or directory\n",
+  "generatedAt": "2026-04-04T07:46:11.460Z"
+}

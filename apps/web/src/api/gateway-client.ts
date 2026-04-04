@@ -138,6 +138,14 @@ export function createGatewayClient(baseUrl: string) {
       });
     },
 
+    /** POST /api/runtime/start */
+    async startSession(): Promise<ApiResult<any>> {
+      return apiRequest<any>(baseUrl, "/api/runtime/start", {
+        method: "POST",
+        body: "{}"
+      });
+    },
+
     // ---------------------------------------------------------------------------
     // Chat & Skills
     // ---------------------------------------------------------------------------

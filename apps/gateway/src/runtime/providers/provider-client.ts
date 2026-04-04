@@ -30,34 +30,34 @@ export async function callProvider(
   }
 }
 
-function getProviderConfig(kind: string): { apiKey?: string; baseURL?: string } {
+function getProviderConfig(kind: string): { apiKey: string; baseURL?: string } {
   switch (kind) {
     case "nvidia":
       return {
-        apiKey: process.env["NVIDIA_API_KEY"],
+        apiKey: process.env["NVIDIA_API_KEY"] || "",
         baseURL: "https://integrate.api.nvidia.com/v1"
       };
     case "openrouter":
       return {
-        apiKey: process.env["OPENROUTER_API_KEY"],
+        apiKey: process.env["OPENROUTER_API_KEY"] || "",
         baseURL: "https://openrouter.ai/api/v1"
       };
     case "hugging-face":
       return {
-        apiKey: process.env["HUGGINGFACE_API_KEY"]
+        apiKey: process.env["HUGGINGFACE_API_KEY"] || ""
       };
     case "openai":
       return {
-        apiKey: process.env["OPENAI_API_KEY"]
+        apiKey: process.env["OPENAI_API_KEY"] || ""
       };
     case "openai-compatible":
       return {
-        apiKey: process.env["OPENAI_COMPATIBLE_API_KEY"] || process.env["OPENAI_API_KEY"],
+        apiKey: (process.env["OPENAI_COMPATIBLE_API_KEY"] || process.env["OPENAI_API_KEY"]) || "",
         baseURL: process.env["OPENAI_COMPATIBLE_BASE_URL"]
       };
     default:
       return {
-        apiKey: process.env["OPENAI_API_KEY"] || process.env["OPENAI_COMPATIBLE_API_KEY"],
+        apiKey: (process.env["OPENAI_API_KEY"] || process.env["OPENAI_COMPATIBLE_API_KEY"]) || "",
         baseURL: process.env["OPENAI_COMPATIBLE_BASE_URL"]
       };
   }

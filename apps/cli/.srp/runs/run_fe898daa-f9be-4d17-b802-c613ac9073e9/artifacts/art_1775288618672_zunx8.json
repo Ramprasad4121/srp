@@ -1,0 +1,5 @@
+{
+  "markdownSummary": "## Synthesized Architecture\n\nBased on the initial 0 identified source files, the project's architecture appears to be structured around the following core components:\n\n- *No primary contracts identified.*\n\n### Interfaces & Dependencies\nDetected 0 explicit interfaces, suggesting a composable or heavily integrated pattern. \n\n### Framework Context\nOperates within a Standard toolchain environment, constrained to /Users/ramprasadgoud/Downloads/building/srp/apps/cli.\n",
+  "keyComponents": [],
+  "generatedByModel": "gpt-4.1-mini (Provider Fallback)"
+}

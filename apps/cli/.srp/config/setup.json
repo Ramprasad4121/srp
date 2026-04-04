@@ -1,0 +1,37 @@
+{
+  "version": "1",
+  "updatedAt": "2026-04-04T07:43:18.219Z",
+  "approvedDomains": [
+    {
+      "hostname": "docs.openzeppelin.com",
+      "reason": "Smart contract library documentation"
+    },
+    {
+      "hostname": "eips.ethereum.org",
+      "reason": "Primary standards and EIP references"
+    },
+    {
+      "hostname": "docs.soliditylang.org",
+      "reason": "Solidity language reference"
+    }
+  ],
+  "state": {
+    "currentStep": "welcome",
+    "completedSteps": [],
+    "role": "hybrid",
+    "providers": [
+      {
+        "kind": "openai-compatible",
+        "label": "Primary Compatible Endpoint",
+        "model": "gpt-4.1-mini",
+        "enabled": true
+      }
+    ],
+    "workspace": {
+      "rootDirectory": ".",
+      "outputDirectory": ".srp",
+      "useDockerToolchains": true,
+      "internetMode": "local-plus-docs"
+    }
+  }
+}

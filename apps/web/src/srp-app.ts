@@ -5,6 +5,9 @@ import type { AppBootstrapResult, RuntimeSessionState } from "@srp/shared-types"
 // Import components
 import "./onboarding/setup-view.js";
 import "./features/chat/chat-view.js";
+import "./features/team/team-view.js";
+import "./features/gstack/gstack-view.js";
+import "./features/methodology/methodology-view.js";
 
 export class SrpApp extends LitElement {
   static override properties = {
@@ -20,10 +23,18 @@ export class SrpApp extends LitElement {
 
   static override styles = css`
     :host {
+      --bg-app: #ffffff;
+      --bg-sidebar: #f9fafb;
+      --border-main: #e5e7eb;
+      --text-primary: #111827;
+      --text-secondary: #6b7280;
+      --text-muted: #9ca3af;
+      --accent: #0052FF;
+      
       display: block;
-      font-family: 'Inter', system-ui, sans-serif;
-      background: #f7f9fa; /* x402 light background */
-      color: #000;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-app);
+      color: var(--text-primary);
       min-height: 100vh;
     }
 
@@ -33,27 +44,26 @@ export class SrpApp extends LitElement {
       overflow: hidden;
     }
 
-    /* Sidebar Styles */
+    /* Sidebar Refinement */
     .sidebar {
-      background: #fff;
-      border-right: 1px solid #000;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-main);
       display: flex;
       flex-direction: column;
       z-index: 10;
-      padding: 1.5rem 0;
-      width: 260px;
+      width: 280px;
       flex-shrink: 0;
-      transition: margin-left 0.3s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .sidebar.closed {
-      margin-left: -260px;
+      width: 0;
+      opacity: 0;
+      pointer-events: none;
     }
 
     .sidebar-header {
-      padding: 0 1.5rem 1.5rem 1.5rem;
-      border-bottom: 1px solid #e1e3e8;
-      margin-bottom: 1.5rem;
+      padding: 1.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -62,168 +72,201 @@ export class SrpApp extends LitElement {
     .logo-container {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.75rem;
     }
 
     .logo {
-      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .logo-badge {
+      font-size: 10px;
+      background: var(--text-primary);
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 4px;
       font-weight: 700;
-      font-size: 1.25rem;
-      letter-spacing: -0.05em;
+      letter-spacing: 0.05em;
     }
 
-    .toggle-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 1.2rem;
-      padding: 0;
+    .nav-section {
+      padding: 0.5rem 0.75rem;
     }
 
-    .nav-menu {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-      padding: 0 1rem;
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 1.5rem 0.75rem 0.5rem 0.75rem;
     }
 
     .nav-item {
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 0.875rem;
+      font-size: 13px;
       font-weight: 500;
-      color: #666;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.15s ease;
+    }
+
+    .nav-item:hover {
+      background: #f3f4f6;
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: #fff;
+      color: var(--text-primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.02);
+      border: 1px solid var(--border-main);
+    }
+
+    .nav-icon {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.7;
+    }
+
+    /* Role Switcher */
+    .role-switcher {
+      margin: 1.5rem 0.75rem;
+      background: #f3f4f6;
+      padding: 0.25rem;
+      border-radius: 8px;
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .role-btn {
+      flex: 1;
+      padding: 0.5rem;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
       transition: all 0.2s;
+      color: var(--text-secondary);
+    }
+
+    .role-btn.active {
+      background: #fff;
+      color: var(--text-primary);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    /* Main Content Refinement */
+    .main-content {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+    }
+
+    .top-bar {
+      height: 60px;
+      border-bottom: 1px solid var(--border-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      background: #fff;
+      z-index: 5;
+    }
+
+    .page-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
 
-    .nav-item:hover {
-      background: #f0f0f0;
-      color: #000;
-    }
-
-    .nav-item.active {
-      background: #000;
-      color: #fff;
-    }
-
-    .sidebar-section {
-      margin-top: 2rem;
-      padding: 0 1rem;
-    }
-
-    .section-title {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      font-weight: 700;
-      color: #999;
-      margin-bottom: 0.75rem;
-      padding: 0 1rem;
-    }
-
-    .mode-options {
+    .status-indicator {
       display: flex;
-      flex-direction: column;
+      align-items: center;
       gap: 0.5rem;
-      padding: 0 1rem;
+      font-size: 12px;
+      color: var(--text-secondary);
     }
 
-    .mode-item {
-      font-size: 0.875rem;
-      font-weight: 500;
-      padding: 0.5rem 1rem;
-      border: 1px solid transparent;
-      border-radius: 4px;
-      cursor: pointer;
-      color: #666;
-    }
-    
-    .mode-item.active {
-      border: 1px solid #000;
-      background: #f7f9fa;
-      color: #000;
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+      animation: pulse 2s infinite;
     }
 
-    .skills-section {
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .view-container {
       flex: 1;
-      overflow-y: auto;
-      margin-top: 2rem;
-      padding: 0 1rem;
-    }
-
-    .skill-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
-    .skill-item {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
-      padding: 0.4rem 1rem;
-      color: #333;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      cursor: default;
-    }
-
-    .skill-item::before {
-      content: "•";
-      margin-right: 0.5rem;
-      color: #000;
-    }
-
-    .main-content {
-      position: relative;
-      flex: 1;
-      height: 100vh;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-    }
-
-    .room-header {
-      background: #fff;
-      border-bottom: 1px solid #000;
-      padding: 1rem 1.5rem;
-      font-size: 1.25rem;
-      font-weight: 700;
-      font-family: 'JetBrains Mono', monospace;
-      flex-shrink: 0;
-      text-align: center;
-    }
-
-    .room-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .room-container.auditor-room {
-      /* specific styling for auditor room if needed */
-    }
-
-    .room-container.developer-room {
-      /* specific styling for developer room if needed */
     }
 
     .hamburger-btn {
-      position: absolute;
-      top: 1.5rem;
-      left: 1.5rem;
-      z-index: 20;
-      background: #fff;
-      border: 1px solid #000;
-      border-radius: 4px;
-      padding: 0.5rem;
+      background: none;
+      border: none;
       cursor: pointer;
-      box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+      padding: 0.5rem;
+      margin-right: 0.5rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+    }
+
+    .hamburger-btn:hover {
+      color: var(--text-primary);
+    }
+
+    /* Skills simplified */
+    .skills-footer {
+      margin-top: auto;
+      padding: 1.5rem;
+      border-top: 1px solid var(--border-main);
+    }
+
+    .skills-count {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .skills-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .skill-pill {
+      font-size: 10px;
+      background: #f3f4f6;
+      color: var(--text-secondary);
+      padding: 2px 8px;
+      border-radius: 100px;
+      white-space: nowrap;
     }
   `;
 
@@ -247,13 +290,13 @@ export class SrpApp extends LitElement {
     this._sidebarOpen = true;
     this._mode = "auditor";
 
-    console.log("SRP App initialized");
+    console.log("SRP Senior App initialized");
     
     const boot = document.getElementById("boot-status");
     if (boot) boot.style.display = "none";
 
-    document.body.style.background = "#f7f9fa";
-    document.body.style.color = "#000";
+    document.body.style.background = "#ffffff";
+    document.body.style.color = "#111827";
 
     window.addEventListener("error", (e) => {
       this._error = e.message;
@@ -319,17 +362,17 @@ export class SrpApp extends LitElement {
   override render() {
     if (this._error) {
       return html`
-        <div style="border: 1px solid #ff4d4d; margin: 4rem auto; max-width: 800px; padding: 2rem; border-radius: 8px;">
-          <h1 style="color: #ff4d4d;">System Error</h1>
-          <p>${this._error}</p>
-          <button style="background: #ff4d4d; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px;" @click=${() => location.reload()}>Retry Connection</button>
+        <div style="padding: 4rem; max-width: 600px; margin: auto; text-align: center;">
+          <h1 style="font-size: 1.5rem; margin-bottom: 1rem;">Connection Error</h1>
+          <p style="color: var(--text-secondary); margin-bottom: 2rem;">${this._error}</p>
+          <button style="background: var(--text-primary); color: #fff; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;" @click=${() => location.reload()}>Reconnect</button>
         </div>
       `;
     }
 
     if (this._loading) {
-      return html`<div style="padding: 4rem; text-align: center; color: #000; font-family: 'JetBrains Mono', monospace;">
-        <div style="font-size: 2rem; margin-bottom: 1rem;">⚡</div>
+      return html`<div style="height: 100vh; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500; color: var(--text-secondary);">
+        <div class="pulse-dot" style="margin-right: 1rem;"></div>
         Initializing SRP Protocol...
       </div>`;
     }
@@ -340,75 +383,96 @@ export class SrpApp extends LitElement {
 
     if (this._bootstrap?.decision !== "ready") {
       return html`
-        <div style="border: 1px solid #000; margin: 4rem auto; max-width: 800px; padding: 2rem; border-radius: 8px;">
-          <h1>Onboarding Required</h1>
-          <p>Your workspace is not yet ready for a security audit.</p>
-          <a href="/setup" style="display:inline-block; margin-top:1rem; padding:0.75rem 1.5rem; background:#000; color:#fff; text-decoration:none; border-radius:4px;" @click=${this.navigate}>Configure in Web UI</a>
+        <div style="padding: 4rem; max-width: 600px; margin: auto; text-align: center;">
+          <h1 style="font-size: 1.5rem; margin-bottom: 1rem;">Welcome to SRP</h1>
+          <p style="color: var(--text-secondary); margin-bottom: 2rem;">Your local environment is not yet configured for security auditing.</p>
+          <a href="/setup" style="background: var(--text-primary); color: #fff; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 6px; font-weight: 600;" @click=${this.navigate}>Configure Environment</a>
         </div>
       `;
     }
 
     return html`
       <div class="app-container">
-        <!-- Persistent Sidebar -->
+        <!-- Minimal Sidebar -->
         <aside class="sidebar ${this._sidebarOpen ? '' : 'closed'}">
           <div class="sidebar-header">
             <div class="logo-container">
-              <span class="logo">SRP</span>
-              <span style="font-size: 0.75rem; background: #000; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold;">WEB</span>
+              <span class="logo">SRP Protocol</span>
+              <span class="logo-badge">v1.0</span>
             </div>
-            <button class="toggle-btn" @click=${() => this._sidebarOpen = false}>×</button>
+            <button class="toggle-btn" style="background:none; border:none; cursor:pointer; color:var(--text-muted);" @click=${() => this._sidebarOpen = false}>
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+            </button>
+          </div>
+
+          <div class="role-switcher">
+            <div class="role-btn ${this._mode === 'auditor' ? 'active' : ''}" @click=${() => this.updateMode('auditor')}>Auditor</div>
+            <div class="role-btn ${this._mode === 'developer' ? 'active' : ''}" @click=${() => this.updateMode('developer')}>Developer</div>
           </div>
           
-          <nav class="nav-menu">
-            <div class="nav-item active">Chat Engine</div>
-            <div class="nav-item">Methodology Audit</div>
-            <div class="nav-item" @click=${() => { window.history.pushState({}, "", "/setup"); this._path = "/setup"; }}>Settings</div>
+          <div class="section-label">${this._mode.toUpperCase()} WORKSPACE</div>
+          <nav class="nav-section">
+            <div class="nav-item ${this._path === '/' ? 'active' : ''}" @click=${() => { window.history.pushState({}, "", "/"); this._path = "/"; }}>
+              <div class="nav-icon">◈</div> Chat Engine
+            </div>
+            
+            ${this._mode === 'auditor' ? html`
+              <div class="nav-item ${this._path === '/audit' ? 'active' : ''}" @click=${() => { window.history.pushState({}, "", "/audit"); this._path = "/audit"; }}>
+                <div class="nav-icon">🛡️</div> Start Methodology Audit
+              </div>
+            ` : html`
+              <div class="nav-item ${this._path === '/build' ? 'active' : ''}" @click=${() => { window.history.pushState({}, "", "/build"); this._path = "/build"; }}>
+                <div class="nav-icon">⌬</div> Build from Scratch
+              </div>
+            `}
+
+            <div class="nav-item ${this._path === '/team' ? 'active' : ''}" @click=${() => { window.history.pushState({}, "", "/team"); this._path = "/team"; }}>
+              <div class="nav-icon">◎</div> Virtual Room
+            </div>
           </nav>
 
-          <div class="sidebar-section">
-            <div class="section-title">Current Mode</div>
-            <div class="mode-options">
-              <div class="mode-item ${this._mode === 'auditor' ? 'active' : ''}" @click=${() => this.updateMode('auditor')}>
-                Auditor
-              </div>
-              <div class="mode-item ${this._mode === 'developer' ? 'active' : ''}" @click=${() => this.updateMode('developer')}>
-                Developer
-              </div>
+          <div class="section-label">System</div>
+          <nav class="nav-section">
+            <div class="nav-item" @click=${() => { window.history.pushState({}, "", "/setup"); this._path = "/setup"; }}>
+              <div class="nav-icon">⚙</div> Settings
             </div>
-          </div>
+          </nav>
 
-          <div class="sidebar-section">
-            <div class="section-title">Resources</div>
-            <div class="nav-menu" style="padding: 0;">
-              <div class="nav-item">Learning Section</div>
-              <div class="nav-item">Documentation</div>
-            </div>
-          </div>
-
-          <div class="skills-section">
-            <div class="section-title">Active Skills (${this._skills.length})</div>
-            <div class="skill-list">
-              ${this._skills.length === 0 
-                ? html`<div style="padding: 0 1rem; font-size: 0.75rem; color: #999;">Loading...</div>`
-                : this._skills.map(s => html`<div class="skill-item" title=${s.name}>${s.name}</div>`)
-              }
+          <div class="skills-footer">
+            <div class="skills-count">Active Agents: ${this._skills.length}</div>
+            <div class="skills-pills">
+              ${this._skills.slice(0, 6).map(s => html`<div class="skill-pill">${s.name}</div>`)}
+              ${this._skills.length > 6 ? html`<div class="skill-pill">+${this._skills.length - 6}</div>` : ''}
             </div>
           </div>
         </aside>
 
-        <!-- Main Chat UI Area -->
+        <!-- Main Workspace Area -->
         <main class="main-content">
-          <div class="room-header">
-            ${this._mode === 'auditor' ? 'AUDITOR ROOM' : 'DEVELOPER ROOM'}
-          </div>
-          ${!this._sidebarOpen ? html`
-            <button class="hamburger-btn" @click=${() => this._sidebarOpen = true}>
-              ☰
-            </button>
-          ` : ''}
-          <div class="room-container ${this._mode}-room">
-            <chat-view .mode=${this._mode}></chat-view>
+          <header class="top-bar">
+            <div class="page-title">
+              ${!this._sidebarOpen ? html`
+                <button class="hamburger-btn" @click=${() => this._sidebarOpen = true}>
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+              ` : ''}
+              ${this._path === '/audit' ? 'Methodology Pipeline' : (this._path === '/build' ? 'Build Workflow' : (this._path === '/team' ? 'Collaboration' : 'Security Chat'))}
+            </div>
+            <div class="status-indicator">
+              <div class="pulse-dot"></div>
+              <span>Protocol Active</span>
+            </div>
+          </header>
+
+          <div class="view-container">
+            ${this._path === '/audit'
+              ? html`<methodology-view></methodology-view>`
+              : (this._path === '/build'
+                ? html`<gstack-view></gstack-view>`
+                : (this._path === '/team' 
+                  ? html`<team-view></team-view>`
+                  : html`<chat-view .mode=${this._mode}></chat-view>`))
+            }
           </div>
         </main>
       </div>

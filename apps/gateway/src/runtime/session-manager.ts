@@ -19,16 +19,18 @@ import { runToolchainWorkflows } from "./toolchain-runner.js";
 
 const TARGET_PHASES: readonly MethodologyPhase[] = [
   "phase-0-preparation",
-  "phase-1-intent",
+  "phase-1-recon",
   "phase-2-architecture",
   "phase-3-invariants",
-  "phase-4-code-reading",
-  "phase-5-attack-simulation",
-  "phase-6-economic-modeling",
-  "phase-7-cross-contract-paths",
-  "phase-8-finding-verification",
-  "phase-10-remediation",
-  "phase-9-reporting"
+  "phase-4-hypotheses",
+  "phase-5-code-reading",
+  "phase-6-notes",
+  "phase-7-simulations",
+  "phase-8-interaction-matrix",
+  "phase-9-economic-modeling",
+  "phase-10-cross-contract-paths",
+  "phase-11-reporting",
+  "phase-12-remediation"
 ];
 
 // ---------------------------------------------------------------------------
@@ -283,219 +285,120 @@ async function runSimulatedPipeline(
         break;
       }
       currentPhaseIndex = i;
-
-      // 1. Mark Running
       updatePhaseStatus(i, "running", projectId, runId);
-
       const phaseName = phaseStates[i]?.phase;
 
-      // Phase execution
+      // PHASE 0: PREPARATION
       if (phaseName === "phase-0-preparation") {
         pendingWorkspaceAnalysis = await analyzeWorkspace(rootDirectory);
-        await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Workspace Analysis", pendingWorkspaceAnalysis);
-      } else if (phaseName === "phase-1-intent") {
-        if (pendingWorkspaceAnalysis) {
-          const ctxResult = await buildCodebaseContext(pendingWorkspaceAnalysis);
-          pendingCodebaseContext = ctxResult.summary;
-          pendingIntentSummary = ctxResult.intent;
-          await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Codebase Context", pendingCodebaseContext);
-          await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Intent Summary", pendingIntentSummary);
-        }
-      } else if (phaseName === "phase-2-architecture") {
-        if (pendingWorkspaceAnalysis && pendingCodebaseContext && pendingIntentSummary) {
-          pendingArchitectureSummary = await generateArchitectureSummary(
-            {
-              workspace: pendingWorkspaceAnalysis,
-              codebase: pendingCodebaseContext,
-              intent: pendingIntentSummary
-            },
-            activeProvider
-          );
-          await persistArtifactAndEmit(runId, projectId, phaseName, "diagram", "Architecture Summary", pendingArchitectureSummary);
-          pendingProtocolDiagram = await generateProtocolDiagram(
-            {
-              workspace: pendingWorkspaceAnalysis,
-              codebase: pendingCodebaseContext,
-              intent: pendingIntentSummary,
-              architecture: pendingArchitectureSummary
-            },
-            activeProvider
-          );
-          await persistArtifactAndEmit(runId, projectId, phaseName, "diagram", "Protocol Map", pendingProtocolDiagram);
-        }
-      } else if (phaseName === "phase-3-invariants") {
-        if (pendingWorkspaceAnalysis && pendingCodebaseContext && pendingIntentSummary) {
-          pendingInvariantRegistry = await generateInvariants(
-            {
-              workspace: pendingWorkspaceAnalysis,
-              codebase: pendingCodebaseContext,
-              intent: pendingIntentSummary,
-              architecture: pendingArchitectureSummary
-            },
-            activeProvider
-          );
-          await persistArtifactAndEmit(runId, projectId, phaseName, "invariant", "Invariants Registry", pendingInvariantRegistry);
-        }
-      } else if (phaseName === "phase-4-code-reading") {
-        if (pendingWorkspaceAnalysis && pendingCodebaseContext && pendingIntentSummary) {
-          pendingVerificationPlan = await generateVerificationPlan(
-            {
-              workspace: pendingWorkspaceAnalysis,
-              codebase: pendingCodebaseContext,
-              intent: pendingIntentSummary,
-              architecture: pendingArchitectureSummary,
-              invariants: pendingInvariantRegistry
-            },
-            activeProvider
-          );
-          await persistArtifactAndEmit(runId, projectId, phaseName, "test", "Verification Plan", pendingVerificationPlan);
-          pendingToolchainExecution = await runToolchainWorkflows(
-            rootDirectory,
-            { isFoundry: pendingWorkspaceAnalysis.isFoundry, isHardhat: pendingWorkspaceAnalysis.isHardhat },
-            { runId, projectId }
-          );
-          await persistArtifactAndEmit(runId, projectId, phaseName, "test", "Toolchain Execution", pendingToolchainExecution);
-        }
-      } else if (phaseName === "phase-5-attack-simulation") {
-        if (pendingWorkspaceAnalysis && pendingCodebaseContext && pendingIntentSummary) {
-          pendingHypothesisRegistry = await generateHypotheses(
-            {
-              workspace: pendingWorkspaceAnalysis,
-              codebase: pendingCodebaseContext,
-              intent: pendingIntentSummary,
-              architecture: pendingArchitectureSummary,
-              invariants: pendingInvariantRegistry,
-              verificationPlan: pendingVerificationPlan
-            },
-            activeProvider
-          );
-          await persistArtifactAndEmit(runId, projectId, phaseName, "hypothesis", "Hypothesis Registry", pendingHypothesisRegistry);
-        }
-      } else if (phaseName === "phase-6-economic-modeling") {
-        if (pendingWorkspaceAnalysis && pendingCodebaseContext && pendingIntentSummary) {
-          pendingEconomicAnalysis = await generateEconomicAnalysis(
-            {
-              workspace: pendingWorkspaceAnalysis,
-              codebase: pendingCodebaseContext,
-              intent: pendingIntentSummary,
-              architecture: pendingArchitectureSummary,
-              invariants: pendingInvariantRegistry,
-              verificationPlan: pendingVerificationPlan,
-              hypotheses: pendingHypothesisRegistry
-            },
-            activeProvider
-          );
-          await persistArtifactAndEmit(runId, projectId, phaseName, "finding", "Economic Analysis", pendingEconomicAnalysis);
-        }
-      } else if (phaseName === "phase-7-cross-contract-paths") {
-        if (pendingWorkspaceAnalysis && pendingCodebaseContext && pendingIntentSummary) {
-          pendingCrossContractAnalysis = await generateCrossContractAnalysis(
-            {
-              workspace: pendingWorkspaceAnalysis,
-              codebase: pendingCodebaseContext,
-              intent: pendingIntentSummary,
-              architecture: pendingArchitectureSummary,
-              invariants: pendingInvariantRegistry,
-              verificationPlan: pendingVerificationPlan,
-              hypotheses: pendingHypothesisRegistry,
-              economicAnalysis: pendingEconomicAnalysis
-            },
-            activeProvider
-          );
-          await persistArtifactAndEmit(runId, projectId, phaseName, "diagram", "Cross-Contract Call Paths", pendingCrossContractAnalysis);
-        }
-      } else if (phaseName === "phase-8-finding-verification") {
-        if (pendingWorkspaceAnalysis && pendingCodebaseContext && pendingIntentSummary) {
-          pendingFindingRegistry = await generateFindingRegistry(
-            {
-              workspace: pendingWorkspaceAnalysis,
-              codebase: pendingCodebaseContext,
-              intent: pendingIntentSummary,
-              architecture: pendingArchitectureSummary,
-              invariants: pendingInvariantRegistry,
-              verificationPlan: pendingVerificationPlan,
-              hypotheses: pendingHypothesisRegistry,
-              economicAnalysis: pendingEconomicAnalysis,
-              crossContractAnalysis: pendingCrossContractAnalysis
-            },
-            activeProvider
-          );
-          await persistArtifactAndEmit(runId, projectId, phaseName, "finding", "Finding Registry", pendingFindingRegistry);
-          const pocLimit = Math.max(0, Math.min(3, Number(process.env["SRP_POC_LIMIT"] ?? "1")));
-          const findingsToProve = pendingFindingRegistry.findings.slice(0, pocLimit);
-          const updatedFindings = [...pendingFindingRegistry.findings];
-          for (let fi = 0; fi < findingsToProve.length; fi++) {
-            const finding = findingsToProve[fi]!;
-            const findingData: Record<string, unknown> = { ...finding };
-            const proof = await runPoC(findingData, rootDirectory);
-            updatedFindings[fi] = { ...finding, proof };
-            await persistArtifactAndEmit(runId, projectId, phaseName, "test", `PoC ${finding.id}`, proof);
-          }
-          pendingFindingRegistry = {
-            ...pendingFindingRegistry,
-            findings: updatedFindings
-          };
-        }
-      } else if (phaseName === "phase-10-remediation") {
-        if (pendingWorkspaceAnalysis && pendingCodebaseContext && pendingIntentSummary) {
-          pendingRemediationPlan = await generateRemediationPlan(
-            {
-              workspace: pendingWorkspaceAnalysis,
-              codebase: pendingCodebaseContext,
-              intent: pendingIntentSummary,
-              architecture: pendingArchitectureSummary,
-              invariants: pendingInvariantRegistry,
-              verificationPlan: pendingVerificationPlan,
-              hypotheses: pendingHypothesisRegistry,
-              economicAnalysis: pendingEconomicAnalysis,
-              crossContractAnalysis: pendingCrossContractAnalysis,
-              findingRegistry: pendingFindingRegistry
-            },
-            activeProvider
-          );
-          await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Remediation Plan", pendingRemediationPlan);
-        }
-      } else if (phaseName === "phase-9-reporting") {
-        if (pendingWorkspaceAnalysis && pendingCodebaseContext && pendingIntentSummary) {
-          pendingFormalReport = await generateFormalReport(
-            {
-              workspace: pendingWorkspaceAnalysis,
-              codebase: pendingCodebaseContext,
-              intent: pendingIntentSummary,
-              architecture: pendingArchitectureSummary,
-              invariants: pendingInvariantRegistry,
-              verificationPlan: pendingVerificationPlan,
-              hypotheses: pendingHypothesisRegistry,
-              economicAnalysis: pendingEconomicAnalysis,
-              crossContractAnalysis: pendingCrossContractAnalysis,
-              findingRegistry: pendingFindingRegistry,
-              remediationPlan: pendingRemediationPlan
-            },
-            activeProvider
-          );
-          await persistArtifactAndEmit(runId, projectId, phaseName, "report", "Formal Report", pendingFormalReport);
-        }
-      } else {
-        await setTimeout(300, undefined, { signal });
+        const prep = await generatePreAuditPrep({ workspace: pendingWorkspaceAnalysis }, activeProvider);
+        await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Pre-Audit Prep", prep);
+      } 
+      
+      // PHASE 1: RECON
+      else if (phaseName === "phase-1-recon") {
+        const recon = await generateReconResult({ workspace: pendingWorkspaceAnalysis! }, activeProvider);
+        const ctxResult = await buildCodebaseContext(pendingWorkspaceAnalysis!);
+        pendingCodebaseContext = ctxResult.summary;
+        pendingIntentSummary = ctxResult.intent;
+        await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Reconnaissance", recon);
+      } 
+      
+      // PHASE 2: ARCHITECTURE
+      else if (phaseName === "phase-2-architecture") {
+        pendingArchitectureSummary = await generateArchitectureSummary(
+          { workspace: pendingWorkspaceAnalysis!, codebase: pendingCodebaseContext!, intent: pendingIntentSummary! },
+          activeProvider
+        );
+        pendingProtocolDiagram = await generateProtocolDiagram(
+          { workspace: pendingWorkspaceAnalysis!, architecture: pendingArchitectureSummary! },
+          activeProvider
+        );
+        await persistArtifactAndEmit(runId, projectId, phaseName, "diagram", "System Architecture", pendingProtocolDiagram);
+      } 
+      
+      // PHASE 3: INVARIANTS
+      else if (phaseName === "phase-3-invariants") {
+        pendingInvariantRegistry = await generateInvariants(
+          { architecture: pendingArchitectureSummary! },
+          activeProvider
+        );
+        await persistArtifactAndEmit(runId, projectId, phaseName, "invariant", "Invariants Registry", pendingInvariantRegistry);
+      } 
+      
+      // PHASE 4: HYPOTHESES
+      else if (phaseName === "phase-4-hypotheses") {
+        pendingHypothesisRegistry = await generateHypotheses(
+          { invariants: pendingInvariantRegistry! },
+          activeProvider
+        );
+        await persistArtifactAndEmit(runId, projectId, phaseName, "hypothesis", "Hypothesis Registry", pendingHypothesisRegistry);
+      } 
+      
+      // PHASE 5: CODE READING
+      else if (phaseName === "phase-5-code-reading") {
+        const annotations = await generateFunctionAnnotations({ codebase: pendingCodebaseContext! }, activeProvider);
+        await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Function Annotations", annotations);
+      } 
+      
+      // PHASE 6: NOTES & QUESTIONS
+      else if (phaseName === "phase-6-notes") {
+        const questions = await generateQuestionLog({}, activeProvider);
+        await persistArtifactAndEmit(runId, projectId, phaseName, "question", "Question Log", questions);
+      } 
+      
+      // PHASE 7: SIMULATIONS
+      else if (phaseName === "phase-7-simulations") {
+        pendingEconomicAnalysis = await generateEconomicAnalysis(
+          { hypotheses: pendingHypothesisRegistry! },
+          activeProvider
+        );
+        await persistArtifactAndEmit(runId, projectId, phaseName, "finding", "Simulation Findings", pendingEconomicAnalysis);
+      } 
+      
+      // PHASE 8: INTERACTION MATRIX
+      else if (phaseName === "phase-8-interaction-matrix") {
+        const matrix = await generateInteractionMatrix({ architecture: pendingArchitectureSummary! }, activeProvider);
+        await persistArtifactAndEmit(runId, projectId, phaseName, "diagram", "Interaction Matrix", matrix);
+      } 
+      
+      // PHASE 9: ECONOMIC MODELING
+      else if (phaseName === "phase-9-economic-modeling") {
+        const scenarios = await generateEconomicScenarios({ economicAnalysis: pendingEconomicAnalysis! }, activeProvider);
+        await persistArtifactAndEmit(runId, projectId, phaseName, "finding", "Economic Scenarios", scenarios);
+      } 
+      
+      // PHASE 10: CROSS-CONTRACT PATHS
+      else if (phaseName === "phase-10-cross-contract-paths") {
+        pendingCrossContractAnalysis = await generateCrossContractAnalysis(
+          { architecture: pendingArchitectureSummary! },
+          activeProvider
+        );
+        await persistArtifactAndEmit(runId, projectId, phaseName, "diagram", "Cross-Contract Paths", pendingCrossContractAnalysis);
+      } 
+      
+      // PHASE 11: REPORTING
+      else if (phaseName === "phase-11-reporting") {
+        pendingFindingRegistry = await generateFindingRegistry({ economicAnalysis: pendingEconomicAnalysis! }, activeProvider);
+        pendingFormalReport = await generateFormalReport({ findingRegistry: pendingFindingRegistry! }, activeProvider);
+        await persistArtifactAndEmit(runId, projectId, phaseName, "report", "Audit Report", pendingFormalReport);
+      } 
+      
+      // PHASE 12: REMEDIATION
+      else if (phaseName === "phase-12-remediation") {
+        pendingRemediationPlan = await generateRemediationPlan({ findingRegistry: pendingFindingRegistry! }, activeProvider);
+        await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Remediation Plan", pendingRemediationPlan);
       }
 
-      // 2. Mark Completed
       updatePhaseStatus(i, "completed", projectId, runId);
     }
   } catch (err) {
-    if (signal.aborted) {
-      return;
-    }
-    console.error("Runtime execution failed:", err);
-    if (currentPhaseIndex >= 0 && currentPhaseIndex < phaseStates.length) {
-      updatePhaseStatus(currentPhaseIndex, "failed", projectId, runId);
-    }
-    if (persistence) {
-      void persistence.updateRunStatus(runId, "failed");
-    }
+    if (signal.aborted) return;
+    console.error("Pipeline failed:", err);
+    if (currentPhaseIndex >= 0) updatePhaseStatus(currentPhaseIndex, "failed", projectId, runId);
   } finally {
     isRunning = false;
     activeAbortController = null;
-    activePipelineTask = null;
   }
+
 }

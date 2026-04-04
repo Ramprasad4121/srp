@@ -37,6 +37,19 @@ export class GatewayClient {
     });
   }
 
+  async startSession(): Promise<{ok: boolean, data: any, error?: string}> {
+    try {
+      const data = await this.request<any>("/runtime/start", {
+        method: "POST",
+        body: JSON.stringify({}),
+        headers: { "Content-Type": "application/json" }
+      });
+      return { ok: true, data };
+    } catch (e: any) {
+      return { ok: false, data: null, error: e.message };
+    }
+  }
+
   async setRole(role: RuntimeMode): Promise<{ok: boolean, data: any, error?: string}> {
     try {
       const data = await this.request<any>("/setup/role", {

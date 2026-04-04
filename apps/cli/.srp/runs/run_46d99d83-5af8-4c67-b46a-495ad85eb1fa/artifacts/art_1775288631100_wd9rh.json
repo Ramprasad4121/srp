@@ -1,0 +1,26 @@
+{
+  "summary": "Mapped 1 critical cross-contract execution paths and potential state-change flows.",
+  "paths": [
+    {
+      "id": "PATH-GEN-01",
+      "title": "Generic Execution Path",
+      "steps": [
+        {
+          "contract": "Caller",
+          "method": "execute",
+          "reason": "Standard entry point"
+        },
+        {
+          "contract": "Protocol",
+          "method": "handle",
+          "reason": "Core logic execution"
+        }
+      ],
+      "criticalPoints": [
+        "Reentrancy guards",
+        "State transition validation"
+      ]
+    }
+  ],
+  "generatedByModel": "gpt-4.1-mini"
+}

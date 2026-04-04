@@ -1,0 +1,17 @@
+{
+  "summary": "Identified 1 potential economic and systemic risks across the protocol surface.",
+  "risks": [
+    {
+      "id": "ECO-GEN-01",
+      "title": "Systemic Incentive Misalignment",
+      "description": "Default fallback risk: fees or reward distributions might not account for tail-end volatility.",
+      "impact": "Gradual drain of protocol reserves or abandonment by liquidity providers.",
+      "severity": "Low",
+      "relevantComponents": [
+        "Protocol Treasury"
+      ],
+      "mitigationStrategy": "Perform Monte Carlo simulations on fee distribution across various market conditions."
+    }
+  ],
+  "generatedByModel": "gpt-4.1-mini"
+}

@@ -1,0 +1,44 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "srp",
+  "title": "Protocol Map",
+  "summary": "Excalidraw-compatible protocol map covering 1 core component(s).",
+  "elements": [
+    {
+      "id": "node-0",
+      "type": "rectangle",
+      "x": 120,
+      "y": 140,
+      "width": 180,
+      "height": 92,
+      "angle": 0,
+      "seed": 1000,
+      "strokeColor": "#4ade80",
+      "backgroundColor": "#163325",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "label-0",
+      "type": "text",
+      "x": 138,
+      "y": 168,
+      "width": 144,
+      "height": 28,
+      "angle": 0,
+      "seed": 1500,
+      "text": "Workspace",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "strokeColor": "#e4e6eb",
+      "backgroundColor": "transparent",
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "opacity": 100
+    }
+  ],
+  "generatedByModel": "gpt-4.1-mini"
+}

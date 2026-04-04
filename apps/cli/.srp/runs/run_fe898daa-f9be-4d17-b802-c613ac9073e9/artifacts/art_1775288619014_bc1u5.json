@@ -1,0 +1,15 @@
+{
+  "summary": "Extracted 1 initial structural invariants from 0 source files.",
+  "invariants": [
+    {
+      "id": "INV-GEN-01",
+      "title": "Empty Workspace Fallback",
+      "description": "Default fallback invariant due to no specific contracts found.",
+      "category": "General",
+      "priority": "Low",
+      "derivedFrom": [],
+      "suggestedVerification": "None"
+    }
+  ],
+  "generatedByModel": "gpt-4.1-mini (Provider Fallback)"
+}

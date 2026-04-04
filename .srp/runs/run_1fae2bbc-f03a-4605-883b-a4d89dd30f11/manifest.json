@@ -1,0 +1,91 @@
+{
+  "runId": "run_1fae2bbc-f03a-4605-883b-a4d89dd30f11",
+  "projectId": "default-project",
+  "sessionId": "session_e18893d1-6ad7-46ec-a876-a060f94b67e9",
+  "status": "running",
+  "createdAt": "2026-04-04T07:45:26.378Z",
+  "artifacts": [
+    {
+      "artifactId": "art_1775288726442_ng7bt",
+      "kind": "note",
+      "title": "Workspace Analysis",
+      "phase": "phase-0-preparation",
+      "runId": "run_1fae2bbc-f03a-4605-883b-a4d89dd30f11",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:45:26.442Z"
+    },
+    {
+      "artifactId": "art_1775288726443_yp51k",
+      "kind": "note",
+      "title": "Codebase Context",
+      "phase": "phase-1-intent",
+      "runId": "run_1fae2bbc-f03a-4605-883b-a4d89dd30f11",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:45:26.444Z"
+    },
+    {
+      "artifactId": "art_1775288726444_ur106",
+      "kind": "note",
+      "title": "Intent Summary",
+      "phase": "phase-1-intent",
+      "runId": "run_1fae2bbc-f03a-4605-883b-a4d89dd30f11",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:45:26.445Z"
+    },
+    {
+      "artifactId": "art_1775288732363_c8z4m",
+      "kind": "diagram",
+      "title": "Architecture Summary",
+      "phase": "phase-2-architecture",
+      "runId": "run_1fae2bbc-f03a-4605-883b-a4d89dd30f11",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:45:32.364Z"
+    },
+    {
+      "artifactId": "art_1775288732366_q99mh",
+      "kind": "diagram",
+      "title": "Protocol Map",
+      "phase": "phase-2-architecture",
+      "runId": "run_1fae2bbc-f03a-4605-883b-a4d89dd30f11",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:45:32.368Z"
+    },
+    {
+      "artifactId": "art_1775288736155_f11pl",
+      "kind": "invariant",
+      "title": "Invariants Registry",
+      "phase": "phase-3-invariants",
+      "runId": "run_1fae2bbc-f03a-4605-883b-a4d89dd30f11",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:45:36.156Z"
+    },
+    {
+      "artifactId": "art_1775288736159_fj64t",
+      "kind": "test",
+      "title": "Verification Plan",
+      "phase": "phase-4-code-reading",
+      "runId": "run_1fae2bbc-f03a-4605-883b-a4d89dd30f11",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:45:36.161Z"
+    },
+    {
+      "artifactId": "art_1775288736532_inv9f",
+      "kind": "test",
+      "title": "Toolchain Execution",
+      "phase": "phase-4-code-reading",
+      "runId": "run_1fae2bbc-f03a-4605-883b-a4d89dd30f11",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:45:36.532Z"
+    },
+    {
+      "artifactId": "art_1775288746724_b0o03",
+      "kind": "hypothesis",
+      "title": "Hypothesis Registry",
+      "phase": "phase-5-attack-simulation",
+      "runId": "run_1fae2bbc-f03a-4605-883b-a4d89dd30f11",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T07:45:46.725Z"
+    }
+  ],
+  "currentPhase": "phase-5-attack-simulation"
+}

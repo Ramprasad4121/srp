@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "updatedAt": "2026-04-04T07:11:56.021Z",
+  "updatedAt": "2026-04-04T08:43:59.133Z",
   "approvedDomains": [
     {
       "hostname": "docs.openzeppelin.com",
@@ -24,7 +24,7 @@
       "workspace",
       "ready"
     ],
-    "role": "developer",
+    "role": "auditor",
     "providers": [
       {
         "kind": "nvidia",
