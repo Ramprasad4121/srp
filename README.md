@@ -1,81 +1,95 @@
 # SRP — Security Reasoning Protocol
 
-> AI agent army for smart contract security. One command. Proven findings.
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Active%20Development-cyan?style=for-the-badge" alt="Status" />
+  <img src="https://img.shields.io/badge/Inspiration-OpenClaw-blue?style=for-the-badge" alt="Inspiration" />
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License" />
+</p>
 
-> [!IMPORTANT]  
-> SRP is under active development,do not use it until official announcement.
-> 
+> **An army of AI agents for smart contract security. One command. Proven findings.**
+
+SRP is a methodology-faithful autonomous agent framework designed to perform security audits, real-time development feedback, and production monitoring for Ethereum smart contracts.
+
+---
+
+## ⚡ The Vision
+
+> "How does one person ship like a team of twenty? They build an army." — Inspired by Peter Steinberger's **OpenClaw**.
+
+Current human audits cost **$150,000+** and take weeks. SRP aims to deliver the same depth of reasoning for **~$1 in API tokens**, instantly. We don't just "scan" for bugs; our agents **reason**, **trace**, and **prove** vulnerabilities using a multi-phase security methodology.
+
+---
+
+## 🛡️ The SRP Command Suite
 
 ```bash
-srp audit    # pre-deployment: 13 agents find and prove vulnerabilities
-srp dev      # during build: security feedback as you write code
-srp watch    # live production: real-time monitoring and auto-pause
+srp onboard   # Interactive setup (OpenClaw style)
+srp audit     # Pre-deployment: 13 agents find and prove vulnerabilities
+srp dev       # During build: security feedback and workbench for engineers
+srp watch     # Live production: real-time monitoring and auto-pause (Coming Soon)
 ```
 
-**~$1 in API tokens. $150,000 is what a human audit costs.**
+---
+
+## 🤖 The Army of Agents
+
+SRP isn't a single LLM prompt. It's a coordinated protocol of specialized agents:
+
+| Agent | Specialty | Output |
+| :--- | :--- | :--- |
+| **Preparation Agent** | Scope Discovery | `scope_map`, `actor_list` |
+| **Recon Agent** | Intent Analysis | `intent_statement` |
+| **Architecture Agent** | Trust Boundaries | `trust_boundary_map`, `value_flow_map` |
+| **NatSpec Agent** | Documentation | Inline code comments & documentation |
+| **Test Gen Agent** | Exploit Proofs | Foundry/Hardhat test suites |
+| **Explain Agent** | Logic Synthesis | Protocol walkthroughs & summaries |
 
 ---
 
-## Status
+## 🚀 Quickstart
 
-| Tool | Status |
-|------|--------|
-| `srp audit` | ✅ Working |
-| `srp dev` | 🔨 In Progress |
-| `srp watch` | 📋 Coming Soon |
-
----
-
-## Quickstart
+### 1. Install
+Requires Node.js 18+, pnpm 8+, and [Foundry](https://getfoundry.sh).
 
 ```bash
 git clone https://github.com/Ramprasad4121/srp
 cd srp
+pnpm install
 ./setup.sh
-
-# Add your LLM API key to .env
-cp .env.example .env
-
-# Run from your Solidity project
-cd your-project
-pnpm --prefix path/to/srp/apps/cli start audit
 ```
 
-Requires Node.js 18+, pnpm 8+, and [Foundry](https://getfoundry.sh).
+### 2. Onboard
+Run the interactive wizard to configure your risk profile and LLM providers.
+```bash
+srp onboard
+```
+
+### 3. Audit
+Point SRP at any Solidity project directory.
+```bash
+srp audit
+```
 
 ---
 
+## 🛠️ Provider Configuration
 
+SRP supports a wide range of providers to ensure maximum reasoning depth:
+- **Anthropic** (Claude 3.5 Sonnet / Opus) — *Recommended*
+- **OpenAI** (GPT-4o)
+- **OpenRouter** (DeepSeek, Llama 3)
+- **Mock Mode** — Run without API keys for toolchain testing (`SRP_TOOLCHAIN_MODE=mock`)
 
-## License
+---
 
-MIT · Built by [@0xramprasad](https://x.com/0xramprasad)
+## ⚠️ Disclaimer
 
-## Development Tools
+**SRP is under active development.** It is a powerful tool that performs deep analysis and can execute toolchain commands. Always run in a safe environment. Do not use for final production sign-offs until the official 1.0 announcement.
 
-This project includes gstack for enhanced development workflows:
+---
 
-```bash
-# Install with development dependencies
-pnpm install
-```
-# Available gstack skills (use /skill-name):
-# /browse, /office-hours, /plan-ceo-review, /plan-eng-review, /plan-design-review,
-# /design-consultation, /design-shotgun, /review, /ship, /land-and-deploy,
-# /canary, /benchmark, /connect-chrome, /qa, /qa-only, /design-review,
-# /setup-browser-cookies, /setup-deploy, /retro, /investigate, /document-release,
-# /codex, /cso, /autoplan, /careful, /freeze, /guard, /unfreeze, /gstack-upgrade
-```
+## 📜 License & Credits
 
-For web browsing tasks, use the `/browse` skill from gstack and avoid mcp__claude-in-chrome__* tools.
+Built with ❤️ by [@0xramprasad](https://x.com/0xramprasad).
 
-## Provider Configuration
-
-Set the following environment variables to route generation phases to real providers; otherwise SRP continues using deterministic mocks and `SRP_TOOLCHAIN_MODE=mock` keeps the toolchain runner quiet.
-
-- `OPENAI_API_KEY` for `provider.kind: "openai"`.
-- `OPENAI_COMPATIBLE_BASE_URL` (and optionally `OPENAI_COMPATIBLE_API_KEY`) for compatible endpoints such as OpenRouter or custom GPT services.
-- `ANTHROPIC_API_KEY` (plus `ANTHROPIC_BASE_URL` for self-hosted endpoints) for `provider.kind: "anthropic"`.
-- `SRP_TOOLCHAIN_MODE=mock` to skip actual `forge`/`hardhat` calls in CI or dev mode; any other value executes the configured toolchain.
-
-   
+Inspired by the speed and autonomy of [OpenClaw](https://github.com/openclaw/openclaw). Part of the next generation of personal security agents.
