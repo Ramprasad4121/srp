@@ -18,6 +18,14 @@ venv/
 *.swp
 *.swo
 
+# Node / TypeScript
+node_modules/
+.turbo/
+coverage/
+*.tsbuildinfo
+apps/*/dist/
+packages/*/dist/
+
 # macOS
 .DS_Store
 

@@ -1,6 +1,0 @@
-{"timestamp": "2026-03-22T05:43:37.940892Z", "role": "system", "content": "Agent run started for DevAccessControlMapperV2"}
-{"timestamp": "2026-03-22T05:43:37.958157Z", "role": "error", "content": "Agent run failed: \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""}
-{"timestamp": "2026-03-22T05:47:50.876183Z", "role": "system", "content": "Agent run started for DevAccessControlMapperV2"}
-{"timestamp": "2026-03-22T05:47:50.896800Z", "role": "error", "content": "Agent run failed: \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""}
-{"timestamp": "2026-03-22T05:48:07.218087Z", "role": "system", "content": "Agent run started for DevAccessControlMapperV2"}
-{"timestamp": "2026-03-22T05:48:07.235947Z", "role": "error", "content": "Agent run failed: \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""}

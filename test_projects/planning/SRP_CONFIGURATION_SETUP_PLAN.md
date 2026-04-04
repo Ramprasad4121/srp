@@ -1,4 +1,5 @@
 # SRP Configuration Setup Plan
+user run this command `srp configure` then following should happen
 
 ## 1. Goal
 

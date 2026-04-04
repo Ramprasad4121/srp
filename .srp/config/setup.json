@@ -1,0 +1,44 @@
+{
+  "version": "1",
+  "updatedAt": "2026-04-03T12:13:47.815Z",
+  "approvedDomains": [
+    {
+      "hostname": "docs.openzeppelin.com",
+      "reason": "Smart contract library documentation"
+    },
+    {
+      "hostname": "eips.ethereum.org",
+      "reason": "Primary standards and EIP references"
+    },
+    {
+      "hostname": "docs.soliditylang.org",
+      "reason": "Solidity language reference"
+    }
+  ],
+  "state": {
+    "currentStep": "ready",
+    "completedSteps": [
+      "welcome",
+      "role-selection",
+      "providers",
+      "workspace",
+      "ready",
+      "toolchain"
+    ],
+    "role": "hybrid",
+    "providers": [
+      {
+        "kind": "nvidia",
+        "label": "NVIDIA",
+        "model": "meta/llama-3.1-70b-instruct",
+        "enabled": true
+      }
+    ],
+    "workspace": {
+      "rootDirectory": ".",
+      "outputDirectory": ".srp",
+      "useDockerToolchains": true,
+      "internetMode": "local-plus-docs"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@srp/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./api/client": "./dist/api/client.js",
+    "./api/gateway-client": "./dist/api/gateway-client.js",
+    "./api/runtime-client": "./dist/api/runtime-client.js",
+    "./api/event-client": "./dist/api/event-client.js"
+  },
+  "dependencies": {
+    "@srp/config": "file:../../packages/config",
+    "@srp/events": "file:../../packages/events",
+    "@srp/providers": "file:../../packages/providers",
+    "@srp/security": "file:../../packages/security",
+    "@srp/shared-types": "file:../../packages/shared-types",
+    "lit": "^3.2.1"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build --outDir dist-web",
+    "preview": "vite preview"
+  }
+}

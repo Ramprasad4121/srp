@@ -1,0 +1,21 @@
+{
+  "name": "@srp/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "srp": "dist/bin.js"
+  },
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@srp/config": "file:../../packages/config",
+    "@srp/events": "file:../../packages/events",
+    "@srp/gateway": "file:../gateway",
+    "@srp/providers": "file:../../packages/providers",
+    "@srp/security": "file:../../packages/security",
+    "@srp/shared-types": "file:../../packages/shared-types",
+    "@clack/prompts": "^1.1.0",
+    "picocolors": "^1.1.1"
+  }
+}

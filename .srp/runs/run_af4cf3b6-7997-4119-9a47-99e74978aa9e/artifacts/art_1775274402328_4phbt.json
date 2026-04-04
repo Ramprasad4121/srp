@@ -1,0 +1,11 @@
+{
+  "filesProcessed": 4,
+  "bytesProcessed": 28935,
+  "limitReached": false,
+  "targetFiles": [
+    "test_projects/2026-03-NFT-dealers/src/MockUSDC.sol",
+    "test_projects/2026-03-NFT-dealers/src/NFTDealers.sol",
+    "test_projects/2026-03-NFT-dealers/test/NFTDealersTest.t.sol",
+    "test_projects/2026-03-NFT-dealers/test/SRP_Fuzz.t.sol"
+  ]
+}

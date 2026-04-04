@@ -1,0 +1,21 @@
+{
+  "name": "srp",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Security Reasoning Protocol monorepo",
+  "packageManager": "pnpm@10.6.5",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "node scripts/clean.mjs",
+    "test": "npm run build && node --test \"tests/**/*.test.mjs\"",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.3"
+  }
+}

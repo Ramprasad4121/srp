@@ -1,0 +1,12 @@
+{
+  "name": "@srp/providers",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@srp/shared-types": "file:../shared-types",
+    "@srp/security": "file:../security"
+  }
+}

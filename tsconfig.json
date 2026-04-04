@@ -1,0 +1,22 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/shared-types" },
+    { "path": "./packages/ids" },
+    { "path": "./packages/config" },
+    { "path": "./packages/events" },
+    { "path": "./packages/providers" },
+    { "path": "./packages/security" },
+    { "path": "./packages/sessions" },
+    { "path": "./packages/artifacts" },
+    { "path": "./packages/chat-runtime" },
+    { "path": "./packages/skills" },
+    { "path": "./packages/agents" },
+    { "path": "./packages/diagram-engine" },
+    { "path": "./packages/benchmark" },
+    { "path": "./apps/gateway" },
+    { "path": "./apps/worker" },
+    { "path": "./apps/cli" },
+    { "path": "./apps/web" }
+  ]
+}

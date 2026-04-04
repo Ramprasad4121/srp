@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "references": [
+    {
+      "path": "../shared-types"
+    },
+    {
+      "path": "../config"
+    },
+    {
+      "path": "../events"
+    }
+  ],
+  "include": [
+    "src/**/*.ts"
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "summary": "Identified 2 potential economic and systemic risks across the protocol surface.",
+  "risks": [
+    {
+      "id": "ECO-001",
+      "title": "Oracle Price Manipulation",
+      "description": "Reliance on spot price or narrow-window TWAP from decentralized exchanges can be exploited via flash loans.",
+      "impact": "Attacker could manipulate collateral valuation to drain funds.",
+      "severity": "Critical",
+      "relevantComponents": [
+        "Unknown Root Contract"
+      ],
+      "mitigationStrategy": "Use decentralized oracle aggregators (e.g. Chainlink) with circuit breakers."
+    },
+    {
+      "id": "ECO-002",
+      "title": "Liquidity Drain / Sandwiching",
+      "description": "High slippage tolerance or lack of deadline checks in swap functions allows for MEV exploitation.",
+      "impact": "Protocol and users lose value during state-changing swaps.",
+      "severity": "Medium",
+      "relevantComponents": [
+        "Unknown Root Contract"
+      ],
+      "mitigationStrategy": "Implement strict slippage bounds and validate price impact before execution."
+    }
+  ],
+  "generatedByModel": "gpt-4"
+}

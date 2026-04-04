@@ -1,0 +1,20 @@
+{
+  "name": "@srp/gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.4.1",
+    "openai": "^4.30.0",
+    "@srp/chat-runtime": "file:../../packages/chat-runtime",
+    "@srp/config": "file:../../packages/config",
+    "@srp/events": "file:../../packages/events",
+    "@srp/providers": "file:../../packages/providers",
+    "@srp/security": "file:../../packages/security",
+    "@srp/sessions": "file:../../packages/sessions",
+    "@srp/shared-types": "file:../../packages/shared-types",
+    "@srp/skills": "file:../../packages/skills"
+  }
+}

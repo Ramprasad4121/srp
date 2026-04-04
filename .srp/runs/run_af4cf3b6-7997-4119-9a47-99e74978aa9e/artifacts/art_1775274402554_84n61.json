@@ -1,0 +1,6 @@
+{
+  "tool": "forge test",
+  "success": true,
+  "logs": "Missing dependencies found. Installing now...\n\nWarning: Your project has missing dependencies that could not be installed.\nNothing to compile\n",
+  "generatedAt": "2026-04-04T03:46:42.554Z"
+}

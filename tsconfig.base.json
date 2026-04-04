@@ -1,0 +1,73 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "strict": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "@srp/artifacts": [
+        "packages/artifacts/src/index.ts"
+      ],
+      "@srp/config": [
+        "packages/config/src/index.ts"
+      ],
+      "@srp/events": [
+        "packages/events/src/index.ts"
+      ],
+      "@srp/gateway": [
+        "apps/gateway/src/index.ts"
+      ],
+      "@srp/ids": [
+        "packages/ids/src/index.ts"
+      ],
+      "@srp/providers": [
+        "packages/providers/src/index.ts"
+      ],
+      "@srp/security": [
+        "packages/security/src/index.ts"
+      ],
+      "@srp/sessions": [
+        "packages/sessions/src/index.ts"
+      ],
+      "@srp/shared-types": [
+        "packages/shared-types/src/index.ts"
+      ],
+      "@srp/methodology": [
+        "packages/methodology/src/index.ts"
+      ],
+      "@srp/agents": [
+        "packages/agents/src/index.ts"
+      ],
+      "@srp/diagram-engine": [
+        "packages/diagram-engine/src/index.ts"
+      ],
+      "@srp/report-engine": [
+        "packages/report-engine/src/index.ts"
+      ],
+      "@srp/project-graph": [
+        "packages/project-graph/src/index.ts"
+      ],
+      "@srp/tools": [
+        "packages/tools/src/index.ts"
+      ]
+    },
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "incremental": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  }
+}

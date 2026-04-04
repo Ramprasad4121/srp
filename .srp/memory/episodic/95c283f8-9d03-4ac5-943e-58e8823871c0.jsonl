@@ -1,6 +1,0 @@
-{"timestamp": "2026-03-22T05:43:37.531199Z", "role": "system", "content": "Agent run started for NatSpecAgentV2"}
-{"timestamp": "2026-03-22T05:43:37.885076Z", "role": "error", "content": "Agent run failed: \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""}
-{"timestamp": "2026-03-22T05:47:50.773093Z", "role": "system", "content": "Agent run started for NatSpecAgentV2"}
-{"timestamp": "2026-03-22T05:47:50.803173Z", "role": "error", "content": "Agent run failed: \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""}
-{"timestamp": "2026-03-22T05:48:07.118633Z", "role": "system", "content": "Agent run started for NatSpecAgentV2"}
-{"timestamp": "2026-03-22T05:48:07.156182Z", "role": "error", "content": "Agent run failed: \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""}
