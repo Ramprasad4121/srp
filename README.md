@@ -2,7 +2,6 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Status-Active%20Development-cyan?style=for-the-badge" alt="Status" />
-  <img src="https://img.shields.io/badge/Inspiration-OpenClaw-blue?style=for-the-badge" alt="Inspiration" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License" />
 </p>
 
@@ -14,7 +13,7 @@ SRP is a methodology-faithful autonomous agent framework designed to perform sec
 
 ## ⚡ The Vision
 
-> "How does one person ship like a team of twenty? They build an army." — Inspired by Peter Steinberger's **OpenClaw**.
+> "How does one person ship like a team of twenty? They build an army."
 
 Current human audits cost **$150,000+** and take weeks. SRP aims to deliver the same depth of reasoning for **~$1 in API tokens**, instantly. We don't just "scan" for bugs; our agents **reason**, **trace**, and **prove** vulnerabilities using a multi-phase security methodology.
 
@@ -23,7 +22,7 @@ Current human audits cost **$150,000+** and take weeks. SRP aims to deliver the 
 ## 🛡️ The SRP Command Suite
 
 ```bash
-srp onboard   # Interactive setup (OpenClaw style)
+srp onboard   # Interactive setup and configuration
 srp audit     # Pre-deployment: 13 agents find and prove vulnerabilities
 srp dev       # During build: security feedback and workbench for engineers
 srp watch     # Live production: real-time monitoring and auto-pause (Coming Soon)
@@ -91,5 +90,4 @@ SRP supports a wide range of providers to ensure maximum reasoning depth:
 ## 📜 License & Credits
 
 Built with ❤️ by [@0xramprasad](https://x.com/0xramprasad).
-
-Inspired by the speed and autonomy of [OpenClaw](https://github.com/openclaw/openclaw). Part of the next generation of personal security agents.
+Part of the next generation of personal security agents.
