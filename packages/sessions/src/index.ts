@@ -17,7 +17,7 @@ export function createSessionRecord(
   return {
     ...input,
     status: input.status ?? "idle",
-    currentPhase: input.currentPhase ?? "phase-0-preparation",
+    currentPhase: input.currentPhase ?? "discovery-docs",
     createdAt: new Date().toISOString()
   };
 }

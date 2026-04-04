@@ -3,8 +3,8 @@ import { join, extname } from "node:path";
 import type { WorkspaceAnalysis } from "@srp/shared-types";
 
 // Limit recursion to avoid hanging on massive misconfigured workspaces
-const MAX_SEARCH_DEPTH = 5;
-const MAX_FILE_COUNT = 5000;
+const MAX_SEARCH_DEPTH = 10;
+const MAX_FILE_COUNT = 10000;
 
 interface FindSolidityResult {
   readonly files: readonly string[];
@@ -39,7 +39,7 @@ async function findSolidityFiles(
         return { files, limitReached: true };
       }
 
-      // Ignore common noise directories
+      // Ignore common noise directories but keep 'lib' as it often contains source code/deps in Foundry
       if (
         entry.name === "node_modules" ||
         entry.name === ".git" ||
@@ -47,7 +47,8 @@ async function findSolidityFiles(
         entry.name === "cache" ||
         entry.name === "artifacts" ||
         entry.name === ".srp" ||
-        entry.name === "lib" // we usually want to skip deps analyzing in phase 0 explicitly unless instructed
+        entry.name === "venv" ||
+        entry.name === "dist"
       ) {
         continue;
       }

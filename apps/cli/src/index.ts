@@ -47,7 +47,7 @@ export function createCliBootstrapSummary(): CliBootstrapSummary {
   const firstPhaseEvent = createPhaseStatusChangedEvent({
     projectId: "workspace",
     runId: "bootstrap-run",
-    phase: "phase-0-preparation",
+    phase: "discovery-docs",
     status: "running"
   });
   const provider = createDefaultProviderSelection("openai-compatible");

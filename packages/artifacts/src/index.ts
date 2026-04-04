@@ -18,7 +18,7 @@ export function createArtifactRecord(
 ): ArtifactRecord {
   return {
     ...input,
-    phase: input.phase ?? "phase-9-reporting",
+    phase: input.phase ?? "synthesis-intent",
     createdAt: new Date().toISOString()
   };
 }

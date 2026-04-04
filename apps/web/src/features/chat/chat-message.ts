@@ -136,7 +136,14 @@ export class ChatMessage extends LitElement {
     let name = this.role === 'assistant' ? 'SRP Agent' : 'You';
     if (this.role === 'system') name = 'Protocol System';
     
+    // Filter out internal jargon like [TOOL: ...] from final display
+    let displayContent = this.content;
     const isTool = this.content.startsWith('[TOOL:');
+    
+    if (this.role === 'assistant' && !isTool) {
+      displayContent = this.content.replace(/\\s*\\[TOOL: [^\\]]+\\].*/g, '').trim();
+    }
+
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     return html`
@@ -151,7 +158,7 @@ export class ChatMessage extends LitElement {
           </div>
           ${isTool 
             ? html`<div class="tool-call">🛠️ ${this.content}</div>`
-            : html`<div class="content">${this.content}</div>`
+            : html`<div class="content">${displayContent}</div>`
           }
         </div>
       </div>

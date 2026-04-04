@@ -34,65 +34,29 @@ export type ArtifactKind =
 export type SessionStatus = "idle" | "running" | "completed" | "failed";
 
 export type MethodologyPhase =
-  | "phase-0-preparation"
-  | "phase-1-recon"
-  | "phase-2-architecture"
-  | "phase-3-invariants"
-  | "phase-4-hypotheses"
-  | "phase-5-code-reading"
-  | "phase-6-notes"
-  | "phase-7-simulations"
-  | "phase-8-interaction-matrix"
-  | "phase-9-economic-modeling"
-  | "phase-10-cross-contract-paths"
-  | "phase-11-reporting"
-  | "phase-12-remediation";
+  | "discovery-docs"
+  | "discovery-audits"
+  | "discovery-governance"
+  | "discovery-tokenomics"
+  | "discovery-onchain"
+  | "synthesis-intent"
+  | "synthesis-actors"
+  | "visual-flow-map";
 
-export interface PreAuditPrep {
-  readonly valueProposition: string;
-  readonly moneyFlow: string;
-  readonly adversarialActors: readonly string[];
-  readonly worstCaseOutcome: string;
-  readonly initialThreatModel: string;
-}
-
-export interface ReconResult {
-  readonly sources: readonly string[];
-  readonly securityGuarantees: readonly string[];
-  readonly candidateInvariants: readonly string[];
-}
-
-export interface QuestionEntry {
+export interface IntelligenceArtifact {
   readonly id: string;
-  readonly question: string;
-  readonly status: "pending" | "answered";
-  readonly answer?: string;
-}
-
-export interface FunctionAnnotation {
-  readonly functionName: string;
-  readonly contractPath: string;
-  readonly access: string;
-  readonly modifiers: readonly string[];
-  readonly stateChanges: readonly string[];
-  readonly externalCalls: readonly string[];
-  readonly mathRisks: string;
-  readonly invariantsAffected: readonly string[];
-}
-
-export interface InteractionMatrixEntry {
-  readonly from: string;
-  readonly to: string;
-  readonly interaction: "read" | "write" | "none";
-  readonly description: string;
-}
-
-export interface EconomicAttackScenario {
-  readonly id: string;
+  readonly domain: "docs" | "audits" | "governance" | "tokenomics" | "onchain";
   readonly title: string;
-  readonly profitabilityAnalysis: string;
-  readonly capitalRequirements: string;
-  readonly oracleAssumptions: string;
+  readonly url: string;
+  readonly rawContent: string;
+  readonly summary: string;
+  readonly metadata: Record<string, any>;
+  readonly analyzedAt: string;
+}
+
+export interface DiscoveryRegistry {
+  readonly artifacts: readonly IntelligenceArtifact[];
+  readonly totalSources: number;
 }
 
 
@@ -134,62 +98,7 @@ export interface ArchitectureSummary {
   readonly generatedByModel: string;
 }
 
-export interface ExcalidrawElementStyle {
-  readonly strokeColor: string;
-  readonly backgroundColor: string;
-  readonly fillStyle: "solid";
-  readonly strokeWidth: number;
-  readonly roughness: number;
-  readonly opacity: number;
-}
-
-export interface ExcalidrawRectangleElement extends ExcalidrawElementStyle {
-  readonly id: string;
-  readonly type: "rectangle";
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-  readonly angle: number;
-  readonly seed: number;
-}
-
-export interface ExcalidrawTextElement {
-  readonly id: string;
-  readonly type: "text";
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-  readonly angle: number;
-  readonly seed: number;
-  readonly text: string;
-  readonly fontSize: number;
-  readonly fontFamily: number;
-  readonly strokeColor: string;
-  readonly backgroundColor: string;
-  readonly textAlign: "left" | "center";
-  readonly verticalAlign: "middle";
-  readonly opacity: number;
-}
-
-export interface ExcalidrawArrowElement extends ExcalidrawElementStyle {
-  readonly id: string;
-  readonly type: "arrow";
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-  readonly angle: number;
-  readonly seed: number;
-  readonly points: readonly [number, number][];
-  readonly endArrowhead: "arrow";
-}
-
-export type ExcalidrawDiagramElement =
-  | ExcalidrawRectangleElement
-  | ExcalidrawTextElement
-  | ExcalidrawArrowElement;
+export type ExcalidrawDiagramElement = Record<string, any>;
 
 export interface ProtocolDiagram {
   readonly type: "excalidraw";
@@ -198,6 +107,8 @@ export interface ProtocolDiagram {
   readonly title: string;
   readonly summary: string;
   readonly elements: readonly ExcalidrawDiagramElement[];
+  readonly appState?: Record<string, any>;
+  readonly files?: Record<string, any>;
   readonly generatedByModel: string;
 }
 
@@ -402,8 +313,7 @@ export interface RuntimeSessionState {
   readonly runId: string | null;
   readonly currentPhase: MethodologyPhase | null;
   readonly phases: readonly PhaseState[];
-  readonly preAuditPrep?: PreAuditPrep;
-  readonly reconResult?: ReconResult;
+  readonly discoveryRegistry?: DiscoveryRegistry;
   readonly workspaceAnalysis?: WorkspaceAnalysis;
   readonly codebaseContext?: CodebaseContextSummary;
   readonly intentSummary?: IntentSummary;
@@ -412,17 +322,16 @@ export interface RuntimeSessionState {
   readonly invariantRegistry?: InvariantRegistry;
   readonly verificationPlan?: VerificationPlan;
   readonly hypothesisRegistry?: HypothesisRegistry;
-  readonly functionAnnotations?: readonly FunctionAnnotation[];
-  readonly questionLog?: readonly QuestionEntry[];
+  readonly functionAnnotations?: readonly any[];
+  readonly questionLog?: readonly any[];
   readonly economicAnalysis?: EconomicAnalysis;
-  readonly economicScenarios?: readonly EconomicAttackScenario[];
-  readonly interactionMatrix?: readonly InteractionMatrixEntry[];
   readonly crossContractAnalysis?: CrossContractAnalysis;
   readonly findingRegistry?: FindingRegistry;
   readonly remediationPlan?: RemediationPlan;
   readonly formalReport?: FormalReport;
   readonly toolchainExecution?: ToolchainExecution;
 }
+
 
 
 export interface IdentifiedRecord {

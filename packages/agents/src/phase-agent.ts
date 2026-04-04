@@ -44,36 +44,23 @@ export interface PhaseAgent {
 }
 
 /**
- * Agent type identifiers matching the master plan's agent list.
+ * Agent type identifiers for the Discovery-First methodology.
  */
 export type PhaseAgentType =
-  | "PreparationAgent"
-  | "ReconAgent"
-  | "ArchitectureAgent"
-  | "InvariantAgent"
-  | "HypothesisAgent"
-  | "CodeReadingAgent"
-  | "AttackSimulationAgent"
-  | "EconomicModelingAgent"
-  | "CrossContractPathAgent"
-  | "FindingVerificationAgent"
-  | "ReportAgent"
-  | "TraceAgent";
+  | "DiscoveryAgent"
+  | "SynthesisAgent"
+  | "VisualAgent";
 
 /**
  * Maps each agent type to its corresponding methodology phase.
  */
-export const AGENT_PHASE_MAP: Readonly<Record<PhaseAgentType, MethodologyPhase>> = {
-  PreparationAgent: "phase-0-preparation",
-  ReconAgent: "phase-1-intent",
-  ArchitectureAgent: "phase-2-architecture",
-  InvariantAgent: "phase-3-invariants",
-  CodeReadingAgent: "phase-4-code-reading",
-  AttackSimulationAgent: "phase-5-attack-simulation",
-  EconomicModelingAgent: "phase-6-economic-modeling",
-  CrossContractPathAgent: "phase-7-cross-contract-paths",
-  FindingVerificationAgent: "phase-8-finding-verification",
-  ReportAgent: "phase-9-reporting",
-  TraceAgent: "phase-10-remediation",
-  HypothesisAgent: "phase-5-attack-simulation"
+export const AGENT_PHASE_MAP: Readonly<Record<string, MethodologyPhase>> = {
+  "DiscoveryAgent:docs": "discovery-docs",
+  "DiscoveryAgent:audits": "discovery-audits",
+  "DiscoveryAgent:governance": "discovery-governance",
+  "DiscoveryAgent:tokenomics": "discovery-tokenomics",
+  "DiscoveryAgent:onchain": "discovery-onchain",
+  "SynthesisAgent:intent": "synthesis-intent",
+  "SynthesisAgent:actors": "synthesis-actors",
+  "VisualAgent:flow": "visual-flow-map"
 };

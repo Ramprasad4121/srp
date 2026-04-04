@@ -53,12 +53,12 @@ function getProviderConfig(kind: string): { apiKey: string; baseURL?: string } {
     case "openai-compatible":
       return {
         apiKey: (process.env["OPENAI_COMPATIBLE_API_KEY"] || process.env["OPENAI_API_KEY"]) || "",
-        baseURL: process.env["OPENAI_COMPATIBLE_BASE_URL"]
+        baseURL: process.env["OPENAI_COMPATIBLE_BASE_URL"] || ""
       };
     default:
       return {
         apiKey: (process.env["OPENAI_API_KEY"] || process.env["OPENAI_COMPATIBLE_API_KEY"]) || "",
-        baseURL: process.env["OPENAI_COMPATIBLE_BASE_URL"]
+        baseURL: process.env["OPENAI_COMPATIBLE_BASE_URL"] || ""
       };
   }
 }

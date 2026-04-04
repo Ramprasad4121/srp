@@ -7,6 +7,6 @@ export function createWorkerBootstrapArtifact() {
     runId: "bootstrap-run",
     kind: "report",
     title: "Bootstrap Artifact",
-    phase: "phase-9-reporting"
+    phase: "visual-flow-map"
   });
 }

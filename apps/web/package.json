@@ -13,14 +13,19 @@
     "./api/event-client": "./dist/api/event-client.js"
   },
   "dependencies": {
+    "@excalidraw/excalidraw": "^0.18.0",
     "@srp/config": "file:../../packages/config",
     "@srp/events": "file:../../packages/events",
     "@srp/providers": "file:../../packages/providers",
     "@srp/security": "file:../../packages/security",
     "@srp/shared-types": "file:../../packages/shared-types",
-    "lit": "^3.2.1"
+    "lit": "^3.2.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "vite": "^6.0.0"
   },
   "scripts": {
