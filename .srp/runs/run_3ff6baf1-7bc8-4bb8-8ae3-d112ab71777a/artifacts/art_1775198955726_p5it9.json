@@ -1,6 +1,0 @@
-{
-  "findingId": "FIND-HYP-INV-001-01",
-  "status": "skipped",
-  "output": "Traceback (most recent call last):\n  File \"/Users/ramprasadgoud/Downloads/building/srp/scripts/run_poc.py\", line 11, in <module>\n    from srp.core.poc_verifier import run_poc\nModuleNotFoundError: No module named 'srp'\n",
-  "generatedAt": "2026-04-03T06:49:15.726Z"
-}

@@ -226,6 +226,17 @@ export class SrpApp extends LitElement {
       flex-direction: column;
     }
 
+    .view-container > * {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
     .hamburger-btn {
       background: none;
       border: none;
@@ -465,14 +476,10 @@ export class SrpApp extends LitElement {
           </header>
 
           <div class="view-container">
-            ${this._path === '/audit'
-              ? html`<methodology-view></methodology-view>`
-              : (this._path === '/build'
-                ? html`<gstack-view></gstack-view>`
-                : (this._path === '/team' 
-                  ? html`<team-view></team-view>`
-                  : html`<chat-view .mode=${this._mode}></chat-view>`))
-            }
+            <methodology-view ?hidden=${this._path !== '/audit'}></methodology-view>
+            <gstack-view ?hidden=${this._path !== '/build'}></gstack-view>
+            <team-view ?hidden=${this._path !== '/team'}></team-view>
+            <chat-view .mode=${this._mode} ?hidden=${this._path !== '/' && this._path !== ''}></chat-view>
           </div>
         </main>
       </div>

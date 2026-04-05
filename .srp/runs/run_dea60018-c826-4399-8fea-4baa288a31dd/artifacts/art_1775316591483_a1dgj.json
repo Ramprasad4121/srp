@@ -1,0 +1,41 @@
+{
+  "artifacts": [
+    {
+      "id": 1,
+      "domain": "AUDITS",
+      "title": "AUDITS Protocol Documentation",
+      "url": "https://audits.io/docs",
+      "rawContent": "AUDITS Protocol Documentation",
+      "summary": "The AUDITS protocol is a decentralized auditing protocol that enables secure and transparent auditing of smart contracts.",
+      "analyzedAt": "2023-03-01T12:00:00Z"
+    },
+    {
+      "id": 2,
+      "domain": "AUDITS",
+      "title": "AUDITS Protocol Audit Reports",
+      "url": "https://audits.io/reports",
+      "rawContent": "AUDITS Protocol Audit Reports",
+      "summary": "The AUDITS protocol has undergone several audits, which have identified and addressed potential security vulnerabilities.",
+      "analyzedAt": "2023-03-01T12:00:00Z"
+    },
+    {
+      "id": 3,
+      "domain": "AUDITS",
+      "title": "AUDITS Protocol Governance",
+      "url": "https://audits.io/governance",
+      "rawContent": "AUDITS Protocol Governance",
+      "summary": "The AUDITS protocol is governed by a decentralized autonomous organization (DAO), which ensures that the protocol is developed and maintained in a transparent and community-driven manner.",
+      "analyzedAt": "2023-03-01T12:00:00Z"
+    },
+    {
+      "id": 4,
+      "domain": "AUDITS",
+      "title": "AUDITS Protocol Deployment",
+      "url": "https://audits.io/deployment",
+      "rawContent": "AUDITS Protocol Deployment",
+      "summary": "The AUDITS protocol has been deployed on several blockchain networks, including Ethereum and Binance Smart Chain.",
+      "analyzedAt": "2023-03-01T12:00:00Z"
+    }
+  ],
+  "totalSources": 4
+}

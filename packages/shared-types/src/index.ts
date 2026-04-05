@@ -41,6 +41,9 @@ export type MethodologyPhase =
   | "discovery-onchain"
   | "synthesis-intent"
   | "synthesis-actors"
+  | "synthesis-invariants"
+  | "synthesis-entry-exit"
+  | "synthesis-functions"
   | "visual-flow-map";
 
 export interface IntelligenceArtifact {
@@ -75,6 +78,8 @@ export interface WorkspaceAnalysis {
   readonly isHardhat: boolean;
   readonly solidityFileCount: number;
   readonly solidityFiles: readonly string[];
+  readonly externalFileCount: number;
+  readonly externalFiles: readonly string[];
   readonly topLevelDirectories: readonly string[];
   readonly summary: string;
 }
@@ -118,10 +123,10 @@ export interface InvariantItem {
   readonly id: string;
   readonly title: string;
   readonly description: string;
-  readonly category: string;
+  readonly category: "Global" | "Function" | "Economic";
   readonly priority: InvariantPriority;
-  readonly derivedFrom: readonly string[];
-  readonly suggestedVerification: string;
+  readonly derivedFrom?: readonly string[];
+  readonly suggestedVerification?: string;
 }
 
 export interface InvariantRegistry {
@@ -326,11 +331,60 @@ export interface RuntimeSessionState {
   readonly questionLog?: readonly any[];
   readonly economicAnalysis?: EconomicAnalysis;
   readonly crossContractAnalysis?: CrossContractAnalysis;
+  readonly entryExitMatrix?: EntryExitMatrix;
+  readonly functionMap?: ProtocolFunctionMap;
   readonly findingRegistry?: FindingRegistry;
   readonly remediationPlan?: RemediationPlan;
   readonly formalReport?: FormalReport;
   readonly toolchainExecution?: ToolchainExecution;
+  readonly agentRegistry?: AgentRegistryState;
+  readonly knowledgeBus?: KnowledgeBusState;
 }
+
+// ---------------------------------------------------------------------------
+// Agentic Factory & Hive Mind
+// ---------------------------------------------------------------------------
+
+export type AgentRole = "researcher" | "architect" | "auditor" | "developer" | "sentinel";
+
+export interface AgentDefinition {
+  readonly id: string;
+  readonly name: string;
+  readonly role: AgentRole;
+  readonly skills: readonly string[];
+  readonly toolAccess: readonly string[];
+  readonly defaultModel?: string;
+}
+
+export interface AgentInstance {
+  readonly instanceId: string;
+  readonly definitionId: string;
+  readonly status: "idle" | "busy" | "finished" | "failed";
+  readonly lastThought?: string;
+  readonly activeTask?: string;
+}
+
+export interface AgentRegistryState {
+  readonly definitions: readonly AgentDefinition[];
+  readonly activeInstances: readonly AgentInstance[];
+}
+
+export type KnowledgeKind = "contract" | "actor" | "invariant" | "risk" | "flow";
+
+export interface KnowledgeNode {
+  readonly id: string;
+  readonly kind: KnowledgeKind;
+  readonly title: string;
+  readonly data: any;
+  readonly sourceAgentId: string;
+  readonly discoveredAt: string;
+}
+
+export interface KnowledgeBusState {
+  readonly nodes: readonly KnowledgeNode[];
+  readonly lastUpdateAt: string;
+}
+
 
 
 
@@ -580,4 +634,36 @@ export interface WebResearchRequest {
   readonly limit?: number;
   readonly includeDocumentation?: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Technical Audit Artifacts
+// ---------------------------------------------------------------------------
+
+export interface EntryExitPoint {
+  readonly id: string;
+  readonly type: "entry" | "exit";
+  readonly contract: string;
+  readonly functionName: string;
+  readonly description: string;
+  readonly accessControl: string;
+}
+
+export interface EntryExitMatrix {
+  readonly summary: string;
+  readonly points: readonly EntryExitPoint[];
+}
+
+export interface FunctionMapEntry {
+  readonly functionName: string;
+  readonly contract: string;
+  readonly visibility: string;
+  readonly isStateModifying: boolean;
+  readonly description: string;
+}
+
+export interface ProtocolFunctionMap {
+  readonly summary: string;
+  readonly functions: readonly FunctionMapEntry[];
+}
+
 

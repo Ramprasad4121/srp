@@ -39,7 +39,7 @@ async function findSolidityFiles(
         return { files, limitReached: true };
       }
 
-      // Ignore common noise directories but keep 'lib' as it often contains source code/deps in Foundry
+      // Ignore common noise directories and massive dependency folders
       if (
         entry.name === "node_modules" ||
         entry.name === ".git" ||
@@ -48,7 +48,9 @@ async function findSolidityFiles(
         entry.name === "artifacts" ||
         entry.name === ".srp" ||
         entry.name === "venv" ||
-        entry.name === "dist"
+        entry.name === "dist" ||
+        entry.name === "lib" ||
+        entry.name === "forge-cache"
       ) {
         continue;
       }
@@ -101,26 +103,29 @@ export async function analyzeWorkspace(rootDirectory: string): Promise<Workspace
 
   const { files: solidityFiles, limitReached } = await findSolidityFiles(rootDirectory, rootDirectory, 0, 0);
 
+  const coreFiles = solidityFiles.filter(f => f.startsWith('contracts/') || f.startsWith('src/'));
+  const externalFiles = solidityFiles.filter(f => !coreFiles.includes(f));
+
   const frameworks = [];
   if (isFoundry) frameworks.push("Foundry");
   if (isHardhat) frameworks.push("Hardhat");
 
-  let summary = `Workspace at ${rootDirectory} contains ${solidityFiles.length} Solidity file(s).`;
+  let summary = `Workspace at ${rootDirectory} contains ${coreFiles.length} CORE Solidity file(s) and ${externalFiles.length} external dependencies.`;
   if (limitReached) {
     summary += ` (Limit of ${MAX_FILE_COUNT} reached).`;
   }
   if (frameworks.length > 0) {
     summary += ` Frameworks detected: ${frameworks.join(", ")}.`;
-  } else {
-    summary += ` No specific smart contract framework file detected.`;
   }
 
   return {
     rootDirectory,
     isFoundry,
     isHardhat,
-    solidityFileCount: solidityFiles.length,
-    solidityFiles,
+    solidityFileCount: coreFiles.length,
+    solidityFiles: coreFiles,
+    externalFileCount: externalFiles.length,
+    externalFiles: externalFiles,
     topLevelDirectories,
     summary
   };

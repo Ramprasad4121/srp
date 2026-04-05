@@ -1,0 +1,64 @@
+{
+  "runId": "run_dea60018-c826-4399-8fea-4baa288a31dd",
+  "projectId": "default-project",
+  "sessionId": "session_a0f1f425-823c-4d4e-830c-89e5e881844e",
+  "status": "running",
+  "createdAt": "2026-04-04T15:29:51.412Z",
+  "artifacts": [
+    {
+      "artifactId": "art_1775316591481_f4oh6",
+      "kind": "note",
+      "title": "Discovery: Documentation",
+      "phase": "discovery-docs",
+      "runId": "run_dea60018-c826-4399-8fea-4baa288a31dd",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T15:29:51.482Z"
+    },
+    {
+      "artifactId": "art_1775316591483_a1dgj",
+      "kind": "note",
+      "title": "Discovery: Prior Audits",
+      "phase": "discovery-audits",
+      "runId": "run_dea60018-c826-4399-8fea-4baa288a31dd",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T15:29:51.484Z"
+    },
+    {
+      "artifactId": "art_1775316591485_2t4ol",
+      "kind": "note",
+      "title": "Discovery: Governance",
+      "phase": "discovery-governance",
+      "runId": "run_dea60018-c826-4399-8fea-4baa288a31dd",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T15:29:51.486Z"
+    },
+    {
+      "artifactId": "art_1775316591487_ukxoc",
+      "kind": "note",
+      "title": "Discovery: Tokenomics",
+      "phase": "discovery-tokenomics",
+      "runId": "run_dea60018-c826-4399-8fea-4baa288a31dd",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T15:29:51.487Z"
+    },
+    {
+      "artifactId": "art_1775316591488_qdgs5",
+      "kind": "note",
+      "title": "Discovery: On-Chain",
+      "phase": "discovery-onchain",
+      "runId": "run_dea60018-c826-4399-8fea-4baa288a31dd",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T15:29:51.488Z"
+    },
+    {
+      "artifactId": "art_1775316630374_4pcyp",
+      "kind": "note",
+      "title": "Protocol Intent",
+      "phase": "synthesis-intent",
+      "runId": "run_dea60018-c826-4399-8fea-4baa288a31dd",
+      "projectId": "default-project",
+      "createdAt": "2026-04-04T15:30:30.375Z"
+    }
+  ],
+  "currentPhase": "synthesis-actors"
+}

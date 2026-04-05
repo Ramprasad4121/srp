@@ -1,0 +1,41 @@
+{
+  "artifacts": [
+    {
+      "id": 1,
+      "domain": "ONCHAIN",
+      "title": "ONCHAIN Protocol Documentation",
+      "url": "https://spl_governance.crates.io/crates/onchain",
+      "rawContent": "ONCHAIN protocol documentation content",
+      "summary": "The ONCHAIN protocol documentation provides an overview of the protocol's architecture, functionality, and usage.",
+      "analyzedAt": "2023-03-01T12:00:00Z"
+    },
+    {
+      "id": 2,
+      "domain": "ONCHAIN",
+      "title": "ONCHAIN Protocol Audit Reports",
+      "url": "https://github.com/onchain/audit-reports",
+      "rawContent": "ONCHAIN protocol audit reports content",
+      "summary": "The ONCHAIN protocol audit reports provide an independent review of the protocol's security and functionality.",
+      "analyzedAt": "2023-03-01T12:00:00Z"
+    },
+    {
+      "id": 3,
+      "domain": "ONCHAIN",
+      "title": "ONCHAIN Protocol Governance Posts",
+      "url": "https://onchain.io/governance",
+      "rawContent": "ONCHAIN protocol governance posts content",
+      "summary": "The ONCHAIN protocol governance posts provide information on the protocol's governance structure and decision-making processes.",
+      "analyzedAt": "2023-03-01T12:00:00Z"
+    },
+    {
+      "id": 4,
+      "domain": "ONCHAIN",
+      "title": "ONCHAIN Protocol Deployment Info",
+      "url": "https://onchain.io/deployment",
+      "rawContent": "ONCHAIN protocol deployment info content",
+      "summary": "The ONCHAIN protocol deployment info provides information on the protocol's deployment process and requirements.",
+      "analyzedAt": "2023-03-01T12:00:00Z"
+    }
+  ],
+  "totalSources": 4
+}

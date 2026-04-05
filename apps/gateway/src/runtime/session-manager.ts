@@ -7,7 +7,6 @@ import type {
   CodebaseContextSummary, 
   IntentSummary, 
   ArchitectureSummary, 
-  InvariantRegistry, 
   VerificationPlan, 
   HypothesisRegistry, 
   EconomicAnalysis, 
@@ -17,7 +16,13 @@ import type {
   RemediationPlan, 
   ProtocolDiagram,
   IntelligenceArtifact,
-  DiscoveryRegistry
+  DiscoveryRegistry,
+  AgentDefinition,
+  AgentInstance,
+  AgentRegistryState,
+  KnowledgeNode,
+  KnowledgeBusState,
+  KnowledgeKind
 } from "@srp/shared-types";
 import { createArtifactCreatedEvent, createPhaseStatusChangedEvent, createSessionStartedEvent } from "@srp/events";
 import { sharedEventBus } from "../events/event-bus.js";
@@ -31,16 +36,104 @@ import {
   generateArchitectureSummary, 
   generateProtocolDiagram,
   generateDiscoveryArtifacts,
-  generateIntentSummary
+  generateIntentSummary,
+  generateFunctionMap,
+  generateEntryExitMatrix,
+  generateInvariants
 } from "./providers/inference-bridge.js";
 import type { ProviderSelection } from "@srp/shared-types";
 import { randomUUID } from "node:crypto";
 import { setTimeout } from "node:timers/promises";
 import { PersistenceManager } from "./persistence-manager.js";
-import type { ArtifactKind, RunEventLogEntry } from "@srp/shared-types";
+import type { ArtifactKind, RunEventLogEntry, ProtocolFunctionMap, EntryExitMatrix, InvariantRegistry } from "@srp/shared-types";
 import { runPoC } from "./poc-runner.js";
 import type { ToolchainExecution } from "@srp/shared-types";
 import { runToolchainWorkflows } from "./toolchain-runner.js";
+
+// ---------------------------------------------------------------------------
+// Knowledge Bus (Hive Mind)
+// ---------------------------------------------------------------------------
+
+class KnowledgeBus {
+  private nodes: KnowledgeNode[] = [];
+  private lastUpdate: string = new Date().toISOString();
+
+  addNode(kind: KnowledgeKind, title: string, data: any, sourceAgentId: string) {
+    const node: KnowledgeNode = {
+      id: `node_${randomUUID()}`,
+      kind,
+      title,
+      data,
+      sourceAgentId,
+      discoveredAt: new Date().toISOString()
+    };
+    this.nodes.push(node);
+    this.lastUpdate = node.discoveredAt;
+    console.log(`[KnowledgeBus] New Node: ${kind}:${title} from ${sourceAgentId}`);
+  }
+
+  getState(): KnowledgeBusState {
+    return {
+      nodes: [...this.nodes],
+      lastUpdateAt: this.lastUpdate
+    };
+  }
+
+  clear() {
+    this.nodes = [];
+    this.lastUpdate = new Date().toISOString();
+  }
+}
+
+const knowledgeBus = new KnowledgeBus();
+
+// ---------------------------------------------------------------------------
+// Agent Registry (Factory)
+// ---------------------------------------------------------------------------
+
+class AgentRegistry {
+  private definitions: AgentDefinition[] = [
+    { id: "discovery-agent", name: "Discovery Agent", role: "researcher", skills: ["web-search", "fetch-content"], toolAccess: ["SEARCH", "FETCH_CONTENT"] },
+    { id: "synthesis-agent", name: "Synthesis Agent", role: "architect", skills: ["logic-synthesis", "actor-mapping"], toolAccess: ["READ_FILE", "LIST_FILES"] },
+    { id: "visual-agent", name: "Visual Agent", role: "architect", skills: ["diagram-generation"], toolAccess: [] },
+    { id: "fuzzer-agent", name: "Fuzzer Agent", role: "developer", skills: ["poc-generation"], toolAccess: ["BASH", "READ_FILE"] }
+  ];
+  private activeInstances: AgentInstance[] = [];
+
+  spawnInstance(definitionId: string): string {
+    const def = this.definitions.find(d => d.id === definitionId);
+    if (!def) throw new Error(`Unknown agent definition: ${definitionId}`);
+    
+    const instanceId = `inst_${randomUUID()}`;
+    const instance: AgentInstance = {
+      instanceId,
+      definitionId,
+      status: "idle"
+    };
+    this.activeInstances.push(instance);
+    return instanceId;
+  }
+
+  updateInstanceStatus(instanceId: string, status: AgentInstance["status"], lastThought?: string, activeTask?: string) {
+    const idx = this.activeInstances.findIndex(i => i.instanceId === instanceId);
+    if (idx !== -1) {
+      this.activeInstances[idx] = { ...this.activeInstances[idx], status, lastThought, activeTask } as AgentInstance;
+    }
+  }
+
+  getState(): AgentRegistryState {
+    return {
+      definitions: [...this.definitions],
+      activeInstances: [...this.activeInstances]
+    };
+  }
+
+  clear() {
+    this.activeInstances = [];
+  }
+}
+
+const agentRegistry = new AgentRegistry();
 
 // ---------------------------------------------------------------------------
 // Simulated methodology pipeline configuration
@@ -71,10 +164,12 @@ let pendingCodebaseContext: CodebaseContextSummary | undefined;
 let pendingIntentSummary: IntentSummary | undefined;
 let pendingArchitectureSummary: ArchitectureSummary | undefined;
 let pendingProtocolDiagram: ProtocolDiagram | undefined;
+let pendingFunctionMap: ProtocolFunctionMap | undefined;
+let pendingEntryExitMatrix: EntryExitMatrix | undefined;
 let pendingInvariantRegistry: InvariantRegistry | undefined;
+let pendingHypothesisRegistry: HypothesisRegistry | undefined;
 let pendingVerificationPlan: VerificationPlan | undefined;
 let pendingToolchainExecution: ToolchainExecution | undefined;
-let pendingHypothesisRegistry: HypothesisRegistry | undefined;
 let pendingEconomicAnalysis: EconomicAnalysis | undefined;
 let pendingCrossContractAnalysis: CrossContractAnalysis | undefined;
 let pendingFindingRegistry: FindingRegistry | undefined;
@@ -99,7 +194,9 @@ export function getSessionState(): RuntimeSessionState {
     currentPhase: currentPhaseIndex >= 0 && currentPhaseIndex < TARGET_PHASES.length
       ? (TARGET_PHASES[currentPhaseIndex] ?? null)
       : null,
-    phases: [...phaseStates]
+    phases: [...phaseStates],
+    agentRegistry: agentRegistry.getState(),
+    knowledgeBus: knowledgeBus.getState()
   };
 
   if (pendingDiscoveryRegistry) state.discoveryRegistry = pendingDiscoveryRegistry;
@@ -108,6 +205,8 @@ export function getSessionState(): RuntimeSessionState {
   if (pendingIntentSummary) state.intentSummary = pendingIntentSummary;
   if (pendingArchitectureSummary) state.architectureSummary = pendingArchitectureSummary;
   if (pendingProtocolDiagram) state.protocolDiagram = pendingProtocolDiagram;
+  if (pendingFunctionMap) state.functionMap = pendingFunctionMap;
+  if (pendingEntryExitMatrix) state.entryExitMatrix = pendingEntryExitMatrix;
   if (pendingInvariantRegistry) state.invariantRegistry = pendingInvariantRegistry;
   if (pendingVerificationPlan) state.verificationPlan = pendingVerificationPlan;
   if (pendingToolchainExecution) state.toolchainExecution = pendingToolchainExecution;
@@ -153,6 +252,9 @@ export function startSession(
   pendingFindingRegistry = undefined;
   pendingRemediationPlan = undefined;
   pendingFormalReport = undefined;
+
+  agentRegistry.clear();
+  knowledgeBus.clear();
 
   phaseStates = TARGET_PHASES.map((p) => ({
     phase: p,
@@ -314,42 +416,73 @@ async function runSimulatedPipeline(
       currentPhaseIndex = i;
       updatePhaseStatus(i, "running", projectId, runId);
       const phaseName = phaseStates[i]?.phase;
+      console.log(`[Pipeline] >>> ENTERING PHASE: ${phaseName} (${i+1}/${phaseStates.length})`);
 
       // 1. DISCOVERY: DOCS
       if (phaseName === "discovery-docs") {
+        const agentId = agentRegistry.spawnInstance("discovery-agent");
+        agentRegistry.updateInstanceStatus(agentId, "busy", "Initiating workspace analysis and documentation research...");
+        
+        console.log(`[Pipeline] Running analyzeWorkspace...`);
         pendingWorkspaceAnalysis = await analyzeWorkspace(rootDirectory);
+        console.log(`[Pipeline] Workspace analyzed: ${pendingWorkspaceAnalysis.solidityFileCount} core files.`);
+        
+        console.log(`[Pipeline] Calling generateDiscoveryArtifacts for DOCS...`);
         const arts = await generateDiscoveryArtifacts("docs", { workspace: pendingWorkspaceAnalysis }, activeProvider);
+        console.log(`[Pipeline] DOCS returned ${arts.length} artifacts.`);
+        
         accumulatedArtifacts.push(...arts);
         pendingDiscoveryRegistry = { artifacts: [...accumulatedArtifacts], totalSources: accumulatedArtifacts.length };
         await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Discovery: Documentation", { artifacts: arts, totalSources: arts.length });
+        
+        // Add to Knowledge Bus
+        knowledgeBus.addNode("contract", "Core Solidity Files", { count: pendingWorkspaceAnalysis.solidityFileCount, files: pendingWorkspaceAnalysis.solidityFiles }, agentId);
+        
+        agentRegistry.updateInstanceStatus(agentId, "finished", "Documentation research complete.");
       } 
       
       // 2. DISCOVERY: AUDITS
       else if (phaseName === "discovery-audits") {
+        const agentId = agentRegistry.spawnInstance("discovery-agent");
+        agentRegistry.updateInstanceStatus(agentId, "busy", "Searching for prior security audit reports...");
+
+        console.log(`[Pipeline] Calling generateDiscoveryArtifacts for AUDITS...`);
         const arts = await generateDiscoveryArtifacts("audits", { 
           workspace: pendingWorkspaceAnalysis!,
           codebase: { filesProcessed: 0, bytesProcessed: 0, limitReached: false, targetFiles: [] },
           intent: { mainContracts: [], interfaceCount: 0, draftSummary: "" }
         }, activeProvider);
+        
         accumulatedArtifacts.push(...arts);
         pendingDiscoveryRegistry = { artifacts: [...accumulatedArtifacts], totalSources: accumulatedArtifacts.length };
         await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Discovery: Prior Audits", { artifacts: arts, totalSources: arts.length });
+        
+        agentRegistry.updateInstanceStatus(agentId, "finished", `Identified ${arts.length} audit sources.`);
       } 
       
       // 3. DISCOVERY: GOVERNANCE
       else if (phaseName === "discovery-governance") {
+        const agentId = agentRegistry.spawnInstance("discovery-agent");
+        agentRegistry.updateInstanceStatus(agentId, "busy", "Mapping social layer and governance controls...");
+
         const arts = await generateDiscoveryArtifacts("governance", { 
           workspace: pendingWorkspaceAnalysis!,
           codebase: { filesProcessed: 0, bytesProcessed: 0, limitReached: false, targetFiles: [] },
           intent: { mainContracts: [], interfaceCount: 0, draftSummary: "" }
         }, activeProvider);
+        
         accumulatedArtifacts.push(...arts);
         pendingDiscoveryRegistry = { artifacts: [...accumulatedArtifacts], totalSources: accumulatedArtifacts.length };
         await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Discovery: Governance", { artifacts: arts, totalSources: arts.length });
+        
+        agentRegistry.updateInstanceStatus(agentId, "finished", "Governance trust model mapped.");
       } 
       
       // 4. DISCOVERY: TOKENOMICS
       else if (phaseName === "discovery-tokenomics") {
+        const agentId = agentRegistry.spawnInstance("discovery-agent");
+        agentRegistry.updateInstanceStatus(agentId, "busy", "Extracting economic architecture and incentives...");
+
         const arts = await generateDiscoveryArtifacts("tokenomics", { 
           workspace: pendingWorkspaceAnalysis!,
           codebase: { filesProcessed: 0, bytesProcessed: 0, limitReached: false, targetFiles: [] },
@@ -358,10 +491,15 @@ async function runSimulatedPipeline(
         accumulatedArtifacts.push(...arts);
         pendingDiscoveryRegistry = { artifacts: [...accumulatedArtifacts], totalSources: accumulatedArtifacts.length };
         await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Discovery: Tokenomics", { artifacts: arts, totalSources: arts.length });
+        
+        agentRegistry.updateInstanceStatus(agentId, "finished", "Economic layer analysis complete.");
       } 
       
       // 5. DISCOVERY: ON-CHAIN
       else if (phaseName === "discovery-onchain") {
+        const agentId = agentRegistry.spawnInstance("discovery-agent");
+        agentRegistry.updateInstanceStatus(agentId, "busy", "Verifying mainnet deployments and initial roles...");
+
         const arts = await generateDiscoveryArtifacts("onchain", { 
           workspace: pendingWorkspaceAnalysis!,
           codebase: { filesProcessed: 0, bytesProcessed: 0, limitReached: false, targetFiles: [] },
@@ -370,40 +508,138 @@ async function runSimulatedPipeline(
         accumulatedArtifacts.push(...arts);
         pendingDiscoveryRegistry = { artifacts: [...accumulatedArtifacts], totalSources: accumulatedArtifacts.length };
         await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Discovery: On-Chain", { artifacts: arts, totalSources: arts.length });
+        
+        agentRegistry.updateInstanceStatus(agentId, "finished", "On-chain state verified.");
       } 
       
       // 6. SYNTHESIS: INTENT
       else if (phaseName === "synthesis-intent") {
+        const agentId = agentRegistry.spawnInstance("synthesis-agent");
+        agentRegistry.updateInstanceStatus(agentId, "busy", "Synthesizing 'Ground Truth' protocol intent...");
+
         const ctxResult = await buildCodebaseContext(pendingWorkspaceAnalysis!);
         pendingCodebaseContext = ctxResult.summary;
         pendingIntentSummary = await generateIntentSummary(
-          { workspace: pendingWorkspaceAnalysis!, codebase: pendingCodebaseContext!, discoveryRegistry: { artifacts: accumulatedArtifacts, totalSources: accumulatedArtifacts.length } },
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            discoveryRegistry: { artifacts: accumulatedArtifacts, totalSources: accumulatedArtifacts.length },
+            knowledgeBus: knowledgeBus.getState()
+          },
           activeProvider
         );
         await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Protocol Intent", pendingIntentSummary);
+        
+        // Add to Knowledge Bus
+        knowledgeBus.addNode("flow", "Intended Value Flow", { summary: pendingIntentSummary.draftSummary }, agentId);
+        
+        agentRegistry.updateInstanceStatus(agentId, "finished", "Protocol intent synthesized.");
       } 
       
       // 7. SYNTHESIS: ACTORS
       else if (phaseName === "synthesis-actors") {
+        const agentId = agentRegistry.spawnInstance("synthesis-agent");
+        agentRegistry.updateInstanceStatus(agentId, "busy", "Mapping actor model and trust boundaries...");
+
         pendingArchitectureSummary = await generateArchitectureSummary(
-          { workspace: pendingWorkspaceAnalysis!, codebase: pendingCodebaseContext!, intent: pendingIntentSummary! },
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!, 
+            discoveryRegistry: { artifacts: accumulatedArtifacts, totalSources: accumulatedArtifacts.length },
+            knowledgeBus: knowledgeBus.getState()
+          },
           activeProvider
         );
         await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Actor Model", pendingArchitectureSummary);
+        
+        // Add to Knowledge Bus
+        knowledgeBus.addNode("actor", "Identified Actors", { components: pendingArchitectureSummary.keyComponents }, agentId);
+        
+        agentRegistry.updateInstanceStatus(agentId, "finished", "Actor model mapped.");
       } 
       
-      // 8. VISUAL: FLOW MAP
+      // 8. SYNTHESIS: FUNCTIONS
+      else if (phaseName === "synthesis-functions") {
+        const agentId = agentRegistry.spawnInstance("synthesis-agent");
+        agentRegistry.updateInstanceStatus(agentId, "busy", "Analyzing state-modifying contract functions...");
+
+        pendingFunctionMap = await generateFunctionMap(
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!, 
+            architecture: pendingArchitectureSummary!,
+            knowledgeBus: knowledgeBus.getState()
+          },
+          activeProvider
+        );
+        await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Function Map", pendingFunctionMap);
+        
+        agentRegistry.updateInstanceStatus(agentId, "finished", "Function surface area cataloged.");
+      }
+
+      // 9. SYNTHESIS: ENTRY/EXIT
+      else if (phaseName === "synthesis-entry-exit") {
+        const agentId = agentRegistry.spawnInstance("synthesis-agent");
+        agentRegistry.updateInstanceStatus(agentId, "busy", "Tracing capital entry and exit paths...");
+
+        pendingEntryExitMatrix = await generateEntryExitMatrix(
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!, 
+            architecture: pendingArchitectureSummary!,
+            knowledgeBus: knowledgeBus.getState()
+          },
+          activeProvider
+        );
+        await persistArtifactAndEmit(runId, projectId, phaseName, "note", "Entry/Exit Matrix", pendingEntryExitMatrix);
+        
+        agentRegistry.updateInstanceStatus(agentId, "finished", "Value drainage paths identified.");
+      }
+
+      // 10. SYNTHESIS: INVARIANTS
+      else if (phaseName === "synthesis-invariants") {
+        const agentId = agentRegistry.spawnInstance("synthesis-agent");
+        agentRegistry.updateInstanceStatus(agentId, "busy", "Extracting formal protocol invariants...");
+
+        pendingInvariantRegistry = await generateInvariants(
+          { 
+            workspace: pendingWorkspaceAnalysis!, 
+            codebase: pendingCodebaseContext!, 
+            intent: pendingIntentSummary!, 
+            architecture: pendingArchitectureSummary!,
+            knowledgeBus: knowledgeBus.getState()
+          },
+          activeProvider
+        );
+        await persistArtifactAndEmit(runId, projectId, phaseName, "invariant", "Invariant Registry", pendingInvariantRegistry);
+        
+        // Add to Knowledge Bus
+        knowledgeBus.addNode("invariant", "Critical Invariants", { invariants: pendingInvariantRegistry.invariants }, agentId);
+        
+        agentRegistry.updateInstanceStatus(agentId, "finished", "Security heartbeat defined.");
+      }
+
+      // 11. VISUAL: FLOW MAP
       else if (phaseName === "visual-flow-map") {
+        const agentId = agentRegistry.spawnInstance("visual-agent");
+        agentRegistry.updateInstanceStatus(agentId, "busy", "Drawing interactive value flow diagram...");
+
         pendingProtocolDiagram = await generateProtocolDiagram(
           { 
             workspace: pendingWorkspaceAnalysis!, 
             codebase: pendingCodebaseContext!, 
-            intent: pendingIntentSummary!,
-            architecture: pendingArchitectureSummary! 
+            intent: pendingIntentSummary!, 
+            architecture: pendingArchitectureSummary!,
+            knowledgeBus: knowledgeBus.getState()
           },
           activeProvider
         );
         await persistArtifactAndEmit(runId, projectId, phaseName, "diagram", "Value Flow Map", pendingProtocolDiagram);
+        
+        agentRegistry.updateInstanceStatus(agentId, "finished", "Protocol map rendered.");
       }
 
       updatePhaseStatus(i, "completed", projectId, runId);

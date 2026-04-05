@@ -262,21 +262,24 @@ export class ChatView extends LitElement {
 
     this._isLoading = true;
 
-    this._messages = [
-      ...this._messages, 
-      { id: Date.now().toString(), role: "user", content }
-    ];
+    // Local state first for responsiveness
+    const userMsg = { id: Date.now().toString(), role: "user" as const, content };
+    this._messages = [...this._messages, userMsg];
     this.scrollToBottom();
 
     try {
       const res = await gatewayClient.addMessage(this._conversationId, content);
       if (res.ok && res.data.assistantMessage) {
+        // We replace or append. The server response is the source of truth.
+        // If the server returns full history, we use it. 
+        // For now, we append the specific assistant message.
         this._messages = [...this._messages, res.data.assistantMessage];
       } else if (!res.ok) {
-        this._messages = [...this._messages, { id: "err", role: "system", content: `System Error: ${res.error}` }];
+        this._messages = [...this._messages, { id: "err", role: "system" as const, content: `System Error: ${res.error}` }];
       }
     } catch (e) {
       console.error("Network failure", e);
+      this._messages = [...this._messages, { id: "err", role: "system" as const, content: "Network failure. Check gateway connection." }];
     } finally {
       this._isLoading = false;
       this.scrollToBottom();

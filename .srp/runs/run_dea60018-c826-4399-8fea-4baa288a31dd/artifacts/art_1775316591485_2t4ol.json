@@ -1,0 +1,41 @@
+{
+  "artifacts": [
+    {
+      "id": 1,
+      "domain": "GOVERNANCE",
+      "title": "Governance Protocol Documentation",
+      "url": "https://example.com/governance-protocol/docs",
+      "rawContent": "",
+      "summary": "",
+      "analyzedAt": ""
+    },
+    {
+      "id": 2,
+      "domain": "GOVERNANCE",
+      "title": "Governance Protocol Audit Report",
+      "url": "https://example.com/governance-protocol/audit-report",
+      "rawContent": "",
+      "summary": "",
+      "analyzedAt": ""
+    },
+    {
+      "id": 3,
+      "domain": "GOVERNANCE",
+      "title": "Governance Protocol Governance Post",
+      "url": "https://example.com/governance-protocol/governance-post",
+      "rawContent": "",
+      "summary": "",
+      "analyzedAt": ""
+    },
+    {
+      "id": 4,
+      "domain": "GOVERNANCE",
+      "title": "Governance Protocol Deployment Info",
+      "url": "https://example.com/governance-protocol/deployment-info",
+      "rawContent": "",
+      "summary": "",
+      "analyzedAt": ""
+    }
+  ],
+  "totalSources": 4
+}

@@ -11,6 +11,9 @@ export const METHODOLOGY_PHASES: readonly MethodologyPhase[] = [
   "discovery-onchain",
   "synthesis-intent",
   "synthesis-actors",
+  "synthesis-functions",
+  "synthesis-entry-exit",
+  "synthesis-invariants",
   "visual-flow-map"
 ] as const;
 
@@ -25,6 +28,9 @@ export const PHASE_LABELS: Readonly<Record<MethodologyPhase, string>> = {
   "discovery-onchain": "Discovery: On-Chain Deployments",
   "synthesis-intent": "Synthesis: Protocol Intent",
   "synthesis-actors": "Synthesis: Actor Model",
+  "synthesis-functions": "Synthesis: Main Contracts & Functions",
+  "synthesis-entry-exit": "Synthesis: Entry & Exit points",
+  "synthesis-invariants": "Synthesis: Protocol Invariants",
   "visual-flow-map": "Visual: Protocol Flow Map"
 };
 
@@ -87,11 +93,32 @@ export const PHASE_DEFINITIONS: readonly PhaseDefinition[] = [
     dependsOn: ["synthesis-intent"]
   },
   {
+    phase: "synthesis-functions",
+    label: PHASE_LABELS["synthesis-functions"],
+    description: "Map all contracts and their main state-modifying functions.",
+    expectedArtifactKinds: ["note"],
+    dependsOn: ["synthesis-actors"]
+  },
+  {
+    phase: "synthesis-entry-exit",
+    label: PHASE_LABELS["synthesis-entry-exit"],
+    description: "Identify all external entry points and sensitive value exit paths.",
+    expectedArtifactKinds: ["note"],
+    dependsOn: ["synthesis-functions"]
+  },
+  {
+    phase: "synthesis-invariants",
+    label: PHASE_LABELS["synthesis-invariants"],
+    description: "Extract list of Global, Function, and Economic invariants.",
+    expectedArtifactKinds: ["note"],
+    dependsOn: ["synthesis-entry-exit"]
+  },
+  {
     phase: "visual-flow-map",
     label: PHASE_LABELS["visual-flow-map"],
     description: "Generate interactive Excalidraw value flow diagrams.",
     expectedArtifactKinds: ["diagram"],
-    dependsOn: ["synthesis-actors"]
+    dependsOn: ["synthesis-invariants"]
   }
 ];
 

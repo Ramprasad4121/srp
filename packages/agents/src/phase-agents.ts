@@ -10,11 +10,9 @@ export class DiscoveryAgent extends PhaseAgentBase {
   }
 
   async run(context: AgentContext, input: any): Promise<unknown> {
-    console.log(`[${this.name}] Executing discovery...`);
-    return {
-      artifacts: [],
-      totalSources: 0
-    };
+    console.log(`[${this.name}] Executing discovery for ${context.projectId}...`);
+    // The core logic is handled in session-manager via inference-bridge
+    return input;
   }
 }
 
@@ -24,12 +22,8 @@ export class SynthesisAgent extends PhaseAgentBase {
   }
 
   async run(context: AgentContext, input: any): Promise<unknown> {
-    console.log(`[${this.name}] Synthesizing intelligence...`);
-    return {
-      draftSummary: "Discovery-based synthesis",
-      mainContracts: [],
-      interfaceCount: 0
-    };
+    console.log(`[${this.name}] Synthesizing intelligence for ${context.projectId}...`);
+    return input;
   }
 }
 
@@ -40,11 +34,7 @@ export class VisualAgent extends PhaseAgentBase {
 
   async run(context: AgentContext, input: any): Promise<unknown> {
     console.log(`[${this.name}] Generating protocol flow map...`);
-    return {
-      type: "excalidraw",
-      version: 2,
-      elements: []
-    };
+    return input;
   }
 }
 

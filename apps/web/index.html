@@ -41,6 +41,18 @@
   <srp-app></srp-app>
 
   <script>
+    // Defensive shim for Ethereum provider extensions (Rabby / MetaMask)
+    // Prevents "Uncaught TypeError: Cannot set property ethereum of #<Window> which has only a getter"
+    if (!window.ethereum) {
+      let _eth = undefined;
+      Object.defineProperty(window, 'ethereum', {
+        get: () => _eth,
+        set: (val) => { _eth = val; },
+        configurable: true,
+        enumerable: true
+      });
+    }
+
     window.onerror = function(msg, url, line, col, error) {
       const display = document.getElementById('error-display');
       const content = document.getElementById('error-content');
