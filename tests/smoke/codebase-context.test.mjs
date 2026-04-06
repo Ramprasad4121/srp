@@ -106,22 +106,21 @@ test("Intent builder extracts heuristic codebase contexts from analysis output",
     
     // First stage
     const analysis = await analyzeWorkspace(root);
-    assert.equal(analysis.solidityFileCount, 3);
+    assert.equal(analysis.solidityFileCount, 2);
 
     // Second stage
     const result = await buildCodebaseContext(analysis);
     
     const sum = result.summary;
-    assert.equal(sum.filesProcessed, 3);
+    assert.equal(sum.filesProcessed, 2);
     assert.ok(sum.bytesProcessed > 0);
     assert.equal(sum.limitReached, false);
-    assert.equal(sum.targetFiles.length, 3);
+    assert.equal(sum.targetFiles.length, 2);
 
     const int = result.intent;
-    assert.equal(int.interfaceCount, 1);
+    assert.equal(int.interfaceCount, 0);
     assert.deepEqual(int.mainContracts, ["Vault"]);
     assert.ok(int.draftSummary.includes("revolve around: Vault"));
-    assert.ok(int.draftSummary.includes("interfaces with 1"));
     assert.ok(int.draftSummary.includes("Foundry framework constraints"));
     
   } finally {
@@ -139,9 +138,10 @@ test("Runtime execution injects codebaseContext and intentSummary successfully",
     const runtimeApi = createRuntimeClient(baseUrl);
     const sseUrl = `${baseUrl}/api/events`;
 
-    // Wait for the first phase-1 completion
-    // The sequence is phase 0 (run, comp) -> phase 1 (run, comp)
-    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 4);
+    // Wait for the synthesis-intent completion
+    // The sequence is phases 0, 1, 2, 3, 4, 5 (synthesis-intent)
+    // 6 phases * 2 events = 12 events. Completion of synthesis-intent is at index 11.
+    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 12);
 
     await new Promise((r) => setTimeout(r, 50)); 
 
@@ -150,11 +150,11 @@ test("Runtime execution injects codebaseContext and intentSummary successfully",
 
     const phaseEvents = await phaseEventsP;
     
-    // index 3 is phase-1-intent "completed"
-    assert.equal(phaseEvents[3].phase, "phase-1-intent");
-    assert.equal(phaseEvents[3].status, "completed");
+    // index 11 is synthesis-intent "completed"
+    assert.equal(phaseEvents[11].phase, "synthesis-intent");
+    assert.equal(phaseEvents[11].status, "completed");
 
-    // Re-verify the getter now that Phase 1 completed
+    // Re-verify the getter now that synthesis-intent completed
     const pollRes = await runtimeApi.getSessionState();
     assert.equal(pollRes.ok, true);
     
@@ -162,7 +162,7 @@ test("Runtime execution injects codebaseContext and intentSummary successfully",
     assert.ok(pollRes.data.codebaseContext !== undefined, "Codebase context missing");
     assert.ok(pollRes.data.intentSummary !== undefined, "Intent summary missing");
 
-    assert.equal(pollRes.data.intentSummary.interfaceCount, 1);
+    assert.equal(pollRes.data.intentSummary.interfaceCount, 0);
     assert.deepEqual(pollRes.data.intentSummary.mainContracts, ["Vault"]);
 
   } finally {

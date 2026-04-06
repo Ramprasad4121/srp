@@ -169,8 +169,10 @@ test("Phase-2 emits Architecture Summary directly to runtime status via HTTP and
     const runtimeApi = createRuntimeClient(baseUrl);
     const sseUrl = `${baseUrl}/api/events`;
 
-    // phase 0, phase 1, phase 2 -> 3 phases * 2 events = 6 events for phase-2 completed
-    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 6);
+    // Wait for synthesis-actors completion
+    // phases 0, 1, 2, 3, 4, 5, 6 (synthesis-actors)
+    // 7 phases * 2 events = 14 events. index 13 is completion.
+    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 14);
 
     await new Promise((r) => setTimeout(r, 50)); 
 
@@ -179,11 +181,11 @@ test("Phase-2 emits Architecture Summary directly to runtime status via HTTP and
 
     const phaseEvents = await phaseEventsP;
     
-    // index 5 is phase-2-architecture "completed"
-    assert.equal(phaseEvents[5].phase, "phase-2-architecture");
-    assert.equal(phaseEvents[5].status, "completed");
+    // index 13 is synthesis-actors "completed"
+    assert.equal(phaseEvents[13].phase, "synthesis-actors");
+    assert.equal(phaseEvents[13].status, "completed");
 
-    // Re-verify the getter now that Phase 2 completed
+    // Re-verify the getter now that synthesis-actors completed
     const pollRes = await runtimeApi.getSessionState();
     assert.equal(pollRes.ok, true);
     
@@ -192,7 +194,7 @@ test("Phase-2 emits Architecture Summary directly to runtime status via HTTP and
     assert.ok(pollRes.data.codebaseContext !== undefined);
     assert.ok(pollRes.data.intentSummary !== undefined);
 
-    // Assert Phase 2 succeeded
+    // Assert synthesis-actors succeeded
     assert.ok(pollRes.data.architectureSummary !== undefined, "Architecture summary missing");
     assert.ok(pollRes.data.architectureSummary.markdownSummary.includes("Synthesized Architecture"));
     // Since there were no files, it falls back to empty

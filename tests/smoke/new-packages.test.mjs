@@ -11,7 +11,6 @@ import {
   METHODOLOGY_PHASES,
   PHASE_LABELS,
   PHASE_DEFINITIONS,
-  PHASE_ARTIFACT_KINDS,
   getPhaseDefinition,
   getPhaseIndex,
   getNextPhase,
@@ -70,8 +69,8 @@ import {
 
 test("methodology exports all 11 phases in correct order", () => {
   assert.equal(METHODOLOGY_PHASES.length, 11);
-  assert.equal(METHODOLOGY_PHASES[0], "phase-0-preparation");
-  assert.equal(METHODOLOGY_PHASES[10], "phase-10-remediation");
+  assert.equal(METHODOLOGY_PHASES[0], "discovery-docs");
+  assert.equal(METHODOLOGY_PHASES[10], "visual-flow-map");
 });
 
 test("every phase has a human-readable label", () => {
@@ -85,33 +84,33 @@ test("every phase has a human-readable label", () => {
 test("phase definitions have valid dependency chains", () => {
   assert.equal(PHASE_DEFINITIONS.length, 11);
 
-  // phase-0 has no deps
-  const prep = getPhaseDefinition("phase-0-preparation");
+  // first phase has no deps
+  const prep = getPhaseDefinition("discovery-docs");
   assert.deepEqual(prep.dependsOn, []);
 
-  // phase-1 depends on phase-0
-  const intent = getPhaseDefinition("phase-1-intent");
-  assert.deepEqual(intent.dependsOn, ["phase-0-preparation"]);
+  // second phase depends on first
+  const audits = getPhaseDefinition("discovery-audits");
+  assert.deepEqual(audits.dependsOn, ["discovery-docs"]);
 
   // Unknown phase throws
   assert.throws(() => getPhaseDefinition("phase-99-fake"), /Unknown methodology phase/);
 });
 
 test("phase index and next phase work correctly", () => {
-  assert.equal(getPhaseIndex("phase-0-preparation"), 0);
-  assert.equal(getPhaseIndex("phase-10-remediation"), 10);
-  assert.equal(getNextPhase("phase-0-preparation"), "phase-1-intent");
-  assert.equal(getNextPhase("phase-10-remediation"), null);
+  assert.equal(getPhaseIndex("discovery-docs"), 0);
+  assert.equal(getPhaseIndex("visual-flow-map"), 10);
+  assert.equal(getNextPhase("discovery-docs"), "discovery-audits");
+  assert.equal(getNextPhase("visual-flow-map"), null);
 });
 
 test("dependency checking works across phase graph", () => {
   const empty = new Set();
-  assert.equal(areDependenciesMet("phase-0-preparation", empty), true);
-  assert.equal(areDependenciesMet("phase-1-intent", empty), false);
+  assert.equal(areDependenciesMet("discovery-docs", empty), true);
+  assert.equal(areDependenciesMet("discovery-audits", empty), false);
 
-  const afterPrep = new Set(["phase-0-preparation"]);
-  assert.equal(areDependenciesMet("phase-1-intent", afterPrep), true);
-  assert.equal(areDependenciesMet("phase-2-architecture", afterPrep), false);
+  const afterPrep = new Set(["discovery-docs"]);
+  assert.equal(areDependenciesMet("discovery-audits", afterPrep), true);
+  assert.equal(areDependenciesMet("discovery-governance", afterPrep), false);
 });
 
 test("phase runner creates and transitions records correctly", () => {
@@ -119,21 +118,21 @@ test("phase runner creates and transitions records correctly", () => {
   assert.equal(records.length, 11);
   assert.ok(records.every((r) => r.status === "pending"));
 
-  records = markPhaseRunning(records, "phase-0-preparation");
+  records = markPhaseRunning(records, "discovery-docs");
   assert.equal(records[0].status, "running");
   assert.ok(records[0].startedAt);
 
-  records = markPhaseCompleted(records, "phase-0-preparation", 2);
+  records = markPhaseCompleted(records, "discovery-docs", 2);
   assert.equal(records[0].status, "completed");
   assert.equal(records[0].artifactCount, 2);
   assert.ok(records[0].completedAt);
 
-  records = markPhaseFailed(records, "phase-1-intent", "Network timeout");
+  records = markPhaseFailed(records, "discovery-audits", "Network timeout");
   assert.equal(records[1].status, "failed");
 
   const completed = getCompletedPhases(records);
   assert.equal(completed.size, 1);
-  assert.ok(completed.has("phase-0-preparation"));
+  assert.ok(completed.has("discovery-docs"));
 
   assert.equal(computeRunProgress(records), 1 / 11);
   assert.equal(totalArtifacts(records), 2);
@@ -141,17 +140,17 @@ test("phase runner creates and transitions records correctly", () => {
 
 test("next eligible phase respects dependencies", () => {
   let records = createInitialPhaseRecords();
-  assert.equal(getNextEligiblePhase(records), "phase-0-preparation");
+  assert.equal(getNextEligiblePhase(records), "discovery-docs");
 
-  records = markPhaseCompleted(records, "phase-0-preparation", 1);
-  assert.equal(getNextEligiblePhase(records), "phase-1-intent");
+  records = markPhaseCompleted(records, "discovery-docs", 1);
+  assert.equal(getNextEligiblePhase(records), "discovery-audits");
 });
 
 test("audit manifest summary derives correctly", () => {
   const records = createInitialPhaseRecords();
   const completedRecords = markPhaseCompleted(
-    markPhaseCompleted(records, "phase-0-preparation", 1),
-    "phase-1-intent",
+    markPhaseCompleted(records, "discovery-docs", 1),
+    "discovery-audits",
     2
   );
 
@@ -161,7 +160,7 @@ test("audit manifest summary derives correctly", () => {
     sessionId: "sess-1",
     status: "running",
     createdAt: new Date().toISOString(),
-    currentPhase: "phase-2-architecture",
+    currentPhase: "discovery-governance",
     phaseRecords: completedRecords,
     totalArtifacts: 3
   });
@@ -178,29 +177,29 @@ test("audit manifest summary derives correctly", () => {
 
 test("agent registry registers and retrieves agents", () => {
   const registry = new AgentRegistry();
-  assert.equal(registry.has("phase-0-preparation"), false);
+  assert.equal(registry.has("discovery-docs"), false);
 
   registry.register({
-    phase: "phase-0-preparation",
+    phase: "discovery-docs",
     name: "TestPrepAgent",
     execute: async () => ({
-      phase: "phase-0-preparation",
+      phase: "discovery-docs",
       success: true,
       artifacts: [],
       durationMs: 10
     })
   });
 
-  assert.equal(registry.has("phase-0-preparation"), true);
-  assert.equal(registry.get("phase-0-preparation")?.name, "TestPrepAgent");
+  assert.equal(registry.has("discovery-docs"), true);
+  assert.equal(registry.get("discovery-docs")?.name, "TestPrepAgent");
   assert.equal(registry.list().length, 1);
-  assert.deepEqual(registry.registeredPhases(), ["phase-0-preparation"]);
+  assert.deepEqual(registry.registeredPhases(), ["discovery-docs"]);
 });
 
 test("agent phase map covers all expected agent types", () => {
-  assert.equal(AGENT_PHASE_MAP["PreparationAgent"], "phase-0-preparation");
-  assert.equal(AGENT_PHASE_MAP["ReportAgent"], "phase-9-reporting");
-  assert.equal(AGENT_PHASE_MAP["TraceAgent"], "phase-10-remediation");
+  assert.equal(AGENT_PHASE_MAP["DiscoveryAgent:docs"], "discovery-docs");
+  assert.equal(AGENT_PHASE_MAP["SynthesisAgent:intent"], "synthesis-intent");
+  assert.equal(AGENT_PHASE_MAP["VisualAgent:flow"], "visual-flow-map");
 });
 
 test("orchestrator executes agents in dependency order", async () => {
@@ -208,12 +207,12 @@ test("orchestrator executes agents in dependency order", async () => {
   const executionOrder = [];
 
   registry.register({
-    phase: "phase-0-preparation",
+    phase: "discovery-docs",
     name: "PrepAgent",
     execute: async () => {
       executionOrder.push("phase-0");
       return {
-        phase: "phase-0-preparation",
+        phase: "discovery-docs",
         success: true,
         artifacts: [{ kind: "note", title: "Workspace", payload: { ok: true } }],
         durationMs: 5
@@ -222,15 +221,15 @@ test("orchestrator executes agents in dependency order", async () => {
   });
 
   registry.register({
-    phase: "phase-1-intent",
-    name: "IntentAgent",
+    phase: "discovery-audits",
+    name: "AuditAgent",
     execute: async (ctx) => {
       executionOrder.push("phase-1");
-      const prevArtifacts = ctx.previousArtifacts.get("phase-0-preparation");
+      const prevArtifacts = ctx.previousArtifacts.get("discovery-docs");
       return {
-        phase: "phase-1-intent",
+        phase: "discovery-audits",
         success: true,
-        artifacts: [{ kind: "note", title: "Intent", payload: { prev: prevArtifacts?.length } }],
+        artifacts: [{ kind: "note", title: "Audits", payload: { prev: prevArtifacts?.length } }],
         durationMs: 3
       };
     }

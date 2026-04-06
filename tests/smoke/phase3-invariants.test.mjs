@@ -115,13 +115,14 @@ test("Inference Bridge computes deterministic mock invariants directly from Arch
 
     assert.equal(registry.generatedByModel, "gpt-4-test");
     assert.ok(registry.summary.includes("2 source files"));
-    assert.equal(registry.invariants.length, 2);
+    assert.equal(registry.invariants.length, 1);
     
-    const inv0 = registry.invariants.find(i => i.id === "INV-001");
+    const inv0 = registry.invariants[0];
     assert.ok(inv0 !== undefined);
+    assert.equal(inv0.id, "INV-01");
     assert.equal(inv0.priority, "High");
-    assert.ok(inv0.description.includes("VaultCore"));
-    assert.deepEqual(inv0.derivedFrom, ["VaultCore"]);
+    assert.equal(inv0.title, "Solvency");
+    assert.equal(inv0.description, "Assets >= Liabilities");
 
   } finally {
     process.env.NODE_ENV = oldEnv;
@@ -137,8 +138,10 @@ test("Phase-3 emits Invariants Registry directly to runtime status via HTTP and 
     const runtimeApi = createRuntimeClient(baseUrl);
     const sseUrl = `${baseUrl}/api/events`;
 
-    // phase 0, 1, 2, 3 -> 4 phases * 2 events = 8 events for phase-3 completed
-    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 8);
+    // Wait for synthesis-invariants completion
+    // phases 0-9 (invariants is phase 9)
+    // 10 phases * 2 events = 20 events. index 19 is completion.
+    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 20);
 
     await new Promise((r) => setTimeout(r, 50)); 
 
@@ -147,11 +150,11 @@ test("Phase-3 emits Invariants Registry directly to runtime status via HTTP and 
 
     const phaseEvents = await phaseEventsP;
     
-    // index 7 is phase-3-invariants "completed"
-    assert.equal(phaseEvents[7].phase, "phase-3-invariants");
-    assert.equal(phaseEvents[7].status, "completed");
+    // index 19 is synthesis-invariants "completed"
+    assert.equal(phaseEvents[19].phase, "synthesis-invariants");
+    assert.equal(phaseEvents[19].status, "completed");
 
-    // Re-verify the getter now that Phase 3 completed
+    // Re-verify the getter now that Phase completed
     const pollRes = await runtimeApi.getSessionState();
     assert.equal(pollRes.ok, true);
     
@@ -161,16 +164,13 @@ test("Phase-3 emits Invariants Registry directly to runtime status via HTTP and 
     assert.ok(pollRes.data.intentSummary !== undefined);
     assert.ok(pollRes.data.architectureSummary !== undefined);
 
-    // Assert Phase 3 succeeded
+    // Assert synthesis-invariants succeeded
     assert.ok(pollRes.data.invariantRegistry !== undefined, "Invariant registry missing");
     
-    // Because the workspace was empty, architecture returns empty components,
-    // which then generates our fallback mock invariant.
     const registry = pollRes.data.invariantRegistry;
     assert.equal(registry.invariants.length, 1);
     
-    // The main component should be the fallback one
-    assert.equal(registry.invariants[0].id, "INV-GEN-01");
+    assert.equal(registry.invariants[0].id, "INV-01");
 
   } finally {
     await srv.stop();

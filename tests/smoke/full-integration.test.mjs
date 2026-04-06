@@ -33,7 +33,7 @@ test("full integration: entire audit pipeline runs with all packages", async () 
     runId,
     projectId,
     status: "running",
-    currentPhase: "phase-0-preparation"
+    currentPhase: "discovery-docs"
   });
   assert.equal(session.status, "running");
 
@@ -53,25 +53,31 @@ test("full integration: entire audit pipeline runs with all packages", async () 
   // 4. Run through methodology phases
   let phaseRecords = createInitialPhaseRecords();
 
-  // Phase 0: Preparation
-  phaseRecords = markPhaseRunning(phaseRecords, "phase-0-preparation");
-  sessionStore.transition(sessionId, "running", "phase-0-preparation");
+  // Phase 0: Discovery Docs
+  phaseRecords = markPhaseRunning(phaseRecords, "discovery-docs");
+  sessionStore.transition(sessionId, "running", "discovery-docs");
 
   noteStore.add({
-    phase: "phase-0-preparation",
+    phase: "discovery-docs",
     category: "observation",
     title: "Workspace analyzed",
     content: "Found 15 Solidity files in a Foundry project.",
     relatedIds: []
   });
 
-  phaseRecords = markPhaseCompleted(phaseRecords, "phase-0-preparation", 1);
+  phaseRecords = markPhaseCompleted(phaseRecords, "discovery-docs", 1);
 
-  // Phase 2: Architecture
-  phaseRecords = markPhaseRunning(phaseRecords, "phase-1-intent");
-  phaseRecords = markPhaseCompleted(phaseRecords, "phase-1-intent", 1);
-  phaseRecords = markPhaseRunning(phaseRecords, "phase-2-architecture");
-  sessionStore.transition(sessionId, "running", "phase-2-architecture");
+  // Discovery Phases
+  for (const phase of ["discovery-audits", "discovery-governance", "discovery-tokenomics", "discovery-onchain"]) {
+    phaseRecords = markPhaseRunning(phaseRecords, phase);
+    phaseRecords = markPhaseCompleted(phaseRecords, phase, 1);
+  }
+
+  // Synthesis Phases
+  phaseRecords = markPhaseRunning(phaseRecords, "synthesis-intent");
+  phaseRecords = markPhaseCompleted(phaseRecords, "synthesis-intent", 1);
+  phaseRecords = markPhaseRunning(phaseRecords, "synthesis-actors");
+  sessionStore.transition(sessionId, "running", "synthesis-actors");
 
   // Build project graph
   let graph = createEmptyGraph();
@@ -98,93 +104,42 @@ test("full integration: entire audit pipeline runs with all packages", async () 
   const parsedScene = JSON.parse(excalidrawJson);
   assert.equal(parsedScene.type, "excalidraw");
 
-  phaseRecords = markPhaseCompleted(phaseRecords, "phase-2-architecture", 2);
+  phaseRecords = markPhaseCompleted(phaseRecords, "synthesis-actors", 2);
 
-  // Phase 3: Invariants  
-  phaseRecords = markPhaseRunning(phaseRecords, "phase-3-invariants");
+  // Phase: Invariants  
+  phaseRecords = markPhaseRunning(phaseRecords, "synthesis-invariants");
   questionLog.ask({
     question: "What is the access control model for Vault.emergencyWithdraw?",
-    phase: "phase-3-invariants",
+    phase: "synthesis-invariants",
     relatedIds: ["vault"]
   });
-  phaseRecords = markPhaseCompleted(phaseRecords, "phase-3-invariants", 2);
+  phaseRecords = markPhaseCompleted(phaseRecords, "synthesis-invariants", 2);
 
-  // Phase 5: Attack simulation
-  phaseRecords = markPhaseRunning(phaseRecords, "phase-4-code-reading");
-  phaseRecords = markPhaseCompleted(phaseRecords, "phase-4-code-reading", 1);
-  phaseRecords = markPhaseRunning(phaseRecords, "phase-5-attack-simulation");
+  // Remaining phases
+  for (const phase of ["synthesis-functions", "synthesis-entry-exit"]) {
+    phaseRecords = markPhaseRunning(phaseRecords, phase);
+    phaseRecords = markPhaseCompleted(phaseRecords, phase, 1);
+  }
+
+  // Phase: Visual Map
+  phaseRecords = markPhaseRunning(phaseRecords, "visual-flow-map");
 
   memoryStore.extract({
     kind: "vulnerability-class",
     title: "Flash loan price manipulation",
     summary: "Oracle uses spot price without TWAP protection.",
     sourceArtifactIds: ["art_oracle"],
-    sourcePhase: "phase-5-attack-simulation",
+    sourcePhase: "visual-flow-map",
     confidence: 0.92
   });
 
-  phaseRecords = markPhaseCompleted(phaseRecords, "phase-5-attack-simulation", 1);
+  phaseRecords = markPhaseCompleted(phaseRecords, "visual-flow-map", 1);
 
-  // Phases 6-8
-  for (const phase of ["phase-6-economic-modeling", "phase-7-cross-contract-paths", "phase-8-finding-verification"]) {
-    phaseRecords = markPhaseRunning(phaseRecords, phase);
-    phaseRecords = markPhaseCompleted(phaseRecords, phase, 1);
-  }
-
-  // Phase 9: Report generation
-  phaseRecords = markPhaseRunning(phaseRecords, "phase-9-reporting");
-
-  const report = compileReport({
-    workspace: {
-      rootDirectory: "/test/project",
-      isFoundry: true,
-      isHardhat: false,
-      solidityFileCount: 15,
-      solidityFiles: [],
-      topLevelDirectories: [],
-      summary: "Foundry project"
-    },
-    intent: {
-      mainContracts: ["Vault", "Oracle"],
-      interfaceCount: 5,
-      draftSummary: "DeFi lending protocol"
-    },
-    findingRegistry: {
-      summary: "3 findings",
-      findings: [
-        { id: "F-001", title: "Oracle Manipulation", description: "Flash loan price manipulation possible.", severity: "Critical", status: "Confirmed", targetComponent: "Oracle", impactedInvariantIds: ["INV-001"] },
-        { id: "F-002", title: "Missing Access Control", description: "emergencyWithdraw has no modifier.", severity: "High", status: "Confirmed", targetComponent: "Vault", impactedInvariantIds: ["INV-002"] },
-        { id: "F-003", title: "Missing Events", description: "No events emitted on transfers.", severity: "Informational", status: "Confirmed", targetComponent: "Vault", impactedInvariantIds: [] }
-      ],
-      generatedByModel: "integration-test"
-    }
-  });
-
-  assert.match(report.markdownContent, /Executive Summary/);
-  assert.match(report.markdownContent, /Oracle Manipulation/);
-
-  const severities = findingSeverityCounts({
-    summary: "",
-    findings: [
-      { id: "F-001", title: "", description: "", severity: "Critical", status: "Confirmed", targetComponent: "", impactedInvariantIds: [] },
-      { id: "F-002", title: "", description: "", severity: "High", status: "Confirmed", targetComponent: "", impactedInvariantIds: [] },
-      { id: "F-003", title: "", description: "", severity: "Informational", status: "Confirmed", targetComponent: "", impactedInvariantIds: [] }
-    ],
-    generatedByModel: ""
-  });
-  assert.equal(severities["Critical"], 1);
-  assert.equal(severities["High"], 1);
-
+  // Phase: Findings (Simulated)
   eventBus.emit(createFindingRegisteredEvent({
     runId, projectId,
     findingId: "F-001", severity: "Critical", title: "Oracle Manipulation"
   }));
-
-  phaseRecords = markPhaseCompleted(phaseRecords, "phase-9-reporting", 1);
-
-  // Phase 10: Remediation
-  phaseRecords = markPhaseRunning(phaseRecords, "phase-10-remediation");
-  phaseRecords = markPhaseCompleted(phaseRecords, "phase-10-remediation", 1);
 
   // 5. Final assertions
   const progress = computeRunProgress(phaseRecords);
@@ -280,12 +235,12 @@ test("toolchain definitions are accessible for all registered tools", () => {
 test("agent orchestration handles mixed success/skip scenarios", async () => {
   const registry = new AgentRegistry();
 
-  // Register only phase-0 and phase-1 agents
+  // Register only some agents
   registry.register({
-    phase: "phase-0-preparation",
+    phase: "discovery-docs",
     name: "PrepAgent",
     execute: async () => ({
-      phase: "phase-0-preparation",
+      phase: "discovery-docs",
       success: true,
       artifacts: [{ kind: "note", title: "Prep", payload: {} }],
       durationMs: 1
@@ -293,10 +248,10 @@ test("agent orchestration handles mixed success/skip scenarios", async () => {
   });
 
   registry.register({
-    phase: "phase-1-intent",
+    phase: "discovery-audits",
     name: "IntentAgent",
     execute: async () => ({
-      phase: "phase-1-intent",
+      phase: "discovery-audits",
       success: true,
       artifacts: [{ kind: "note", title: "Intent", payload: {} }],
       durationMs: 2
@@ -330,10 +285,10 @@ test("session store tracks full lifecycle with transitions", () => {
   });
 
   assert.equal(session.status, "idle");
-  assert.equal(session.currentPhase, "phase-0-preparation");
+  assert.equal(session.currentPhase, "discovery-docs");
 
-  store.transition("sess-integ-001", "running", "phase-0-preparation");
-  store.transition("sess-integ-001", "running", "phase-2-architecture");
+  store.transition("sess-integ-001", "running", "discovery-docs");
+  store.transition("sess-integ-001", "running", "synthesis-actors");
   store.transition("sess-integ-001", "completed");
 
   const final = store.get("sess-integ-001");

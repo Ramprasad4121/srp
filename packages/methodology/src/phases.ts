@@ -137,3 +137,15 @@ export function areDependenciesMet(
   const definition = getPhaseDefinition(phase);
   return definition.dependsOn.every((dep) => completedPhases.has(dep));
 }
+
+export function getPhaseIndex(phase: MethodologyPhase): number {
+  return METHODOLOGY_PHASES.indexOf(phase);
+}
+
+export function getNextPhase(currentPhase: MethodologyPhase): MethodologyPhase | null {
+  const index = getPhaseIndex(currentPhase);
+  if (index >= 0 && index < METHODOLOGY_PHASES.length - 1) {
+    return METHODOLOGY_PHASES[index + 1] ?? null;
+  }
+  return null;
+}

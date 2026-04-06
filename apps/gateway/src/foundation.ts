@@ -9,7 +9,7 @@ import { evaluateProviderSetHealth, summarizeProviderHealth } from "@srp/provide
 
 export interface GatewayHealthSnapshot {
   readonly ok: true;
-  readonly currentPhase: "phase-0-preparation";
+  readonly currentPhase: "discovery-docs";
   readonly providerConfigured: boolean;
   readonly setupConfigPath: string;
   readonly nextSetupStep: string;
@@ -23,7 +23,7 @@ export function createGatewayHealthSnapshot(): GatewayHealthSnapshot {
 
   return {
     ok: true,
-    currentPhase: "phase-0-preparation",
+    currentPhase: "discovery-docs",
     providerConfigured: providerHealth.configured > 0,
     setupConfigPath: getSetupConfigPath("."),
     nextSetupStep: getNextSetupStep(manifest)

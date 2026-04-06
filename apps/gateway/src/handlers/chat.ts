@@ -53,7 +53,7 @@ export async function handleAddMessage(
   params: { id: string },
   config: { rootDirectory: string }
 ): Promise<void> {
-  const body = await readJsonBody<{ content: string }>(req);
+  const body = await readJsonBody<{ content: string, searchEnabled?: boolean }>(req);
   if (!body || !body.content) {
     sendError(res, 400, "bad_request", "content is required");
     return;
@@ -80,7 +80,8 @@ export async function handleAddMessage(
       sessionState,
       manifest.state.role,
       grounding,
-      activeProvider
+      activeProvider,
+      body.searchEnabled
     );
 
     const assistantMessage = chatManager.addMessage(params.id, "assistant", assistantResponse.content, {

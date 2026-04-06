@@ -169,10 +169,10 @@ export function createGatewayClient(baseUrl: string) {
     },
 
     /** POST /api/chat/conversations/:id/messages */
-    async addMessage(id: string, content: string): Promise<ApiResult<{ userMessage: any, assistantMessage: any }>> {
+    async addMessage(id: string, content: string, options: { searchEnabled?: boolean } = {}): Promise<ApiResult<{ userMessage: any, assistantMessage: any }>> {
       return apiRequest<any>(baseUrl, `/api/chat/conversations/${id}/messages`, {
         method: "POST",
-        body: JSON.stringify({ content })
+        body: JSON.stringify({ content, searchEnabled: options.searchEnabled })
       });
     },
 

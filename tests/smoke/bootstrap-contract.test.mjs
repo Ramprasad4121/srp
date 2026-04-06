@@ -14,7 +14,7 @@ import assert from "node:assert/strict";
 import { resolveAppBootstrap } from "../../apps/gateway/dist/index.js";
 import {
   deriveNavigationBootstrap,
-} from "../../apps/web/dist/index.js";
+} from "../../apps/web/dist/lib-index.js";
 import {
   summarizeBootstrapForCli,
   resolveCliBootstrap,

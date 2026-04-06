@@ -47,7 +47,7 @@ import {
   providerSetupSummary,
   setupScreens,
   webDefaults
-} from "../../apps/web/dist/index.js";
+} from "../../apps/web/dist/lib-index.js";
 
 test("monorepo foundation packages compose cleanly", () => {
   const cliSummary = createCliBootstrapSummary();
@@ -65,7 +65,7 @@ test("monorepo foundation packages compose cleanly", () => {
   assert.equal(cliSummary.providerSetupStep, "workspace");
   assert.equal(cliSummary.providerHealthConfigured, 0);
   assert.equal(gatewaySnapshot.ok, true);
-  assert.equal(gatewaySnapshot.currentPhase, "phase-0-preparation");
+  assert.equal(gatewaySnapshot.currentPhase, "discovery-docs");
   assert.equal(typeof gatewaySnapshot.providerConfigured, "boolean");
   assert.equal(gatewaySnapshot.setupConfigPath, ".srp/config/setup.json");
   assert.equal(gatewaySnapshot.nextSetupStep, "workspace");

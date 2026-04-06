@@ -123,9 +123,9 @@ test("POST /api/runtime/start begins session and publishes session.started and p
     const phaseEvents = await phaseEventsP;
     assert.equal(phaseEvents.length, 2);
     // The very first phase should transition to "running" then "completed"
-    assert.equal(phaseEvents[0].phase, "phase-0-preparation");
+    assert.equal(phaseEvents[0].phase, "discovery-docs");
     assert.equal(phaseEvents[0].status, "running");
-    assert.equal(phaseEvents[1].phase, "phase-0-preparation");
+    assert.equal(phaseEvents[1].phase, "discovery-docs");
     assert.equal(phaseEvents[1].status, "completed");
 
     // Re-verify the getter

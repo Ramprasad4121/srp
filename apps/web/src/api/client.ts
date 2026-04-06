@@ -85,11 +85,11 @@ export class GatewayClient {
     }
   }
 
-  async addMessage(id: string, content: string): Promise<{ok: boolean, data: any, error?: string, detail?: string}> {
+  async addMessage(id: string, content: string, options: { searchEnabled?: boolean } = {}): Promise<{ok: boolean, data: any, error?: string, detail?: string}> {
     try {
       const data = await this.request<any>(`/chat/conversations/${id}/messages`, {
         method: "POST",
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, searchEnabled: options.searchEnabled }),
         headers: { "Content-Type": "application/json" }
       });
       return { ok: true, data };

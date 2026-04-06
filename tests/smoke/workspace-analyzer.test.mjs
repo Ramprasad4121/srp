@@ -103,15 +103,14 @@ test("Workspace Analyzer cleanly discovers .sol files and frameworks", async () 
     
     assert.equal(analysis.isFoundry, true);
     assert.equal(analysis.isHardhat, false);
-    assert.equal(analysis.solidityFileCount, 3);
-    assert.equal(analysis.solidityFiles.length, 3);
+    assert.equal(analysis.solidityFileCount, 2);
+    assert.equal(analysis.solidityFiles.length, 2);
 
     // Normalize paths for cross-platform assert
     const files = analysis.solidityFiles.map(f => f.replace(/\\/g, '/')).sort();
     assert.deepEqual(files, [
       "src/Registry.sol",
-      "src/Token.sol",
-      "test/Token.t.sol"
+      "src/Token.sol"
     ]);
 
     assert.ok(analysis.topLevelDirectories.includes("src"));
@@ -143,7 +142,7 @@ test("Runtime execution injects workspaceAnalysis automatically", async () => {
     assert.equal(startRes.ok, true);
 
     const phaseEvents = await phaseEventsP;
-    assert.equal(phaseEvents[1].phase, "phase-0-preparation");
+    assert.equal(phaseEvents[1].phase, "discovery-docs");
     assert.equal(phaseEvents[1].status, "completed");
 
     // Re-verify the getter now that Phase 0 completed
@@ -153,8 +152,8 @@ test("Runtime execution injects workspaceAnalysis automatically", async () => {
     // Asserts workspace analysis attached properly
     assert.ok(pollRes.data.workspaceAnalysis !== undefined);
     assert.equal(pollRes.data.workspaceAnalysis.isFoundry, true);
-    assert.equal(pollRes.data.workspaceAnalysis.solidityFileCount, 3);
-    assert.ok(pollRes.data.workspaceAnalysis.summary.includes("3 Solidity file(s)"));
+    assert.equal(pollRes.data.workspaceAnalysis.solidityFileCount, 2);
+    assert.ok(pollRes.data.workspaceAnalysis.summary.includes("2 CORE Solidity file(s)"));
 
   } finally {
     await srv.stop();
