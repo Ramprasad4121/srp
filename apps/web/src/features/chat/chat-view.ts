@@ -144,6 +144,21 @@ export class ChatView extends LitElement {
       cursor: not-allowed;
     }
 
+    .search-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #0088ff;
+      background: rgba(0, 136, 255, 0.08);
+      padding: 4px 10px;
+      border-radius: 8px;
+      margin-left: 12px;
+      margin-bottom: 8px;
+      border: 1px solid rgba(0, 136, 255, 0.2);
+    }
+
     /* Quick suggestions */
     .quick-actions {
       display: flex;
@@ -304,11 +319,11 @@ export class ChatView extends LitElement {
               <div class="empty-state">
                 <div class="empty-title">Secure Reasoning Protocol</div>
                 <p class="empty-subtitle">
-                  Ask me to audit a contract, explain architecture, or generate exploit proofs. I'm connected to your local workspace and the internet.
+                  Ask me to audit a contract, explain architecture, or generate exploit proofs. I'm connected to your local workspace and have <b>real-time web search</b> enabled.
                 </p>
               </div>` 
             : this._messages.map(msg => html`
-                <chat-message .role=${msg.role} .content=${msg.content}></chat-message>
+                <chat-message .role=${msg.role} .content=${msg.content} .citations=${msg.citations}></chat-message>
               `)
           }
           
@@ -328,6 +343,12 @@ export class ChatView extends LitElement {
             <div class="action-chip" @click=${() => this.sendMessage("/scan scope")}>/scan scope</div>
             <div class="action-chip" @click=${() => this.sendMessage("/list contracts")}>/list contracts</div>
             <div class="action-chip" @click=${() => this.sendMessage("Explain trust boundaries")}>Explain trust boundaries</div>
+          </div>
+          <div class="search-badge">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            Web Search Active
           </div>
           <div class="input-row">
             <textarea 

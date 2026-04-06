@@ -1,11 +1,6 @@
 import { LitElement, html, css } from "lit";
 
 export class ChatMessage extends LitElement {
-  static override properties = {
-    role: { type: String },
-    content: { type: String }
-  };
-
   static override styles = css`
     :host {
       display: block;
@@ -121,15 +116,70 @@ export class ChatMessage extends LitElement {
       margin: 0.5rem 0;
       font-family: 'JetBrains Mono', monospace;
     }
+
+    .citation-list {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .citation-item {
+      font-size: 12px;
+      color: #6b7280;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      background: #f9fafb;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .citation-index {
+      background: #e5e7eb;
+      color: #374151;
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .citation-link {
+      color: #0052FF;
+      text-decoration: none;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .citation-link:hover {
+      text-decoration: underline;
+    }
   `;
+
+  static override properties = {
+    role: { type: String },
+    content: { type: String },
+    citations: { type: Array }
+  };
 
   declare role: "user" | "assistant" | "system";
   declare content: string;
+  declare citations?: any[];
 
   constructor() {
     super();
     this.role = "user";
     this.content = "";
+    this.citations = [];
   }
 
   override render() {
@@ -141,7 +191,7 @@ export class ChatMessage extends LitElement {
     const isTool = this.content.startsWith('[TOOL:');
     
     if (this.role === 'assistant' && !isTool) {
-      displayContent = this.content.replace(/\\s*\\[TOOL: [^\\]]+\\].*/g, '').trim();
+      displayContent = this.content.replace(/\[TOOL: [^\]]+\]/g, '').trim();
     }
 
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -158,14 +208,27 @@ export class ChatMessage extends LitElement {
           </div>
           ${isTool 
             ? html`<div class="tool-call">🛠️ ${this.content}</div>`
-            : html`<div class="content">${displayContent}</div>`
+            : html`
+                <div class="content">${displayContent}</div>
+                ${this.role === 'assistant' && this.citations && this.citations.length > 0 ? html`
+                  <div class="citation-list">
+                    ${this.citations.map((c, i) => html`
+                      <div class="citation-item">
+                        <div class="citation-index">${i + 1}</div>
+                        <div style="flex: 1; overflow: hidden;">
+                          <div style="font-weight: 700; color: #111827; margin-bottom: 2px;">${c.title}</div>
+                          <a href="${c.url}" target="_blank" class="citation-link">${c.url}</a>
+                        </div>
+                      </div>
+                    `)}
+                  </div>
+                ` : ''}
+              `
           }
         </div>
       </div>
     `;
   }
-
-
 }
 
 customElements.define("chat-message", ChatMessage);

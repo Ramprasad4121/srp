@@ -51,6 +51,7 @@ export class ExcalidrawWrapper extends LitElement {
 
     this._root.render(
       React.createElement(Excalidraw, {
+        key: `ex-id-${this.elements.length}-${Date.now()}`,
         initialData: {
           elements: this.elements,
           appState: {

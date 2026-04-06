@@ -457,7 +457,7 @@ export class MethodologyView extends LitElement {
       <div class="artifact-card">
         <div class="artifact-title">🧠 Synthesis Evidence</div>
         <div class="artifact-content" style="font-size: 15px; line-height: 1.8; white-space: pre-wrap;">
-          ${(data as any).markdownSummary || (data as any).draftSummary || JSON.stringify(data, null, 2)}
+          ${(data as any).markdownSummary || (data as any).draftSummary || (data as any).summary || JSON.stringify(data, null, 2)}
         </div>
       </div>
     `;
@@ -501,7 +501,7 @@ export class MethodologyView extends LitElement {
                 Senior Analyst Synthesis
               </div>
               <div style="font-size: 16px; line-height: 1.8; color: #1f2937; white-space: pre-wrap; font-family: 'Inter', system-ui, sans-serif;">
-                ${art.rawContent}
+                ${typeof art.rawContent === 'string' ? art.rawContent : JSON.stringify(art.rawContent, null, 2)}
               </div>
               <div style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid #f3f4f6; font-size: 11px; color: #9ca3af; display: flex; justify-content: space-between;">
                 <span>ANALYSIS_TIMESTAMP: ${new Date(art.analyzedAt).toLocaleString()}</span>

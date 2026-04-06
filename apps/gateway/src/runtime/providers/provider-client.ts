@@ -14,20 +14,32 @@ export async function callProvider(
     throw new Error(`Provider ${provider.kind} is disabled`);
   }
 
-  switch (provider.kind) {
-    case "openai":
-    case "openai-compatible":
-    case "openrouter":
-    case "nvidia":
-    case "hugging-face":
-      return callOpenAICompatible(provider, messages);
-    case "anthropic":
-      return callAnthropicViaMessages(provider, messages);
-    case "ollama":
-      return callOllama(provider, messages);
-    default:
-      throw new Error(`Provider ${provider.kind} is not supported yet`);
+  let lastError: any;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      switch (provider.kind) {
+        case "openai":
+        case "openai-compatible":
+        case "openrouter":
+        case "nvidia":
+        case "hugging-face":
+          return await callOpenAICompatible(provider, messages);
+        case "anthropic":
+          return await callAnthropicViaMessages(provider, messages);
+        case "ollama":
+          return await callOllama(provider, messages);
+        default:
+          throw new Error(`Provider ${provider.kind} is not supported yet`);
+      }
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[Provider] Request attempt ${attempt} failed: ${err.message}`);
+      if (attempt < 2) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // wait 1s before retry
+      }
+    }
   }
+  throw lastError;
 }
 
 function getProviderConfig(kind: string): { apiKey: string; baseURL?: string } {
