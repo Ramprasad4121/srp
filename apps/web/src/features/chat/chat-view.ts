@@ -10,7 +10,8 @@ export class ChatView extends LitElement {
     _isLoading: { state: true },
     _conversationId: { state: true },
     _showSettings: { state: true },
-    _webSearchEnabled: { state: true }
+    _webSearchEnabled: { state: true },
+    _attachedFile: { state: true }
   };
 
   static override styles = css`
@@ -18,164 +19,147 @@ export class ChatView extends LitElement {
       display: flex;
       flex-direction: column;
       height: 100%;
-      font-family: 'Inter', system-ui, sans-serif;
       background: #ffffff;
       color: #111827;
       overflow: hidden;
+      font-family: 'Inter', system-ui, sans-serif;
     }
 
-    .chat-layout {
-      flex: 1;
+    /* Header Styling */
+    header {
       display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-      scroll-behavior: smooth;
-      padding-top: 2rem;
-      mask-image: linear-gradient(to bottom, transparent, black 40px, black calc(100% - 120px), transparent);
-      -webkit-mask-image: linear-gradient(to bottom, transparent, black 40px, black calc(100% - 120px), transparent);
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #f3f4f6;
+      background: #fff;
+      z-index: 30;
     }
 
+    .header-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
 
+    .header-actions {
+      display: flex;
+      gap: 0.25rem;
+    }
 
-    .gear-btn {
+    .icon-btn {
       background: none;
       border: none;
-      cursor: pointer;
-      color: #9ca3af;
       padding: 0.5rem;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      transition: all 0.2s;
-      margin-bottom: 4px;
-    }
-
-    .gear-btn:hover {
-      color: #111827;
-      background: #f3f4f6;
-    }
-
-    .settings-overlay {
-      position: absolute;
-      bottom: 110px;
-      right: 1.5rem;
-      width: 260px;
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(229, 231, 235, 0.5);
-      border-radius: 14px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      z-index: 100;
-      padding: 0.6rem;
-      overflow: hidden;
-    }
-
-    .settings-item {
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
+      border-radius: 6px;
+      color: #6b7280;
       cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-      color: #4b5563;
       display: flex;
       align-items: center;
-      gap: 10px;
-      transition: all 0.15s;
+      justify-content: center;
+      transition: all 0.2s;
     }
 
-    .settings-item:hover {
-      background: #f9fafb;
+    .icon-btn:hover {
+      background: #f3f4f6;
       color: #111827;
     }
 
-    .settings-item.danger {
-      color: #ef4444;
-    }
-
-    .settings-item.danger:hover {
-      background: #fef2f2;
-    }
-
-    /* Centered content column */
-    .message-list {
+    /* Message List Area */
+    .chat-container {
       flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 1rem;
+      scroll-behavior: smooth;
+    }
+
+    .message-list {
+      display: flex;
+      flex-direction: column;
       max-width: 800px;
       margin: 0 auto;
       width: 100%;
-      padding: 0 1.5rem 10rem 1.5rem;
-      display: flex;
-      flex-direction: column;
     }
 
+    /* Empty State */
     .empty-state {
-      margin: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       text-align: center;
-      padding: 4rem 2rem;
+      padding: 2rem;
+      color: #6b7280;
+    }
+
+    .empty-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
     }
 
     .empty-title {
-      font-size: 1.5rem;
+      font-size: 1.1rem;
       font-weight: 700;
-      letter-spacing: -0.02em;
+      color: #111827;
       margin-bottom: 0.5rem;
     }
 
-    .empty-subtitle {
+    .empty-desc {
       font-size: 0.875rem;
-      color: #6b7280;
-      max-width: 400px;
-      margin: 0 auto;
+      max-width: 280px;
+      line-height: 1.5;
     }
 
-    /* Action bar / Input */
-    .input-wrapper {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 2.5rem 1.5rem 2.5rem 1.5rem;
-      z-index: 10;
-      pointer-events: none;
-    }
-
-    .input-container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      border-radius: 20px;
-      box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.1), 0 4px 8px -4px rgba(0, 0, 0, 0.05);
-      padding: 0.6rem;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      pointer-events: auto;
-    }
-
-    .input-container:focus-within {
-      border-color: rgba(0, 82, 255, 0.3);
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 82, 255, 0.1);
-      transform: translateY(-2px);
-    }
-
-    .input-row {
+    /* Input Area Styling */
+    .input-area {
+      padding: 1rem;
+      border-top: 1px solid #f3f4f6;
+      background: #fff;
       display: flex;
-      align-items: flex-end;
-      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .input-box {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.2s;
+      width: 100%;
+      max-width: 800px;
+    }
+
+    .input-box:focus-within {
+      border-color: #0052FF;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(0, 82, 255, 0.1);
+    }
+
+    .textarea-wrapper {
+      display: flex;
+      padding: 0.25rem 0.5rem;
     }
 
     textarea {
       flex: 1;
       border: none;
       background: transparent;
-      padding: 0.75rem 1rem;
-      font-size: 0.9375rem;
+      padding: 0.5rem 0;
+      font-size: 14px;
       font-family: inherit;
       line-height: 1.5;
       outline: none;
       resize: none;
-      max-height: 200px;
+      max-height: 160px;
       color: #111827;
     }
 
@@ -183,102 +167,192 @@ export class ChatView extends LitElement {
       color: #9ca3af;
     }
 
+    .input-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.25rem 0.5rem;
+    }
+
     .btn-send {
-      background: #111827;
+      background: #0052FF;
       color: #fff;
       border: none;
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: transform 0.1s, background 0.2s;
-      flex-shrink: 0;
-      margin-bottom: 4px;
-      margin-right: 4px;
+      transition: all 0.2s;
     }
 
-    .btn-send:hover {
-      background: #374151;
-    }
-
-    .btn-send:active {
-      transform: scale(0.95);
+    .btn-send:hover:not(:disabled) {
+      background: #0041cc;
+      transform: scale(1.05);
     }
 
     .btn-send:disabled {
-      background: #f3f4f6;
-      color: #d1d5db;
+      background: #e5e7eb;
+      color: #9ca3af;
       cursor: not-allowed;
     }
 
-    .search-badge {
+    .search-toggle {
       display: flex;
       align-items: center;
       gap: 6px;
       font-size: 11px;
       font-weight: 600;
-      color: #0088ff;
-      background: rgba(0, 136, 255, 0.08);
-      padding: 4px 10px;
-      border-radius: 8px;
-      margin-left: 12px;
-      margin-bottom: 8px;
-      border: 1px solid rgba(0, 136, 255, 0.2);
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
     }
 
-    /* Quick suggestions */
+    .search-toggle.active {
+      background: #eff6ff;
+      color: #0052FF;
+    }
+
+    .search-toggle.inactive {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    /* Quick Actions Chips */
     .quick-actions {
       display: flex;
       gap: 0.5rem;
-      padding: 0.5rem 1rem;
+      margin-bottom: 0.75rem;
       overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .quick-actions::-webkit-scrollbar {
+      display: none;
     }
 
     .action-chip {
-      font-size: 11px;
-      font-weight: 600;
       background: #f3f4f6;
-      color: #4b5563;
+      border: 1px solid #e5e7eb;
       padding: 4px 10px;
       border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #4b5563;
       white-space: nowrap;
       cursor: pointer;
-      border: 1px solid transparent;
+      transition: all 0.15s;
     }
 
     .action-chip:hover {
-      background: #e5e7eb;
+      background: #fff;
+      border-color: #0052FF;
+      color: #0052FF;
+    }
+
+    /* Settings Menu Popover */
+    .settings-menu {
+      position: absolute;
+      top: 3.5rem;
+      right: 1rem;
+      width: 220px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      z-index: 100;
+      padding: 0.5rem;
+      animation: popIn 0.2s ease-out;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .menu-item {
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #4b5563;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .menu-item:hover {
+      background: #f9fafb;
+      color: #111827;
+    }
+
+    .menu-item.danger {
+      color: #ef4444;
+    }
+
+    .menu-item.danger:hover {
+      background: #fef2f2;
+    }
+
+    .menu-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.4rem 0.75rem;
+      border-bottom: 1px solid #f3f4f6;
+      margin-bottom: 0.25rem;
+    }
+
+    .menu-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .menu-close {
+      background: none;
+      border: none;
+      color: #9ca3af;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      border-radius: 4px;
+    }
+
+    .menu-close:hover {
+      background: #f3f4f6;
       color: #111827;
     }
 
     /* Loading state */
-    /* Neural Loading State */
-    .neural-pulse {
+    .loading-pulse {
       display: flex;
-      gap: 6px;
-      padding: 1.5rem 0;
-      align-items: center;
+      gap: 4px;
+      padding: 1rem 0;
+      align-self: flex-start;
     }
 
-    .neural-dot {
+    .pulse-dot {
       width: 6px;
       height: 6px;
       background: #0052FF;
       border-radius: 50%;
-      opacity: 0.3;
-      filter: blur(1px);
-      animation: neuralPulse 1.8s infinite ease-in-out;
+      animation: pulseAnim 1.4s infinite ease-in-out both;
     }
 
-    .neural-dot:nth-child(2) { animation-delay: 0.6s; }
-    .neural-dot:nth-child(3) { animation-delay: 1.2s; }
+    .pulse-dot:nth-child(1) { animation-delay: -0.32s; }
+    .pulse-dot:nth-child(2) { animation-delay: -0.16s; }
 
-    @keyframes neuralPulse {
-      0%, 100% { transform: scale(1); opacity: 0.2; filter: blur(1px); }
-      50% { transform: scale(1.5); opacity: 0.8; filter: blur(0px); box-shadow: 0 0 12px rgba(0, 82, 255, 0.4); }
+    @keyframes pulseAnim {
+      0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+      40% { transform: scale(1); opacity: 1; }
     }
   `;
 
@@ -289,38 +363,16 @@ export class ChatView extends LitElement {
   declare _conversationId: string | null;
   declare _showSettings: boolean;
   declare _webSearchEnabled: boolean;
+  declare _attachedFile: { name: string, content: string } | null;
 
   constructor() {
     super();
     this.mode = "auditor";
     this._chatInput = "";
     this._messages = [];
-    this._isLoading = false;
-    this._conversationId = null;
     this._showSettings = false;
-    this._webSearchEnabled = true; // Default to ON as requested
-  }
-
-  async resetConversation() {
-    if (confirm("Are you sure you want to clear your current history and start a new audit session?")) {
-      try {
-        this._isLoading = true;
-        const createRes = await gatewayClient.createConversation("New Analysis");
-        if (createRes.ok) {
-          this._conversationId = createRes.data.id;
-          this._messages = createRes.data.messages || [];
-          this._showSettings = false;
-        }
-      } catch (e) {
-        console.error("Failed to reset conversation", e);
-      } finally {
-        this._isLoading = false;
-      }
-    }
-  }
-
-  toggleSettings() {
-    this._showSettings = !this._showSettings;
+    this._webSearchEnabled = true;
+    this._attachedFile = null;
   }
 
   override async firstUpdated() {
@@ -336,11 +388,7 @@ export class ChatView extends LitElement {
         this._conversationId = latest.id;
         this._messages = latest.messages || [];
       } else {
-        const createRes = await gatewayClient.createConversation("New Analysis");
-        if (createRes.ok) {
-          this._conversationId = createRes.data.id;
-          this._messages = createRes.data.messages || [];
-        }
+        await this.createNewConversation();
       }
     } catch (e) {
       console.error("Failed to init conversation", e);
@@ -348,6 +396,41 @@ export class ChatView extends LitElement {
       this._isLoading = false;
       this.scrollToBottom();
     }
+  }
+
+  async createNewConversation() {
+    try {
+      const createRes = await gatewayClient.createConversation("New Analysis");
+      if (createRes.ok) {
+        this._conversationId = createRes.data.id;
+        this._messages = createRes.data.messages || [];
+      }
+    } catch (e) {
+      console.error("Failed to create conversation", e);
+    }
+  }
+
+  async resetConversation() {
+    if (confirm("Reset current audit chat? Your session history will be preserved in artifacts.")) {
+      this._showSettings = false;
+      this._isLoading = true;
+      await this.createNewConversation();
+      this._isLoading = false;
+    }
+  }
+
+  async exportChat() {
+    const markdown = this._messages
+      .map(m => `### ${m.role.toUpperCase()}\n\n${m.content}\n`)
+      .join("\n---\n\n");
+    
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `srp-chat-export-${new Date().toISOString().slice(0,10)}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   private handleInput(e: Event) {
@@ -370,117 +453,217 @@ export class ChatView extends LitElement {
     const content = text || this._chatInput.trim();
     if (!content || !this._conversationId || this._isLoading) return;
     
+    const mode = this._webSearchEnabled ? "search" : "auto";
     this._chatInput = "";
-    // Reset height if it was a textarea event
     const textarea = this.shadowRoot?.querySelector('textarea');
     if (textarea) textarea.style.height = 'auto';
 
     this._isLoading = true;
 
-    // Local state first for responsiveness
+    // 1. Add user message
     const userMsg = { id: Date.now().toString(), role: "user" as const, content };
     this._messages = [...this._messages, userMsg];
+    
+    // 2. Add empty assistant message for streaming
+    const assistantId = (Date.now() + 1).toString();
+    this._messages = [...this._messages, { id: assistantId, role: "assistant" as const, content: "" }];
     this.scrollToBottom();
 
+    const fileContent = this._attachedFile ? `\n\n[ATTACHED_FILE: ${this._attachedFile.name}]\n${this._attachedFile.content.slice(0, 5000)}` : "";
+    const fullContent = content + fileContent;
+    this._attachedFile = null; // Clear after sending
+
     try {
-      const res = await gatewayClient.addMessage(this._conversationId, content, { searchEnabled: this._webSearchEnabled });
-      if (res.ok && res.data.assistantMessage) {
-        // We replace or append. The server response is the source of truth.
-        // If the server returns full history, we use it. 
-        // For now, we append the specific assistant message.
-        this._messages = [...this._messages, res.data.assistantMessage];
-      } else if (!res.ok) {
-        this._messages = [...this._messages, { id: "err", role: "system" as const, content: `System Error: ${res.error}` }];
+      const response = await fetch(`/api/chat/conversations/${this._conversationId}/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: fullContent, mode })
+      });
+
+      if (!response.ok) throw new Error("Stream request failed");
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let assistantText = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+          
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.text) {
+                  assistantText += data.text;
+                  // Update the last message in real-time
+                  this._messages = this._messages.map(m => 
+                    m.id === assistantId ? { ...m, content: assistantText } : m
+                  );
+                }
+                if (data.done) break;
+              } catch (e) {
+                // Ignore parse errors for partial chunks
+              }
+            }
+          }
+        }
       }
     } catch (e) {
-      console.error("Network failure", e);
-      this._messages = [...this._messages, { id: "err", role: "system" as const, content: "Network failure. Check gateway connection." }];
+      console.error("Streaming failure", e);
+      this._messages = [...this._messages, { 
+        id: "err", 
+        role: "system" as const, 
+        content: "Connection failed. Please check your gateway." 
+      }];
     } finally {
       this._isLoading = false;
       this.scrollToBottom();
     }
   }
   
+  private async handleFileChange(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      this._attachedFile = { name: file.name, content };
+      console.log(`File attached: ${file.name}`);
+      this._chatInput = `Analyzing ${file.name}...\n` + this._chatInput;
+    };
+    reader.readAsText(file);
+  }
+
   private scrollToBottom() {
     setTimeout(() => {
-      const layout = this.shadowRoot?.querySelector('.chat-layout');
-      if (layout) {
-         layout.scrollTop = layout.scrollHeight;
+      const container = this.shadowRoot?.querySelector('.chat-container');
+      if (container) {
+         container.scrollTop = container.scrollHeight;
       }
     }, 50);
   }
 
   override render() {
     return html`
+      <header>
+        <div class="header-title">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+          </svg>
+          SRP INTELLIGENCE
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn" title="Export Chat" @click=${this.exportChat}>
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+          </button>
+          <button class="icon-btn" title="New Session" @click=${this.resetConversation}>
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+          </button>
+          <button class="icon-btn" title="Settings" @click=${() => this._showSettings = !this._showSettings}>
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
       ${this._showSettings ? html`
-        <div class="settings-overlay">
-          <div class="settings-item" style="justify-content: space-between;" @click=${() => this._webSearchEnabled = !this._webSearchEnabled}>
-             <div style="display: flex; align-items: center; gap: 10px;">
-                <span>🌐</span> Web Search
-             </div>
-             <div style="width: 32px; height: 18px; background: ${this._webSearchEnabled ? '#0052FF' : '#d1d5db'}; border-radius: 100px; position: relative; transition: all 0.2s;">
-                <div style="width: 14px; height: 14px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: ${this._webSearchEnabled ? '16px' : '2px'}; transition: all 0.2s;"></div>
-             </div>
+        <div class="settings-menu">
+          <div class="menu-header">
+            <span class="menu-title">Settings</span>
+            <button class="menu-close" @click=${() => this._showSettings = false}>
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
-          <div class="settings-item" @click=${() => alert(`Role: ${this.mode}. Performance optimized.`)}>
-             <span>👤</span> Persona: Security Senior
+          <div class="menu-item" @click=${() => this._webSearchEnabled = !this._webSearchEnabled}>
+            <span>🌐</span> 
+            <span style="flex: 1;">Search Enabled</span>
+            <div style="width: 24px; height: 14px; background: ${this._webSearchEnabled ? '#0052FF' : '#d1d5db'}; border-radius: 10px; position: relative;">
+              <div style="width: 10px; height: 10px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: ${this._webSearchEnabled ? '12px' : '2px'}; transition: all 0.2s;"></div>
+            </div>
           </div>
-          <div class="settings-item danger" @click=${this.resetConversation}>
+          <div class="menu-item" @click=${() => alert('SRP Persona: Senior Security Auditor')}>
+            <span>👤</span> Senior Persona
+          </div>
+          <div class="menu-item danger" @click=${this.resetConversation}>
             <span>🗑️</span> Reset History
           </div>
         </div>
       ` : ''}
 
-      <main class="chat-layout">
-        <div class="message-list">
-          ${this._messages.length === 0 
-            ? html`
-              <div class="empty-state">
-                <div class="empty-title">SRP Senior Analysis</div>
-                <p class="empty-subtitle">
-                   Real-time vulnerability reconnaissance and protocol auditing is active. Your session history is automatically preserved across modules.
-                </p>
-              </div>` 
-            : this._messages.map(msg => html`
+      <div class="chat-container">
+        ${this._messages.length === 0 
+          ? html`
+            <div class="empty-state">
+              <div class="empty-icon">🛡️</div>
+              <div class="empty-title">Secure Reasoning Protocol</div>
+              <div class="empty-desc">
+                Your high-context companion for security analysis. 
+                Ask me about invariants, codebase intent, or vulnerability surface.
+              </div>
+            </div>` 
+          : html`
+            <div class="message-list">
+              ${this._messages.map(msg => html`
                 <chat-message .role=${msg.role} .content=${msg.content} .citations=${msg.citations}></chat-message>
-              `)
-          }
-          
-          ${this._isLoading ? html`
-            <div class="neural-pulse">
-              <div class="neural-dot"></div>
-              <div class="neural-dot"></div>
-              <div class="neural-dot"></div>
+              `)}
+              
+              ${this._isLoading ? html`
+                <div class="loading-pulse">
+                  <div class="pulse-dot"></div>
+                  <div class="pulse-dot"></div>
+                  <div class="pulse-dot"></div>
+                </div>
+              ` : ''}
             </div>
-          ` : ''}
-        </div>
-      </main>
+          `
+        }
+      </div>
 
-      <div class="input-wrapper">
-        <div class="input-container">
-          <div class="quick-actions">
-            <div class="action-chip" @click=${() => this.sendMessage("/scan scope")}>/scan scope</div>
-            <div class="action-chip" @click=${() => this.sendMessage("/list contracts")}>/list contracts</div>
-            <div class="action-chip" @click=${() => this.sendMessage("Analyze Trust Boundaries")}>Analyze Trust Boundaries</div>
-          </div>
-          <div class="input-row">
+      <div class="input-area">
+        <div class="input-box">
+          <div class="textarea-wrapper">
             <textarea 
               rows="1"
-              placeholder="Message SRP Agent..." 
+              placeholder="Message SRP..." 
               .value=${this._chatInput}
               @input=${this.handleInput}
               @keydown=${this.handleKeydown}
               ?disabled=${this._isLoading}
             ></textarea>
-            <button class="gear-btn" @click=${this.toggleSettings}>
-              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
-            </button>
+          </div>
+          <div class="input-footer">
+            <div style="display: flex; gap: 8px;">
+              <input type="file" id="fileInput" hidden @change=${this.handleFileChange} accept=".sol,.md,.pdf,.txt,.ts,.js">
+              <div class="icon-btn" title="Attach File" @click=${() => (this.shadowRoot?.getElementById('fileInput') as HTMLInputElement).click()}>
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 11-2.828-2.828l6.414-6.586a4 2 0 015.656 5.656l-6.415 6.585a6 6 0 11-8.486-8.486L10.5 3.5"/>
+                </svg>
+              </div>
+              <div class="search-toggle ${this._webSearchEnabled ? 'active' : 'inactive'}" @click=${() => this._webSearchEnabled = !this._webSearchEnabled}>
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                </svg>
+                Search
+              </div>
+            </div>
             <button class="btn-send" @click=${() => this.sendMessage()} ?disabled=${this._isLoading || !this._chatInput.trim()}>
-              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"/>
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </button>
           </div>
@@ -488,8 +671,6 @@ export class ChatView extends LitElement {
       </div>
     `;
   }
-
-
 }
 
 customElements.define("chat-view", ChatView);

@@ -149,3 +149,94 @@ export async function buildChatGroundingContext(
 
   return { runId, snippets, citations };
 }
+
+import { readdir, readFile, stat } from "node:fs/promises";
+import { join, basename, extname } from "node:path";
+import type { ChatIntent } from "./chat-intent.js";
+
+/**
+ * Builds extended context based on detected intent (Step 2).
+ */
+export async function buildExtendedChatContext(
+  intent: ChatIntent,
+  projectRoot: string,
+  existingContext: ChatGroundingContext
+): Promise<string> {
+  const parts: string[] = [];
+
+  // 1. Always include project info and full codebase map
+  try {
+    const allFiles = await globSolFiles(projectRoot);
+    parts.push(`PROJECT ROOT: ${projectRoot}`);
+    parts.push(`CODEBASE MAP (Found ${allFiles.length} Solidity files):`);
+    parts.push(allFiles.map(f => `- ${f.replace(projectRoot + "/", "")}`).join("\n"));
+  } catch (e) {
+    parts.push(`Project: ${basename(projectRoot)} (Codebase Map unavailable)`);
+  }
+
+  // 2. Intent-specific context
+  if (intent.type === "web_search" && intent.query) {
+    parts.push(`WEB SEARCH CONTEXT (Grounded results):`);
+    for (const snippet of existingContext.snippets) {
+      parts.push(`Source [${snippet.title}]: ${snippet.preview}`);
+    }
+  } 
+  else if (intent.type === "read_code") {
+    try {
+      const solFiles = await globSolFiles(projectRoot);
+      const limit = 10;
+      parts.push(`PRE-LOADED SOURCE CODE (Top ${Math.min(solFiles.length, limit)} files):`);
+      for (const file of solFiles.slice(0, limit)) {
+        const content = await readFile(file, "utf8");
+        parts.push(`\n// file:///.../${file.replace(projectRoot + "/", "")}\n${content.slice(0, 4000)}`);
+      }
+    } catch (e) {
+      parts.push("\n(Code reading failed)");
+    }
+  }
+  else if (intent.type === "audit_context") {
+    // Load last audit findings
+    try {
+      const notesPath = join(projectRoot, ".srp", "SHARED_TASK_NOTES.md");
+      const notes = await readFile(notesPath, "utf8").catch(() => null);
+      if (notes) parts.push(`### SHARED TASK NOTES\n${notes.slice(0, 3000)}`);
+
+      const reportsDir = join(projectRoot, ".srp", "reports");
+      const reports = await readdir(reportsDir).catch(() => []);
+      const mdReports = reports.filter(f => f.endsWith(".md"));
+      if (mdReports.length > 0) {
+        const latest = mdReports[mdReports.length - 1]!;
+        const content = await readFile(join(reportsDir, latest), "utf8");
+        parts.push(`### LATEST REPORT (${latest})\n${content.slice(0, 4000)}`);
+      }
+    } catch (e) {
+      parts.push("\n(Audit context unavailable)");
+    }
+  }
+
+  // Fallback to standard grounding if parts are thin
+  if (parts.length < 3) {
+    for (const snippet of existingContext.snippets) {
+      parts.push(`Context [${snippet.title}]: ${snippet.preview}`);
+    }
+  }
+
+  return parts.join("\n\n");
+}
+
+async function globSolFiles(dir: string, depth = 0): Promise<string[]> {
+  if (depth > 3) return [];
+  const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
+  let results: string[] = [];
+
+  for (const entry of entries) {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory() && !entry.name.startsWith(".") && entry.name !== "node_modules") {
+      results = results.concat(await globSolFiles(fullPath, depth + 1));
+    } else if (entry.isFile() && entry.name.endsWith(".sol")) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+

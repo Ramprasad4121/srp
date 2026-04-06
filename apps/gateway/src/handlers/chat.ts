@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { chatManager } from "../runtime/chat-manager.js";
 import { readJsonBody, sendError, sendJson } from "../http-utils.js";
-import { generateChatResponse } from "../runtime/providers/inference-bridge.js";
+import { generateChatResponse, streamChatResponse } from "../runtime/providers/inference-bridge.js";
 import { getSessionState } from "../runtime/session-manager.js";
 import { loadOrCreateSetupManifest } from "@srp/config";
 import { buildChatGroundingContext } from "../runtime/chat-grounding.js";
@@ -46,6 +46,68 @@ export async function handleGetConversation(
 
   sendJson(res, 200, conversation);
 }
+
+export async function handleStreamingChat(
+  req: IncomingMessage,
+  res: ServerResponse,
+  params: { id: string },
+  config: { rootDirectory: string }
+): Promise<void> {
+  const body = await readJsonBody<{ content: string, mode?: string }>(req);
+  if (!body || !body.content) {
+    sendError(res, 400, "bad_request", "content is required");
+    return;
+  }
+
+  const userMessage = chatManager.addMessage(params.id, "user", body.content);
+  if (!userMessage) {
+    sendError(res, 404, "not_found", `Conversation ${params.id} not found`);
+    return;
+  }
+
+  const conversation = chatManager.get(params.id)!;
+  const sessionState = getSessionState();
+  const manifest = await loadOrCreateSetupManifest(config.rootDirectory);
+  const activeProvider = manifest.state.providers.find(p => p.enabled);
+
+  // Set SSE headers
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive"
+  });
+
+  try {
+    const grounding = await buildChatGroundingContext(conversation, sessionState, body.content);
+    const stream = streamChatResponse(
+      conversation,
+      sessionState,
+      manifest.state.role,
+      grounding,
+      activeProvider,
+      body.mode || "auto"
+    );
+
+    let assistantText = "";
+    for await (const chunk of stream) {
+      assistantText += chunk;
+      res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+    }
+
+    // Save the final message
+    chatManager.addMessage(params.id, "assistant", assistantText, {
+      citations: grounding.citations
+    });
+
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
+  } catch (err) {
+    console.error("Streaming failure:", err);
+    res.write(`data: ${JSON.stringify({ error: "Internal Server Error" })}\n\n`);
+    res.end();
+  }
+}
+
 
 export async function handleAddMessage(
   req: IncomingMessage,

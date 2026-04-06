@@ -19,7 +19,8 @@ import {
   handleListConversations,
   handleCreateConversation,
   handleGetConversation,
-  handleAddMessage
+  handleAddMessage,
+  handleStreamingChat
 } from "./handlers/chat.js";
 import { handleGetSkill, handleListSkills } from "./handlers/skills.js";
 import { handleCorsOptions, sendError } from "./http-utils.js";
@@ -104,15 +105,25 @@ export async function routeRequest(
     }
 
     if (path.startsWith("/api/chat/conversations/")) {
-      const id = path.split("/")[4];
-      if (id && method === "GET" && !path.endsWith("/messages")) {
+      const segments = path.split("/");
+      const id = segments[4];
+      const action = segments[5];
+      console.log(`[Router] Chat Route - ID: ${id}, Action: ${action}, Method: ${method}`);
+
+      if (id && method === "GET" && !action) {
         await handleGetConversation(req, res, { id });
         return;
       }
-      if (id && method === "POST" && path.endsWith("/messages")) {
+      if (id && method === "POST" && action === "messages") {
          await handleAddMessage(req, res, { id }, setupConfig);
          return;
       }
+      if (id && method === "POST" && action === "stream") {
+         console.log(`[Router] Calling handleStreamingChat for ${id}`);
+         await handleStreamingChat(req, res, { id }, setupConfig);
+         return;
+      }
+      console.log(`[Router] No match inside chat block for ${method} ${path}`);
     }
 
     if (method === "GET" && path.startsWith("/api/skills/")) {

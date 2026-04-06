@@ -1,0 +1,83 @@
+{
+  "runId": "run_4d12c024-4201-4022-a2c1-4c68fb39715a",
+  "projectId": "default-project",
+  "sessionId": "session_63974eaa-1942-41bf-acba-469b8ae082cc",
+  "status": "completed",
+  "createdAt": "2026-04-06T10:59:03.045Z",
+  "artifacts": [
+    {
+      "artifactId": "art_1775473177382_l06je",
+      "kind": "note",
+      "title": "Discovery: Documentation",
+      "phase": "discovery-docs",
+      "runId": "run_4d12c024-4201-4022-a2c1-4c68fb39715a",
+      "projectId": "default-project",
+      "createdAt": "2026-04-06T10:59:37.383Z"
+    },
+    {
+      "artifactId": "art_1775473299702_gccok",
+      "kind": "note",
+      "title": "Discovery: Prior Audits",
+      "phase": "discovery-audits",
+      "runId": "run_4d12c024-4201-4022-a2c1-4c68fb39715a",
+      "projectId": "default-project",
+      "createdAt": "2026-04-06T11:01:39.704Z"
+    },
+    {
+      "artifactId": "art_1775473323951_tc25h",
+      "kind": "note",
+      "title": "Discovery: Governance",
+      "phase": "discovery-governance",
+      "runId": "run_4d12c024-4201-4022-a2c1-4c68fb39715a",
+      "projectId": "default-project",
+      "createdAt": "2026-04-06T11:02:03.952Z"
+    },
+    {
+      "artifactId": "art_1775473352990_vedvb",
+      "kind": "note",
+      "title": "Discovery: Tokenomics",
+      "phase": "discovery-tokenomics",
+      "runId": "run_4d12c024-4201-4022-a2c1-4c68fb39715a",
+      "projectId": "default-project",
+      "createdAt": "2026-04-06T11:02:32.991Z"
+    },
+    {
+      "artifactId": "art_1775473381019_vg4p5",
+      "kind": "note",
+      "title": "Discovery: On-Chain",
+      "phase": "discovery-onchain",
+      "runId": "run_4d12c024-4201-4022-a2c1-4c68fb39715a",
+      "projectId": "default-project",
+      "createdAt": "2026-04-06T11:03:01.020Z"
+    },
+    {
+      "artifactId": "art_1775473400526_ye8ah",
+      "kind": "note",
+      "title": "Protocol Intent",
+      "phase": "synthesis-intent",
+      "runId": "run_4d12c024-4201-4022-a2c1-4c68fb39715a",
+      "projectId": "default-project",
+      "createdAt": "2026-04-06T11:03:20.527Z"
+    },
+    {
+      "artifactId": "art_1775473431689_tc48z",
+      "kind": "note",
+      "title": "Actor Model",
+      "phase": "synthesis-actors",
+      "runId": "run_4d12c024-4201-4022-a2c1-4c68fb39715a",
+      "projectId": "default-project",
+      "createdAt": "2026-04-06T11:03:51.690Z"
+    },
+    {
+      "artifactId": "art_1775473467949_1s2ac",
+      "kind": "diagram",
+      "title": "Value Flow Map",
+      "phase": "visual-flow-map",
+      "runId": "run_4d12c024-4201-4022-a2c1-4c68fb39715a",
+      "projectId": "default-project",
+      "createdAt": "2026-04-06T11:04:27.951Z"
+    }
+  ],
+  "currentPhase": "visual-flow-map",
+  "completedAt": "2026-04-06T11:04:27.953Z"
+}

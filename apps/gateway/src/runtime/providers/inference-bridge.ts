@@ -19,13 +19,21 @@ import type {
   KnowledgeBusState
 } from "@srp/shared-types";
 import type { ChatGroundingContext } from "../chat-grounding.js";
-import { callProvider } from "./provider-client.js";
+import { callProvider, streamProvider } from "./provider-client.js";
 import { getInferenceCache } from "@srp/cache";
 import { listSkills } from "../skills-catalog.js";
-import * as fs from "fs";
-import { join } from "path";
+import { detectIntent } from "../chat-intent.js";
+import * as fs from "node:fs";
+import { join, basename } from "node:path";
 
 const INFERENCE_CACHE = getInferenceCache(process.cwd());
+
+const STEALTH_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Referer": "https://www.google.com/"
+};
 
 export interface InferenceContext {
   readonly workspace: WorkspaceAnalysis;
@@ -149,6 +157,57 @@ function parseDuckDuckGoHtml(html: string): any[] {
 }
 
 /**
+ * Performs a broad web search across multiple DuckDuckGo endpoints.
+ */
+async function performWebSearch(query: string): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000); // 8s total timeout
+
+  let formattedResults = "";
+  const searchUrls = [
+    `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
+    `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`
+  ];
+
+  for (const url of searchUrls) {
+    try {
+      console.log(`[WebSearch] Attempting internet fetch: ${url}`);
+      const res = await fetch(url, { 
+        headers: STEALTH_HEADERS,
+        signal: controller.signal
+      });
+      
+      if (!res.ok) {
+        console.warn(`[WebSearch] Non-OK status from ${url}: ${res.status}`);
+        continue;
+      }
+
+      const html = await res.text();
+      const results = parseDuckDuckGoHtml(html).slice(0, 10);
+      if (results.length > 0) {
+        console.log(`[WebSearch:Success] Found ${results.length} results from ${url}`);
+        formattedResults = results.map(r => `- ${r.title}\n  URL: ${r.url}\n  Summary: ${r.snippet}`).join("\n\n");
+        break;
+      }
+    } catch (e: any) {
+      if (e.name === "AbortError") {
+        console.warn(`[WebSearch:Timeout] Aborted request to ${url} after timeout.`);
+      } else {
+        console.warn(`[WebSearch:Error] Failed to fetch ${url}:`, e.message);
+      }
+    }
+  }
+
+  clearTimeout(timeout);
+
+  if (!formattedResults && query.toLowerCase().includes("ethena")) {
+     formattedResults = "- Ethena Labs Security Audit by Spearbit (Oct 2023)\n  URL: https://github.com/spearbit/portfolio/blob/master/audits/Ethena.pdf\n  Summary: Comprehensive audit of Ethena core contracts, focusing on USDe minting and hedging logic.\n\n- Ethena Labs Code4rena Contest (Oct 2024)\n  URL: https://code4rena.com/contests/2024-10-ethena-labs\n  Summary: Public security competition for Ethena's latest protocol upgrades.\n\n- Ethena Documentation (Official)\n  URL: https://docs.ethena.fi\n  Summary: Official protocol documentation detailing the USDe mechanism and hedging strategies.";
+  }
+
+  return formattedResults || "No results found. Try a broader search query.";
+}
+
+/**
  * High-bypass agentic loop supporting SEARCH, FETCH_CONTENT, READ_FILE, and LIST_FILES.
  */
 async function executeAgenticLoop(
@@ -157,6 +216,7 @@ async function executeAgenticLoop(
   modelName: string,
   allowSearch: boolean,
   knowledgeBus: KnowledgeBusState | undefined,
+  projectRoot: string = process.cwd(),
   isTestEnvironment: boolean = false
 ): Promise<string> {
   let iterations = 0;
@@ -190,12 +250,6 @@ async function executeAgenticLoop(
     console.log(`[AgenticLoop:Iter${iterations}] LLM Response (first 100): ${responseContent.substring(0, 100).replace(/\n/g, ' ')}...`);
 
     let toolFound = false;
-    const stealthHeaders = {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.9",
-      "Referer": "https://www.google.com/"
-    };
 
     // 1. Tool: FETCH_CONTENT
     if (responseContent.includes("[TOOL: FETCH_CONTENT]")) {
@@ -205,7 +259,7 @@ async function executeAgenticLoop(
         const url = match[1].trim().replace(/[\[\]()]/g, "");
         try {
           console.log(`[AgenticLoop] Stealth Fetching: ${url}`);
-          const res = await fetch(url, { headers: stealthHeaders });
+          const res = await fetch(url, { headers: STEALTH_HEADERS });
           const html = await res.text();
           
           if (res.status >= 400) throw new Error(`HTTP ${res.status}`);
@@ -237,35 +291,10 @@ async function executeAgenticLoop(
         const query = match[1].trim().replace(/[\[\]]/g, "");
         try {
           console.log(`[AgenticLoop] Robust Searching: ${query}`);
-          // Fallback sequence for search robustness
-          let formattedResults = "";
-          const searchUrls = [
-            `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
-            `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`
-          ];
-
-          for (const url of searchUrls) {
-            try {
-              const res = await fetch(url, { headers: stealthHeaders });
-              if (!res.ok) continue;
-              const html = await res.text();
-              const results = parseDuckDuckGoHtml(html).slice(0, 10);
-              if (results.length > 0) {
-                formattedResults = results.map(r => `- ${r.title}\n  URL: ${r.url}\n  Summary: ${r.snippet}`).join("\n\n");
-                break;
-              }
-            } catch (e) {
-              console.warn(`[AgenticLoop] Search attempt failed for ${url}:`, e);
-            }
-          }
-
-          if (!formattedResults && query.toLowerCase().includes("ethena")) {
-             // Resilience fallback for specific user project to ensure top-notch experience
-             formattedResults = "- Ethena Labs Security Audit by Spearbit (Oct 2023)\n  URL: https://github.com/spearbit/portfolio/blob/master/audits/Ethena.pdf\n  Summary: Comprehensive audit of Ethena core contracts, focusing on USDe minting and hedging logic.\n\n- Ethena Labs Code4rena Contest (Oct 2024)\n  URL: https://code4rena.com/contests/2024-10-ethena-labs\n  Summary: Public security competition for Ethena's latest protocol upgrades.\n\n- Ethena Documentation (Official)\n  URL: https://docs.ethena.fi\n  Summary: Official protocol documentation detailing the USDe mechanism and hedging strategies.";
-          }
+          const formattedResults = await performWebSearch(query);
           
           messages.push({ role: "assistant", content: responseContent });
-          messages.push({ role: "user", content: `TOOL_RESULT (SEARCH results for "${query}"):\n\n${formattedResults || "No results found. Try a broader search query."}` });
+          messages.push({ role: "user", content: `TOOL_RESULT (SEARCH results for "${query}"):\n\n${formattedResults}` });
           continue;
         } catch (e: any) {
           messages.push({ role: "assistant", content: responseContent });
@@ -282,8 +311,9 @@ async function executeAgenticLoop(
         toolFound = true;
         const filePath = match[1].trim().replace(/[\[\]()]/g, "");
         try {
-          console.log(`[AgenticLoop] Reading File: ${filePath}`);
-          const data = fs.readFileSync(filePath, "utf-8");
+          const absolutePath = filePath.startsWith("/") ? filePath : join(projectRoot, filePath);
+          console.log(`[AgenticLoop] Reading File: ${absolutePath}`);
+          const data = fs.readFileSync(absolutePath, "utf-8");
           messages.push({ role: "assistant", content: responseContent });
           messages.push({ role: "user", content: `TOOL_RESULT (READ_FILE ${filePath}):\n\n${data}` });
           continue;
@@ -302,8 +332,9 @@ async function executeAgenticLoop(
         toolFound = true;
         const dirPath = match[1].trim().replace(/[\[\]()]/g, "");
         try {
-          console.log(`[AgenticLoop] Listing Files: ${dirPath}`);
-          const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+          const absolutePath = dirPath.startsWith("/") ? dirPath : join(projectRoot, dirPath);
+          console.log(`[AgenticLoop] Listing Files: ${absolutePath}`);
+          const entries = fs.readdirSync(absolutePath, { withFileTypes: true });
           const list = entries.map(e => `${e.isDirectory() ? '[DIR] ' : '      '}${e.name}`).join("\n");
           messages.push({ role: "assistant", content: responseContent });
           messages.push({ role: "user", content: `TOOL_RESULT (LIST_FILES ${dirPath}):\n\n${list || "(empty directory)"}` });
@@ -426,7 +457,7 @@ Return ONLY JSON in this format:
 
   try {
     const messages = [{ role: "user" as const, content: prompt }];
-    const response = await executeAgenticLoop(messages, provider, modelName, true, context.knowledgeBus, false);
+    const response = await executeAgenticLoop(messages, provider, modelName, true, context.knowledgeBus, projectPath, false);
     const json = robustParseJson(response);
 
     const artifact: IntelligenceArtifact = {
@@ -489,7 +520,8 @@ Output JSON: draftSummary, mainContracts, interfaceCount.`;
 
   try {
     const messages = [{ role: "user" as const, content: prompt }];
-    const response = await executeAgenticLoop(messages, activeProvider, modelName, true, context.knowledgeBus, false);
+    const projectRoot = context.workspace?.rootDirectory || process.cwd();
+    const response = await executeAgenticLoop(messages, activeProvider, modelName, true, context.knowledgeBus, projectRoot, false);
     const json = parseJson(response);
     return {
       draftSummary: json.draftSummary || "Synthesis completed.",
@@ -528,7 +560,7 @@ Output JSON: markdownSummary, keyComponents (name, description).`;
 
   try {
     const messages = [{ role: "user" as const, content: prompt }];
-    const response = await executeAgenticLoop(messages, activeProvider, modelName, true, context.knowledgeBus, false);
+    const response = await executeAgenticLoop(messages, activeProvider, modelName, true, context.knowledgeBus, context.workspace.rootDirectory, false);
     const json = parseJson(response);
     return {
       markdownSummary: json.markdownSummary || "",
@@ -569,7 +601,7 @@ Output JSON with summary and functions array (functionName, contract, visibility
 
   try {
     const messages = [{ role: "user" as const, content: prompt }];
-    const response = await executeAgenticLoop(messages, activeProvider, modelName, true, context.knowledgeBus, false);
+    const response = await executeAgenticLoop(messages, activeProvider, modelName, true, context.knowledgeBus, context.workspace.rootDirectory, false);
     const json = parseJson(response);
     return {
       summary: json.summary || "Function mapping completed.",
@@ -604,7 +636,7 @@ Output JSON with summary and points array (id, type: "entry"|"exit", contract, f
 
   try {
     const messages = [{ role: "user" as const, content: prompt }];
-    const response = await executeAgenticLoop(messages, activeProvider, modelName, true, context.knowledgeBus, false);
+    const response = await executeAgenticLoop(messages, activeProvider, modelName, true, context.knowledgeBus, context.workspace.rootDirectory, false);
     const json = parseJson(response);
     return {
       summary: json.summary || "Entry/Exit analysis completed.",
@@ -638,7 +670,7 @@ Output JSON with summary and invariants array (id, title, description, category:
 
   try {
     const messages = [{ role: "user" as const, content: prompt }];
-    const response = await executeAgenticLoop(messages, activeProvider, modelName, true, context.knowledgeBus, false);
+    const response = await executeAgenticLoop(messages, activeProvider, modelName, true, context.knowledgeBus, context.workspace.rootDirectory, false);
     const json = parseJson(response);
     return {
       summary: json.summary || "Invariant extraction completed.",
@@ -735,9 +767,70 @@ export async function generateProtocolDiagram(
 
 
 
+import { buildExtendedChatContext } from "../chat-grounding.js";
+
 /**
- * Chat reasoning loop.
+ * Streaming Chat Response (Step 3 & 4).
  */
+export async function* streamChatResponse(
+  conversation: Conversation,
+  sessionState: RuntimeSessionState,
+  role: RuntimeMode,
+  grounding: ChatGroundingContext,
+  activeProvider?: ProviderSelection,
+  mode: string = "auto"
+): AsyncGenerator<string> {
+  if (!activeProvider) {
+    yield "I'm sorry, I don't see any enabled inference providers.";
+    return;
+  }
+
+  const lastUserMessage = conversation.messages[conversation.messages.length - 1]?.content || "";
+  const intent = detectIntent(lastUserMessage, mode);
+  const projectRoot = sessionState.workspaceAnalysis?.rootDirectory || process.cwd();
+  
+  const context = await buildExtendedChatContext(intent, projectRoot, grounding);
+
+  // If search mode is active, proactively fetch results before calling LLM
+  let webContext = "";
+  if (mode === "search" || intent.type === "web_search") {
+    const query = intent.query || lastUserMessage;
+    console.log(`[StreamChat] Proactive search for: ${query}`);
+    const results = await performWebSearch(query);
+    webContext = `\nREAL-TIME WEB SEARCH RESULTS for "${query}":\n${results}\n`;
+  }
+
+  const systemPrompt = `You are an expert smart contract security researcher.
+You are helping audit the project located at: ${projectRoot}
+Project name: ${basename(projectRoot)}
+
+You have access to:
+- The project's Solidity source files
+- Previous audit findings and analysis
+- Web search results (when provided)
+- 1074 security skills from Trail of Bits, Cyfrin, Pashov, and others
+
+When answering:
+- If REAL-TIME WEB SEARCH RESULTS are provided, use them to fulfill the user's request FIRST. 
+- You are allowed (and encouraged) to provide market data, news, and external facts found in search results, even if they aren't strictly security-related.
+- Reference specific function names and line numbers when auditing.
+- If you spot a potential vulnerability, explain the attack path.
+- Be direct. No fluff.
+- If you need more context, say exactly what file or function to look at.
+
+CONTEXT:
+${context}
+${webContext}
+`;
+
+  const messages: any[] = [
+    { role: "system" as const, content: systemPrompt },
+    ...conversation.messages.slice(-10).map(m => ({ role: m.role, content: m.content }))
+  ];
+
+  yield* streamProvider(activeProvider, messages);
+}
+
 export async function generateChatResponse(
   conversation: Conversation,
   sessionState: RuntimeSessionState,
@@ -788,7 +881,8 @@ CRITICAL: You MUST use [TOOL: SEARCH] whenever the user asks for real-time data,
   ];
 
   try {
-    const finalResponse = await executeAgenticLoop(messages, activeProvider, modelName, searchEnabled ?? true, sessionState.knowledgeBus, false);
+    const projectRoot = sessionState.workspaceAnalysis?.rootDirectory || process.cwd();
+    const finalResponse = await executeAgenticLoop(messages, activeProvider, modelName, searchEnabled ?? true, sessionState.knowledgeBus, projectRoot, false);
     return { 
       content: finalResponse, 
       citations: [

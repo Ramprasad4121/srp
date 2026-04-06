@@ -192,3 +192,96 @@ async function callOllama(
 
   return completion.choices[0]?.message?.content?.trim() ?? "";
 }
+
+/**
+ * Streams a response from an inference provider.
+ */
+export async function* streamProvider(
+  provider: ProviderSelection,
+  messages: readonly ChatMessage[]
+): AsyncGenerator<string> {
+  if (!provider.enabled) {
+    throw new Error(`Provider ${provider.kind} is disabled`);
+  }
+
+  switch (provider.kind) {
+    case "openai":
+    case "openai-compatible":
+    case "openrouter":
+    case "nvidia":
+    case "hugging-face":
+    case "ollama":
+      yield* streamOpenAICompatible(provider, messages);
+      break;
+    case "anthropic":
+      yield* streamAnthropic(provider, messages);
+      break;
+    default:
+      throw new Error(`Streaming for ${provider.kind} is not supported yet`);
+  }
+}
+
+async function* streamOpenAICompatible(
+  provider: ProviderSelection,
+  messages: readonly ChatMessage[]
+): AsyncGenerator<string> {
+  const config = getProviderConfig(provider.kind);
+  const apiKey = config.apiKey;
+  const baseURL = config.baseURL;
+
+  const client = new OpenAI({
+    apiKey: apiKey || "missing",
+    baseURL
+  });
+
+  const stream = await client.chat.completions.create({
+    model: provider.model,
+    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    temperature: 0.2,
+    max_tokens: 2000,
+    stream: true
+  });
+
+  for await (const chunk of stream) {
+    const content = chunk.choices[0]?.delta?.content || "";
+    if (content) yield content;
+  }
+}
+
+async function* streamAnthropic(
+  provider: ProviderSelection,
+  messages: readonly ChatMessage[]
+): AsyncGenerator<string> {
+  const apiKey = process.env["ANTHROPIC_API_KEY"];
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is required");
+
+  const AnthropicModule = await import("@anthropic-ai/sdk") as any;
+  const AnthropicClient = AnthropicModule.Client ?? AnthropicModule.default;
+  const client = new AnthropicClient({ apiKey });
+
+  const systemMessages = messages.filter((m) => m.role === "system");
+  const nonSystemMessages = messages.filter((m) => m.role !== "system");
+  const systemPrompt = systemMessages.map((m) => m.content).join("\n") || undefined;
+  const anthropicMessages = nonSystemMessages.map((m) => ({
+    role: m.role as "user" | "assistant",
+    content: m.content
+  }));
+
+  if (anthropicMessages.length === 0 || anthropicMessages[0]?.role !== "user") {
+    anthropicMessages.unshift({ role: "user", content: "Please respond." });
+  }
+
+  const stream = await client.messages.stream({
+    model: provider.model,
+    max_tokens: 2000,
+    ...(systemPrompt ? { system: systemPrompt } : {}),
+    messages: anthropicMessages
+  });
+
+  for await (const event of stream) {
+    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+      yield event.delta.text;
+    }
+  }
+}
+

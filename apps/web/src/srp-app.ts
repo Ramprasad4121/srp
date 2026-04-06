@@ -18,7 +18,6 @@ export class SrpApp extends LitElement {
     _error: { state: true },
     _skills: { state: true },
     _sidebarOpen: { state: true },
-    _chatPanelOpen: { state: true },
     _mode: { state: true },
   };
 
@@ -234,22 +233,6 @@ export class SrpApp extends LitElement {
       overflow: hidden;
     }
 
-    .chat-panel {
-      width: 450px;
-      border-left: 1px solid var(--border-main);
-      display: flex;
-      flex-direction: column;
-      background: #fff;
-      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 20;
-    }
-
-    .chat-panel.closed {
-      width: 0;
-      overflow: hidden;
-      border-left: none;
-    }
-
     .hamburger-btn {
       background: none;
       border: none;
@@ -317,7 +300,6 @@ export class SrpApp extends LitElement {
     this._error = null;
     this._skills = [];
     this._sidebarOpen = true;
-    this._chatPanelOpen = true;
     this._mode = "auditor";
 
     console.log("SRP Senior App initialized");
@@ -492,52 +474,15 @@ export class SrpApp extends LitElement {
               <div class="pulse-dot"></div>
               <span>Protocol Active</span>
             </div>
-            
-            <button class="nav-item ${this._chatPanelOpen ? 'active' : ''}" 
-                    style="margin-left: 1rem; width: auto; padding: 0.5rem 1rem;" 
-                    @click=${() => this._chatPanelOpen = !this._chatPanelOpen}>
-              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: 6px;">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-              </svg>
-              ${this._chatPanelOpen ? 'Hide' : 'Show'} Chat
-            </button>
           </header>
 
           <div class="view-container">
             <methodology-view ?hidden=${this._path !== '/audit'}></methodology-view>
             <gstack-view ?hidden=${this._path !== '/build'}></gstack-view>
             <team-view ?hidden=${this._path !== '/team'}></team-view>
-            <div ?hidden=${this._path !== '/' && this._path !== ''} style="padding: 3rem; max-width: 900px; margin: 0 auto;">
-               <div style="background: #f9fafb; border: 1px solid var(--border-main); border-radius: 16px; padding: 2rem;">
-                  <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem; letter-spacing: -0.02em;">Audit Dashboard</h2>
-                  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 2rem;">
-                    <div style="background: #fff; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-main);">
-                      <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Active Agents</div>
-                      <div style="font-size: 2rem; font-weight: 800; color: var(--accent);">${this._skills.length}</div>
-                    </div>
-                    <div style="background: #fff; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-main);">
-                      <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Protocol Health</div>
-                      <div style="font-size: 1.25rem; font-weight: 700; color: #10b981; display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
-                         <div class="pulse-dot" style="animation: none;"></div> 100%
-                      </div>
-                    </div>
-                    <div style="background: #fff; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-main);">
-                      <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Vulnerabilities</div>
-                      <div style="font-size: 2rem; font-weight: 800; color: var(--text-primary);">0</div>
-                    </div>
-                  </div>
-                  <p style="margin-top: 2.5rem; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
-                    The Security Reasoning Protocol is actively monitoring the workspace. Your persistent intelligence companion is available in the right sidebar for real-time analysis and deep-dives.
-                  </p>
-               </div>
-            </div>
+            <chat-view ?hidden=${this._path !== '/' && this._path !== ''} .mode=${this._mode}></chat-view>
           </div>
         </main>
-
-        <!-- Persistent Chat Panel -->
-        <aside class="chat-panel ${this._chatPanelOpen ? '' : 'closed'}">
-          <chat-view .mode=${this._mode}></chat-view>
-        </aside>
       </div>
     `;
   }
