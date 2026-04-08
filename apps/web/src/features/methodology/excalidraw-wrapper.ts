@@ -19,9 +19,7 @@ export class ExcalidrawWrapper extends LitElement {
     :host {
       display: block;
       width: 100%;
-      height: 600px;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
+      height: 100%;
       overflow: hidden;
     }
     #container {
@@ -51,13 +49,13 @@ export class ExcalidrawWrapper extends LitElement {
 
     this._root.render(
       React.createElement(Excalidraw, {
-        key: `ex-id-${this.elements.length}-${Date.now()}`,
         initialData: {
           elements: this.elements,
           appState: {
             ...this.appState,
-            viewBackgroundColor: "#fdfdfd",
+            viewBackgroundColor: "#ffffff",
             currentItemFontFamily: 3, // Monospace
+            theme: "light", // TODO: Sync with global SRP theme state
           }
         },
         onChange: (elements: readonly any[], state: any) => {
@@ -73,7 +71,6 @@ export class ExcalidrawWrapper extends LitElement {
 
   override render() {
     return html`
-      <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw/dist/excalidraw.min.css">
       <div id="container"></div>
     `;
   }

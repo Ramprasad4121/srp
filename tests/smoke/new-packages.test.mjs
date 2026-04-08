@@ -67,10 +67,10 @@ import {
 // Methodology tests
 // --------------------------------------------------------------------------
 
-test("methodology exports all 11 phases in correct order", () => {
-  assert.equal(METHODOLOGY_PHASES.length, 11);
+test("methodology exports all 18 phases in correct order", () => {
+  assert.equal(METHODOLOGY_PHASES.length, 18);
   assert.equal(METHODOLOGY_PHASES[0], "discovery-docs");
-  assert.equal(METHODOLOGY_PHASES[10], "visual-flow-map");
+  assert.equal(METHODOLOGY_PHASES[17], "audit-report");
 });
 
 test("every phase has a human-readable label", () => {
@@ -82,7 +82,7 @@ test("every phase has a human-readable label", () => {
 });
 
 test("phase definitions have valid dependency chains", () => {
-  assert.equal(PHASE_DEFINITIONS.length, 11);
+  assert.equal(PHASE_DEFINITIONS.length, 18);
 
   // first phase has no deps
   const prep = getPhaseDefinition("discovery-docs");
@@ -98,9 +98,9 @@ test("phase definitions have valid dependency chains", () => {
 
 test("phase index and next phase work correctly", () => {
   assert.equal(getPhaseIndex("discovery-docs"), 0);
-  assert.equal(getPhaseIndex("visual-flow-map"), 10);
+  assert.equal(getPhaseIndex("audit-report"), 17);
   assert.equal(getNextPhase("discovery-docs"), "discovery-audits");
-  assert.equal(getNextPhase("visual-flow-map"), null);
+  assert.equal(getNextPhase("audit-report"), null);
 });
 
 test("dependency checking works across phase graph", () => {
@@ -115,7 +115,7 @@ test("dependency checking works across phase graph", () => {
 
 test("phase runner creates and transitions records correctly", () => {
   let records = createInitialPhaseRecords();
-  assert.equal(records.length, 11);
+  assert.equal(records.length, 18);
   assert.ok(records.every((r) => r.status === "pending"));
 
   records = markPhaseRunning(records, "discovery-docs");
@@ -134,7 +134,7 @@ test("phase runner creates and transitions records correctly", () => {
   assert.equal(completed.size, 1);
   assert.ok(completed.has("discovery-docs"));
 
-  assert.equal(computeRunProgress(records), 1 / 11);
+  assert.equal(computeRunProgress(records), 1 / 18);
   assert.equal(totalArtifacts(records), 2);
 });
 
@@ -166,7 +166,7 @@ test("audit manifest summary derives correctly", () => {
   });
 
   assert.equal(summary.phasesCompleted, 2);
-  assert.equal(summary.phasesTotal, 11);
+  assert.equal(summary.phasesTotal, 18);
   assert.equal(summary.totalArtifacts, 3);
   assert.ok(summary.progress > 0);
 });

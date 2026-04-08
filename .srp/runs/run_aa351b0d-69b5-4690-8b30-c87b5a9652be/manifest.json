@@ -1,0 +1,146 @@
+{
+  "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+  "projectId": "default-project",
+  "sessionId": "session_a55163c5-c7c6-492e-bfd3-7065540d6e6a",
+  "status": "completed",
+  "createdAt": "2026-04-07T12:32:47.155Z",
+  "artifacts": [
+    {
+      "artifactId": "art_1775565331664_dztwk",
+      "kind": "note",
+      "title": "Discovery: Documentation",
+      "phase": "discovery-docs",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T12:35:31.665Z"
+    },
+    {
+      "artifactId": "art_1775565463555_9lgom",
+      "kind": "note",
+      "title": "Discovery: Prior Audits",
+      "phase": "discovery-audits",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T12:37:43.557Z"
+    },
+    {
+      "artifactId": "art_1775565501362_0m1o6",
+      "kind": "note",
+      "title": "Discovery: Governance",
+      "phase": "discovery-governance",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T12:38:21.365Z"
+    },
+    {
+      "artifactId": "art_1775565539673_gchke",
+      "kind": "note",
+      "title": "Discovery: Tokenomics",
+      "phase": "discovery-tokenomics",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T12:38:59.674Z"
+    },
+    {
+      "artifactId": "art_1775565635286_ox0u0",
+      "kind": "note",
+      "title": "Discovery: On-Chain",
+      "phase": "discovery-onchain",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T12:40:35.288Z"
+    },
+    {
+      "artifactId": "art_1775565659793_g9sz7",
+      "kind": "note",
+      "title": "Protocol Intent",
+      "phase": "synthesis-intent",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T12:40:59.794Z"
+    },
+    {
+      "artifactId": "art_1775566114919_zie70",
+      "kind": "note",
+      "title": "Actor Model",
+      "phase": "synthesis-actors",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T12:48:34.919Z"
+    },
+    {
+      "artifactId": "art_1775566251772_c1z3w",
+      "kind": "diagram",
+      "title": "Value Flow Map",
+      "phase": "visual-flow-map",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T12:50:51.774Z"
+    },
+    {
+      "artifactId": "art_1775566251777_pmqs2",
+      "kind": "note",
+      "title": "Audit: Resolved Input",
+      "phase": "audit-resolve-input",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T12:50:51.778Z"
+    },
+    {
+      "artifactId": "art_1775566267488_brhoc",
+      "kind": "note",
+      "title": "Audit: Setup Summary",
+      "phase": "audit-setup",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T12:51:07.489Z"
+    },
+    {
+      "artifactId": "art_1775566276118_awtas",
+      "kind": "note",
+      "title": "Audit: System Map",
+      "phase": "audit-map",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T12:51:16.119Z"
+    },
+    {
+      "artifactId": "art_1775566616714_fqinr",
+      "kind": "note",
+      "title": "Audit: Hypotheses",
+      "phase": "audit-hunt",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T12:56:56.720Z"
+    },
+    {
+      "artifactId": "art_1775566776569_e5s6e",
+      "kind": "note",
+      "title": "Audit: Attack Analysis",
+      "phase": "audit-attack",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T12:59:36.572Z"
+    },
+    {
+      "artifactId": "art_1775566787093_2d2r0",
+      "kind": "invariant",
+      "title": "Audit: Verified Findings",
+      "phase": "audit-verify",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T12:59:47.094Z"
+    },
+    {
+      "artifactId": "art_1775566815660_2owq4",
+      "kind": "note",
+      "title": "Formal Audit Report",
+      "phase": "audit-report",
+      "runId": "run_aa351b0d-69b5-4690-8b30-c87b5a9652be",
+      "projectId": "default-project",
+      "createdAt": "2026-04-07T13:00:15.662Z"
+    }
+  ],
+  "currentPhase": "audit-report",
+  "completedAt": "2026-04-07T13:00:15.665Z"
+}

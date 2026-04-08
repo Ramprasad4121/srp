@@ -1,4 +1,5 @@
 🚀 Starting SRP Gateway...
+[Server] Initializing SRP Gateway on 0.0.0.0:6969...
 
 ✅ SRP Web UI is running at: http://0.0.0.0:6969
 Press Ctrl+C to stop the server.
@@ -6,385 +7,13 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /
 [Gateway] GET /api/bootstrap
 [Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /favicon.ico
 [Gateway] GET /api/skills
 [Gateway] GET /api/runtime
 [Gateway] GET /api/chat/conversations
 [Gateway] POST /api/chat/conversations
-[Gateway] GET /favicon.ico
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /
-[Gateway] GET /api/bootstrap
-[Gateway] GET /api/runtime
-[Gateway] GET /api/skills
-[Gateway] GET /favicon.ico
-[Gateway] GET /api/runtime
-[Gateway] GET /api/chat/conversations
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -414,8 +43,9 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] POST /api/chat/conversations
-[Gateway] GET /api/chat/conversations
-[Gateway] POST /api/chat/conversations/conv_802eba5e-da23-4845-8b9d-6950e104c66b/stream
+[Gateway] POST /api/chat/conversations/conv_da28004e-5275-430d-a460-cb3c92b326ff/stream
+[Router] Chat Route - ID: conv_da28004e-5275-430d-a460-cb3c92b326ff, Action: stream, Method: POST
+[Router] Calling handleStreamingChat for conv_da28004e-5275-430d-a460-cb3c92b326ff
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -453,7 +83,15 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
+[Gateway] GET /favicon.ico
+[Gateway] POST /api/runtime/start
+[Pipeline] >>> ENTERING PHASE: discovery-docs (1/15)
+[Pipeline] Running analyzeWorkspace...
 [Gateway] GET /api/runtime
+[Pipeline] Workspace analyzed: 0 core files.
+[Pipeline] Calling generateDiscoveryArtifacts for DOCS...
+[DEBUG] generateDiscoveryArtifacts NODE_ENV: undefined
+[Discovery:docs] Senior Analyst synthesizing Technical Architecture & Documentation for srp...
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -497,6 +135,9 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
+[AgenticLoop:Iter1] LLM Prompt Count: 1
+[AgenticLoop:Iter1] LLM Response (first 100): {   "title": "Technical Architecture & Documentation: SRP",   "report": "The Secure Remote Password ...
+[AgenticLoop] Stealth Fetching: can
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -517,6 +158,11 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
+[AgenticLoop:Iter2] LLM Prompt Count: 3
+[AgenticLoop:Iter2] LLM Response (first 100): { "title": "Technical Architecture & Documentation: SRP", "report": "The Secure Remote Password (SRP...
+[AgenticLoop] Robust Searching: results indicate that the SRP protocol is widely used and has been implemented in various applications. **Conclusion:** The SRP protocol provides a secure password authentication mechanism that is resistant to various types of attacks. Its implementation requires a secure random number generator, a cryptographic hash function, and a Diffie-Hellman key exchange implementation. The protocol has been widely adopted in various applications and is described in detail in the RFC 2945 specification.", "officialLinks": { "whitepaper": "https://tools.ietf.org/html/rfc2945", "documentation": "https://en.wikipedia.org/wiki/Secure_Remote_Password_protocol", "etherscan": "N/A", "webapp": "N/A" } }
+[WebSearch] Attempting internet fetch: https://html.duckduckgo.com/html/?q=results%20indicate%20that%20the%20SRP%20protocol%20is%20widely%20used%20and%20has%20been%20implemented%20in%20various%20applications.%20**Conclusion%3A**%20The%20SRP%20protocol%20provides%20a%20secure%20password%20authentication%20mechanism%20that%20is%20resistant%20to%20various%20types%20of%20attacks.%20Its%20implementation%20requires%20a%20secure%20random%20number%20generator%2C%20a%20cryptographic%20hash%20function%2C%20and%20a%20Diffie-Hellman%20key%20exchange%20implementation.%20The%20protocol%20has%20been%20widely%20adopted%20in%20various%20applications%20and%20is%20described%20in%20detail%20in%20the%20RFC%202945%20specification.%22%2C%20%22officialLinks%22%3A%20%7B%20%22whitepaper%22%3A%20%22https%3A%2F%2Ftools.ietf.org%2Fhtml%2Frfc2945%22%2C%20%22documentation%22%3A%20%22https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FSecure_Remote_Password_protocol%22%2C%20%22etherscan%22%3A%20%22N%2FA%22%2C%20%22webapp%22%3A%20%22N%2FA%22%20%7D%20%7D
+[WebSearch] Attempting internet fetch: https://lite.duckduckgo.com/lite/?q=results%20indicate%20that%20the%20SRP%20protocol%20is%20widely%20used%20and%20has%20been%20implemented%20in%20various%20applications.%20**Conclusion%3A**%20The%20SRP%20protocol%20provides%20a%20secure%20password%20authentication%20mechanism%20that%20is%20resistant%20to%20various%20types%20of%20attacks.%20Its%20implementation%20requires%20a%20secure%20random%20number%20generator%2C%20a%20cryptographic%20hash%20function%2C%20and%20a%20Diffie-Hellman%20key%20exchange%20implementation.%20The%20protocol%20has%20been%20widely%20adopted%20in%20various%20applications%20and%20is%20described%20in%20detail%20in%20the%20RFC%202945%20specification.%22%2C%20%22officialLinks%22%3A%20%7B%20%22whitepaper%22%3A%20%22https%3A%2F%2Ftools.ietf.org%2Fhtml%2Frfc2945%22%2C%20%22documentation%22%3A%20%22https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FSecure_Remote_Password_protocol%22%2C%20%22etherscan%22%3A%20%22N%2FA%22%2C%20%22webapp%22%3A%20%22N%2FA%22%20%7D%20%7D
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -533,6 +179,9 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
+[AgenticLoop:Iter3] LLM Prompt Count: 5
+[AgenticLoop:Iter3] LLM Response (first 100): { "title": "Technical Architecture & Documentation: SRP", "report": "The Secure Remote Password (SRP...
+[AgenticLoop] Reading File: /Users/ramprasadgoud/Downloads/building/srp/can
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -554,6 +203,14 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
+[AgenticLoop:Iter4] LLM Prompt Count: 7
+[AgenticLoop:Iter4] LLM Response (first 100): { "title": "Technical Architecture & Documentation: SRP", "report": "The Secure Remote Password (SRP...
+[Pipeline] DOCS returned 1 artifacts.
+[KnowledgeBus] New Node: contract:Core Solidity Files from inst_7eab5397-e34b-4bc0-85f6-90c99b07d76d
+[Pipeline] >>> ENTERING PHASE: discovery-audits (2/15)
+[Pipeline] Calling generateDiscoveryArtifacts for AUDITS...
+[DEBUG] generateDiscoveryArtifacts NODE_ENV: undefined
+[Discovery:audits] Senior Analyst synthesizing Historical Security & Audit Context for srp...
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -566,6 +223,9 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
+[AgenticLoop:Iter1] LLM Prompt Count: 1
+[AgenticLoop:Iter1] LLM Response (first 100): {   "title": "Historical Security & Audit Context: srp",   "report": "The Secure Remote Password (SR...
+[AgenticLoop] Stealth Fetching: did
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -620,6 +280,9 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
+[AgenticLoop:Iter2] LLM Prompt Count: 3
+[AgenticLoop:Iter2] LLM Response (first 100): { "title": "Historical Security & Audit Context: srp", "report": "The Secure Remote Password (SRP) p...
+[AgenticLoop] Reading File: /Users/ramprasadgoud/Downloads/building/srp/did
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -633,6 +296,11 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
+[AgenticLoop:Iter3] LLM Prompt Count: 5
+[AgenticLoop:Iter3] LLM Response (first 100): { "title": "Historical Security & Audit Context: srp", "report": "The Secure Remote Password (SRP) p...
+[Pipeline] >>> ENTERING PHASE: discovery-governance (3/15)
+[DEBUG] generateDiscoveryArtifacts NODE_ENV: undefined
+[Discovery:governance] Senior Analyst synthesizing Governance, Control & Trust Model for srp...
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -656,6 +324,11 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
+[AgenticLoop:Iter1] LLM Prompt Count: 1
+[AgenticLoop:Iter1] LLM Response (first 100): {   "title": "Governance, Control & Trust Model: srp",   "report": "The srp protocol operates under ...
+[Pipeline] >>> ENTERING PHASE: discovery-tokenomics (4/15)
+[DEBUG] generateDiscoveryArtifacts NODE_ENV: undefined
+[Discovery:tokenomics] Senior Analyst synthesizing Economic Architecture & Incentives for srp...
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -677,6 +350,17 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
+[AgenticLoop:Iter1] LLM Prompt Count: 1
+[AgenticLoop:Iter1] LLM Response (first 100): {   "title": "Economic Architecture & Incentives: SRP",   "report": "The SRP (Secure Remote Password...
+JSON Parse failed after robust attempts: SyntaxError: Unterminated string in JSON at position 4581 (line 6 column 56)
+    at JSON.parse (<anonymous>)
+    at robustParseJson (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/providers/inference-bridge.js:303:21)
+    at generateDiscoveryArtifacts (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/providers/inference-bridge.js:381:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async runSimulatedPipeline (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/session-manager.js:386:30)
+[Pipeline] >>> ENTERING PHASE: discovery-onchain (5/15)
+[DEBUG] generateDiscoveryArtifacts NODE_ENV: undefined
+[Discovery:onchain] Senior Analyst synthesizing On-Chain Deployment & Implementation for srp...
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -711,8 +395,14 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
+[AgenticLoop:Iter1] LLM Prompt Count: 1
+[AgenticLoop:Iter1] LLM Response (first 100): {   "title": "On-Chain Deployment & Implementation: srp",   "report": "The Secure Remote Password (S...
+[AgenticLoop] Robust Searching: and TOOL: FETCH_CONTENT, we gathered real-time data from the internet and found that the SRP protocol is widely used in various decentralized applications (dApps) and decentralized finance (DeFi) protocols. The protocol is also supported by several popular Ethereum wallets, including MetaMask and Ledger Live.
+[WebSearch] Attempting internet fetch: https://html.duckduckgo.com/html/?q=and%20TOOL%3A%20FETCH_CONTENT%2C%20we%20gathered%20real-time%20data%20from%20the%20internet%20and%20found%20that%20the%20SRP%20protocol%20is%20widely%20used%20in%20various%20decentralized%20applications%20(dApps)%20and%20decentralized%20finance%20(DeFi)%20protocols.%20The%20protocol%20is%20also%20supported%20by%20several%20popular%20Ethereum%20wallets%2C%20including%20MetaMask%20and%20Ledger%20Live.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
+[WebSearch] Attempting internet fetch: https://lite.duckduckgo.com/lite/?q=and%20TOOL%3A%20FETCH_CONTENT%2C%20we%20gathered%20real-time%20data%20from%20the%20internet%20and%20found%20that%20the%20SRP%20protocol%20is%20widely%20used%20in%20various%20decentralized%20applications%20(dApps)%20and%20decentralized%20finance%20(DeFi)%20protocols.%20The%20protocol%20is%20also%20supported%20by%20several%20popular%20Ethereum%20wallets%2C%20including%20MetaMask%20and%20Ledger%20Live.
+[WebSearch:Success] Found 10 results from https://lite.duckduckgo.com/lite/?q=and%20TOOL%3A%20FETCH_CONTENT%2C%20we%20gathered%20real-time%20data%20from%20the%20internet%20and%20found%20that%20the%20SRP%20protocol%20is%20widely%20used%20in%20various%20decentralized%20applications%20(dApps)%20and%20decentralized%20finance%20(DeFi)%20protocols.%20The%20protocol%20is%20also%20supported%20by%20several%20popular%20Ethereum%20wallets%2C%20including%20MetaMask%20and%20Ledger%20Live.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -725,6 +415,9 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
+[AgenticLoop:Iter2] LLM Prompt Count: 3
+[AgenticLoop:Iter2] LLM Response (first 100): { "title": "On-Chain Deployment & Implementation: srp", "report": "The Secure Remote Password (SRP) ...
+[AgenticLoop] Listing Files: /Users/ramprasadgoud/Downloads/building/srp/and
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -736,299 +429,897 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
+[AgenticLoop:Iter3] LLM Prompt Count: 5
+[AgenticLoop:Iter3] LLM Response (first 100): { "title": "On-Chain Deployment & Implementation: srp", "report": "The Secure Remote Password (SRP) ...
+[Pipeline] >>> ENTERING PHASE: synthesis-intent (6/15)
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
-[Gateway] GET /
-[Gateway] GET /assets/index-DPkvNNvJ.js
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter1] LLM Prompt Count: 2
+[AgenticLoop:Iter1] LLM Response (first 100): **Protocol Intent Synthesis**  Based on the discovery sources, the Secure Remote Password (SRP) prot...
+Intent synthesis failed: Error: Unable to locate valid JSON payload in response
+    at parseJson (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/providers/inference-bridge.js:55:11)
+    at generateIntentSummary (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/providers/inference-bridge.js:428:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async runSimulatedPipeline (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/session-manager.js:416:40)
+[KnowledgeBus] New Node: flow:Intended Value Flow from inst_166b8d28-0604-4bef-873d-1e18af728976
+[Pipeline] >>> ENTERING PHASE: synthesis-actors (7/15)
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter1] LLM Prompt Count: 2
+[AgenticLoop:Iter1] LLM Response (first 100): **Actor Model and Trust Boundaries Analysis**  ### Markdown Summary  Failed to synthesize intent in ...
+[AgenticLoop] Reading File: /Users/ramprasadgoud/Downloads/building/srp/to
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter2] LLM Prompt Count: 4
+[AgenticLoop:Iter2] LLM Response (first 100): **Error Analysis and Recommendations** ### Error Summary The [TOOL: READ_FILE] has encountered an er...
+[AgenticLoop] Reading File: /Users/ramprasadgoud/Downloads/building/srp/has
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter3] LLM Prompt Count: 6
+[AgenticLoop:Iter3] LLM Response (first 100): **Error Analysis and Recommendations** ### Error Summary The [TOOL: READ_FILE] has encountered anoth...
+[AgenticLoop] Reading File: /Users/ramprasadgoud/Downloads/building/srp/has
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter4] LLM Prompt Count: 8
+[AgenticLoop:Iter4] LLM Response (first 100): **Error Analysis and Recommendations** ### Error Summary The [TOOL: READ_FILE] has encountered the s...
+[AgenticLoop] Reading File: /Users/ramprasadgoud/Downloads/building/srp/has
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter5] LLM Prompt Count: 10
+[AgenticLoop:Iter5] LLM Response (first 100): **Error Analysis and Recommendations** ### Error Summary The [TOOL: READ_FILE] has encountered the s...
+[AgenticLoop] Reading File: /Users/ramprasadgoud/Downloads/building/srp/has
+[AgenticLoop:Iter6] LLM Prompt Count: 12
+[AgenticLoop:Iter6] LLM Response (first 100): **Error Analysis and Recommendations** ### Error Summary The [TOOL: READ_FILE] has encountered the s...
+[AgenticLoop] Reading File: /Users/ramprasadgoud/Downloads/building/srp/has
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter7] LLM Prompt Count: 14
+[AgenticLoop:Iter7] LLM Response (first 100): **Error Analysis and Recommendations** ### Error Summary The [TOOL: READ_FILE] has encountered the s...
+[AgenticLoop] Reading File: /Users/ramprasadgoud/Downloads/building/srp/has
+[AgenticLoop:Iter8] LLM Prompt Count: 16
+[AgenticLoop:Iter8] LLM Response (first 100): **Error Analysis and Recommendations** ### Error Summary The [TOOL: READ_FILE] has encountered the s...
+[AgenticLoop] Reading File: /Users/ramprasadgoud/Downloads/building/srp/has
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /N/A
+[Gateway] GET /assets/index-C5YQ_K8N.js
 [Gateway] GET /api/bootstrap
+[Gateway] GET /api/runtime
+[Gateway] GET /api/skills
+[Gateway] GET /favicon.ico
+[Gateway] GET /api/runtime
+[Gateway] GET /api/chat/conversations
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter9] LLM Prompt Count: 18
+[AgenticLoop:Iter9] LLM Response (first 100): **Error Analysis and Recommendations** ### Error Summary The [TOOL: READ_FILE] has encountered the s...
+[AgenticLoop] Reading File: /Users/ramprasadgoud/Downloads/building/srp/has
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter10] LLM Prompt Count: 20
+[AgenticLoop:Iter10] LLM Response (first 100): **Error Analysis and Recommendations** ### Error Summary The [TOOL: READ_FILE] has encountered the s...
+[AgenticLoop] Reading File: /Users/ramprasadgoud/Downloads/building/srp/has
+Architecture synthesis failed: Error: Unable to locate valid JSON payload in response
+    at parseJson (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/providers/inference-bridge.js:55:11)
+    at generateArchitectureSummary (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/providers/inference-bridge.js:461:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async runSimulatedPipeline (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/session-manager.js:431:46)
+[KnowledgeBus] New Node: actor:Identified Actors from inst_ed291394-4b27-43a4-b7af-a1c3526fb1b8
+[Pipeline] >>> ENTERING PHASE: visual-flow-map (8/15)
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Provider] Request attempt 1 failed: Connection error.
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+JSON Parse failed after robust attempts: SyntaxError: Expected double-quoted property name in JSON at position 2387 (line 119 column 32)
+    at JSON.parse (<anonymous>)
+    at robustParseJson (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/providers/inference-bridge.js:303:21)
+    at generateProtocolDiagram (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/providers/inference-bridge.js:617:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async runSimulatedPipeline (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/session-manager.js:491:42)
+[Pipeline] >>> ENTERING PHASE: audit-resolve-input (9/15)
+[Pipeline] >>> ENTERING PHASE: audit-setup (10/15)
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter1] LLM Prompt Count: 2
+[AgenticLoop:Iter1] LLM Response (first 100): {   "phase": "SETUP",   "timestamp": "2026-04-07T12:48:34.921Z",   "scope": {     "rootDir": "",    ...
+[Pipeline] >>> ENTERING PHASE: audit-map (11/15)
+[AgenticLoop:Iter1] LLM Prompt Count: 2
+[AgenticLoop:Iter1] LLM Response (first 100): {   "components": [],   "external_surfaces": [],   "auth_surfaces": [],   "state_variables": [],   "...
+[Pipeline] >>> ENTERING PHASE: audit-hunt (12/15)
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Provider] Request attempt 1 failed: Connection error.
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter1] LLM Prompt Count: 2
+[AgenticLoop:Iter1] LLM Response (first 100): [TOOL: READ_FILE] rootDir/.sc-auditor-work/checkpoints/map.json  [TOOL: READ_FILE] rootDir/.sc-audit...
+[AgenticLoop] Robust Searching: systemMap.external_call_sites
+[WebSearch] Attempting internet fetch: https://html.duckduckgo.com/html/?q=systemMap.external_call_sites
+[WebSearch] Attempting internet fetch: https://lite.duckduckgo.com/lite/?q=systemMap.external_call_sites
+[WebSearch:Success] Found 10 results from https://lite.duckduckgo.com/lite/?q=systemMap.external_call_sites
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter2] LLM Prompt Count: 4
+[AgenticLoop:Iter2] LLM Response (first 100): [TOOL: READ_FILE] rootDir/.sc-auditor-work/checkpoints/map.json  [TOOL: READ_FILE] rootDir/.sc-audit...
+[AgenticLoop] Robust Searching: systemMap.auth_surfaces
+[WebSearch] Attempting internet fetch: https://html.duckduckgo.com/html/?q=systemMap.auth_surfaces
+[WebSearch] Attempting internet fetch: https://lite.duckduckgo.com/lite/?q=systemMap.auth_surfaces
+[WebSearch:Success] Found 10 results from https://lite.duckduckgo.com/lite/?q=systemMap.auth_surfaces
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter3] LLM Prompt Count: 6
+[AgenticLoop:Iter3] LLM Response (first 100): [TOOL: READ_FILE] rootDir/.sc-auditor-work/checkpoints/map.json [TOOL: READ_FILE] rootDir/.sc-audito...
+[AgenticLoop] Robust Searching: systemMap.config_semantics TOOL: SEARCH systemMap.value_flow_edges TOOL: SEARCH existingHotspots TOOL: SEARCH staticFindings TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "flash loan amplification" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "governance timelock" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "cross-protocol governance" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "oracle manipulation" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "cascading liquidation" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "ERC-777 callback reentrancy" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "reward attribution" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "share state inconsistency" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "vault withdrawal" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "reward distributor" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "accounting module" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "stale oracle" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "price manipulation" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "liquidity draining" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "sandwich attacks" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "just-in-time liquidity" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "external protocol upgrade risk" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "external protocol pausing" TOOL: MCP__SC-AUDITOR__SEARCH_FINDINGS "composability assumptions" TOOL: MCP__SC-AUDITOR__ENRICH_EVIDENCE "flash loan amplification" TOOL: MCP__SC-AUDITOR__ENRICH_EVIDENCE "governance timelock" TOOL: MCP__SC-AUDITOR__ENRICH_EVIDENCE "cross-protocol governance" TOOL: MCP__SC-AUDITOR__ENRICH_EVIDENCE "oracle manipulation" TOOL: MCP__SC-AUDITOR__ENRICH_EVIDENCE "cascading liquidation" TOOL: MCP__SC-AUDITOR__ENRICH_EVIDENCE "ERC-777 callback reentrancy" TOOL: MCP__SC-AUDITOR__ENRICH_EVIDENCE "reward attribution" TOOL: MCP__SC-AUDITOR__ENRICH_EVIDENCE "share state inconsistency" TOOL: MCP__SC-AUDITOR__ENRICH_EVIDENCE "vault withdrawal" TOOL: MCP__SC-AUDITOR__ENRICH_EVIDENCE "reward distributor" TOOL: MCP__SC-AUDITOR__ENRICH_EVIDENCE "accounting module"
+[WebSearch] Attempting internet fetch: https://html.duckduckgo.com/html/?q=systemMap.config_semantics%20TOOL%3A%20SEARCH%20systemMap.value_flow_edges%20TOOL%3A%20SEARCH%20existingHotspots%20TOOL%3A%20SEARCH%20staticFindings%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22flash%20loan%20amplification%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22governance%20timelock%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22cross-protocol%20governance%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22oracle%20manipulation%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22cascading%20liquidation%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22ERC-777%20callback%20reentrancy%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22reward%20attribution%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22share%20state%20inconsistency%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22vault%20withdrawal%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22reward%20distributor%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22accounting%20module%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22stale%20oracle%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22price%20manipulation%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22liquidity%20draining%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22sandwich%20attacks%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22just-in-time%20liquidity%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22external%20protocol%20upgrade%20risk%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22external%20protocol%20pausing%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22composability%20assumptions%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22flash%20loan%20amplification%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22governance%20timelock%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22cross-protocol%20governance%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22oracle%20manipulation%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22cascading%20liquidation%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22ERC-777%20callback%20reentrancy%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22reward%20attribution%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22share%20state%20inconsistency%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22vault%20withdrawal%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22reward%20distributor%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22accounting%20module%22
+[WebSearch] Attempting internet fetch: https://lite.duckduckgo.com/lite/?q=systemMap.config_semantics%20TOOL%3A%20SEARCH%20systemMap.value_flow_edges%20TOOL%3A%20SEARCH%20existingHotspots%20TOOL%3A%20SEARCH%20staticFindings%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22flash%20loan%20amplification%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22governance%20timelock%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22cross-protocol%20governance%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22oracle%20manipulation%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22cascading%20liquidation%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22ERC-777%20callback%20reentrancy%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22reward%20attribution%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22share%20state%20inconsistency%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22vault%20withdrawal%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22reward%20distributor%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22accounting%20module%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22stale%20oracle%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22price%20manipulation%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22liquidity%20draining%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22sandwich%20attacks%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22just-in-time%20liquidity%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22external%20protocol%20upgrade%20risk%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22external%20protocol%20pausing%22%20TOOL%3A%20MCP__SC-AUDITOR__SEARCH_FINDINGS%20%22composability%20assumptions%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22flash%20loan%20amplification%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22governance%20timelock%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22cross-protocol%20governance%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22oracle%20manipulation%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22cascading%20liquidation%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22ERC-777%20callback%20reentrancy%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22reward%20attribution%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22share%20state%20inconsistency%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22vault%20withdrawal%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22reward%20distributor%22%20TOOL%3A%20MCP__SC-AUDITOR__ENRICH_EVIDENCE%20%22accounting%20module%22
+[AgenticLoop:Iter4] LLM Prompt Count: 8
+[AgenticLoop:Iter4] LLM Response (first 100): [TOOL: MCP__SC-AUDITOR__ENRICH_EVIDENCE] "flash loan amplification" [TOOL: MCP__SC-AUDITOR__ENRICH_E...
+JSON Parse failed after robust attempts: SyntaxError: Unexpected token 'T', "[TOOL: MCP_"... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at robustParseJson (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/providers/inference-bridge.js:303:21)
+    at executeAuditPhase (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/providers/inference-bridge.js:790:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async runSimulatedPipeline (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/session-manager.js:540:37)
+[Pipeline] >>> ENTERING PHASE: audit-attack (13/15)
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter1] LLM Prompt Count: 2
+[AgenticLoop:Iter1] LLM Response (first 100): [TOOL: READ_FILE] rootDir=.sc-auditor-work/contracts/Hotspot.sol  [TOOL: READ_FILE] rootDir=.sc-audi...
+[AgenticLoop] Reading File: /Users/ramprasadgoud/Downloads/building/srp/rootDir=.sc-auditor-work/contracts/Hotspot.sol
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[AgenticLoop:Iter2] LLM Prompt Count: 4
+[AgenticLoop:Iter2] LLM Response (first 100): [TOOL: GREP] rootDir=.sc-auditor-work pattern=Hotspot.sol [TOOL: GREP] rootDir=.sc-auditor-work patt...
+JSON Parse failed after robust attempts: SyntaxError: Unexpected token 'T', "[TOOL: GREP"... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at robustParseJson (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/providers/inference-bridge.js:303:21)
+    at executeAuditPhase (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/providers/inference-bridge.js:790:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async runSimulatedPipeline (file:///Users/ramprasadgoud/Downloads/building/srp/apps/gateway/dist/runtime/session-manager.js:559:39)
+[Pipeline] >>> ENTERING PHASE: audit-verify (14/15)
+[AgenticLoop:Iter1] LLM Prompt Count: 2
+[AgenticLoop:Iter1] LLM Response (first 100): {"skeptic_verdict": "plausible", "da_verify": {"da_phase": "verify", "da_verdict": "sustained", "da_...
+[Pipeline] >>> ENTERING PHASE: audit-report (15/15)
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /audit
+[Gateway] GET /api/bootstrap
+[Gateway] GET /favicon.ico
+[Gateway] GET /api/runtime
+[Gateway] GET /api/skills
+[Gateway] GET /api/runtime
+[Gateway] GET /api/chat/conversations
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /api/runtime
+[Gateway] GET /audit
+[Gateway] GET /assets/index-C5YQ_K8N.js
+[Gateway] GET /assets/file-open-7c801643-684qeFg4.js
 [Gateway] GET /assets/directory-open-01563666-DWU9wJ6I.js
 [Gateway] GET /assets/file-save-3189631c-C1wFhQhH.js
-[Gateway] GET /assets/file-open-7c801643-684qeFg4.js
-[Gateway] GET /api/runtime
-[Gateway] GET /api/skills
-[Gateway] GET /api/runtime
-[Gateway] GET /api/chat/conversations
-[Gateway] GET /favicon.ico
-[Gateway] POST /api/chat/conversations/conv_802eba5e-da23-4845-8b9d-6950e104c66b/stream
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /
-[Gateway] GET /api/bootstrap
-[Gateway] GET /api/runtime
-[Gateway] GET /api/skills
-[Gateway] GET /api/runtime
-[Gateway] GET /api/chat/conversations
-[Gateway] GET /favicon.ico
-[Gateway] POST /api/chat/conversations/conv_802eba5e-da23-4845-8b9d-6950e104c66b/stream
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /
 [Gateway] GET /api/bootstrap
 [Gateway] GET /api/runtime
 [Gateway] GET /api/skills
@@ -1045,32 +1336,8 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /
-[Gateway] GET /api/bootstrap
-[Gateway] GET /api/runtime
-[Gateway] GET /api/skills
-[Gateway] GET /api/runtime
-[Gateway] GET /api/chat/conversations
 [Gateway] GET /favicon.ico
 [Gateway] GET /api/runtime
-[Gateway] POST /api/chat/conversations/conv_802eba5e-da23-4845-8b9d-6950e104c66b/stream
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
@@ -1090,69 +1357,10 @@ Press Ctrl+C to stop the server.
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /
-[Gateway] GET /api/bootstrap
-[Gateway] GET /api/runtime
-[Gateway] GET /api/skills
-[Gateway] GET /api/runtime
-[Gateway] GET /api/chat/conversations
-[Gateway] GET /favicon.ico
-[Gateway] POST /api/chat/conversations/conv_802eba5e-da23-4845-8b9d-6950e104c66b/stream
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
-[Gateway] GET /api/runtime
+[Gateway] POST /api/chat/conversations
+[Gateway] POST /api/chat/conversations/conv_c9ed0d51-ad65-423a-a464-fa300d838c26/stream
+[Router] Chat Route - ID: conv_c9ed0d51-ad65-423a-a464-fa300d838c26, Action: stream, Method: POST
+[Router] Calling handleStreamingChat for conv_c9ed0d51-ad65-423a-a464-fa300d838c26
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime
 [Gateway] GET /api/runtime

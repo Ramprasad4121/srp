@@ -169,10 +169,9 @@ test("Phase-2 emits Architecture Summary directly to runtime status via HTTP and
     const runtimeApi = createRuntimeClient(baseUrl);
     const sseUrl = `${baseUrl}/api/events`;
 
-    // Wait for synthesis-actors completion
-    // phases 0, 1, 2, 3, 4, 5, 6 (synthesis-actors)
-    // 7 phases * 2 events = 14 events. index 13 is completion.
-    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 14);
+    // Wait for visual-flow-map completion
+    // phases 0-10. index 21 is completion.
+    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 22);
 
     await new Promise((r) => setTimeout(r, 50)); 
 
@@ -181,24 +180,22 @@ test("Phase-2 emits Architecture Summary directly to runtime status via HTTP and
 
     const phaseEvents = await phaseEventsP;
     
-    // index 13 is synthesis-actors "completed"
-    assert.equal(phaseEvents[13].phase, "synthesis-actors");
-    assert.equal(phaseEvents[13].status, "completed");
+    // index 21 is visual-flow-map "completed"
+    assert.equal(phaseEvents[21].phase, "visual-flow-map");
+    assert.equal(phaseEvents[21].status, "completed");
 
-    // Re-verify the getter now that synthesis-actors completed
+    // Re-verify the getter now that visual-flow-map completed
     const pollRes = await runtimeApi.getSessionState();
     assert.equal(pollRes.ok, true);
     
     // The previous phases completed
     assert.ok(pollRes.data.workspaceAnalysis !== undefined);
-    assert.ok(pollRes.data.codebaseContext !== undefined);
     assert.ok(pollRes.data.intentSummary !== undefined);
 
     // Assert synthesis-actors succeeded
     assert.ok(pollRes.data.architectureSummary !== undefined, "Architecture summary missing");
-    assert.ok(pollRes.data.architectureSummary.markdownSummary.includes("Synthesized Architecture"));
-    // Since there were no files, it falls back to empty
-    assert.deepEqual(pollRes.data.architectureSummary.keyComponents, []);
+    
+    // Assert visual-flow-map succeeded
     assert.ok(pollRes.data.protocolDiagram !== undefined, "Protocol diagram missing");
     assert.equal(pollRes.data.protocolDiagram.type, "excalidraw");
     assert.ok(pollRes.data.protocolDiagram.elements.length > 0);

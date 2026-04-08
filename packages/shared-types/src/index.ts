@@ -44,7 +44,14 @@ export type MethodologyPhase =
   | "synthesis-invariants"
   | "synthesis-entry-exit"
   | "synthesis-functions"
-  | "visual-flow-map";
+  | "visual-flow-map"
+  | "audit-resolve-input"
+  | "audit-setup"
+  | "audit-map"
+  | "audit-hunt"
+  | "audit-attack"
+  | "audit-verify"
+  | "audit-report";
 
 export interface IntelligenceArtifact {
   readonly id: string;

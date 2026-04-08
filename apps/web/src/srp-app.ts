@@ -8,6 +8,7 @@ import "./features/chat/chat-view.js";
 import "./features/team/team-view.js";
 import "./features/gstack/gstack-view.js";
 import "./features/methodology/methodology-view.js";
+import "./features/methodology/whiteboard-overlay.js";
 
 export class SrpApp extends LitElement {
   static override properties = {
@@ -19,6 +20,7 @@ export class SrpApp extends LitElement {
     _skills: { state: true },
     _sidebarOpen: { state: true },
     _mode: { state: true },
+    _whiteboardOpen: { state: true },
   };
 
   static override styles = css`
@@ -276,10 +278,40 @@ export class SrpApp extends LitElement {
       white-space: nowrap;
     }
 
-    [hidden] {
-      display: none !important;
-    }
-  `;
+      [hidden] {
+        display: none !important;
+      }
+
+      .floating-fab {
+        position: fixed !important;
+        bottom: 32px !important;
+        right: 32px !important;
+        width: 60px !important;
+        height: 60px !important;
+        border-radius: 50% !important;
+        background: #0052FF !important;
+        color: white !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        z-index: 9999 !important;
+        border: 2px solid white !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .floating-fab:hover {
+        transform: translateY(-4px) scale(1.05);
+        background: #0041cc !important;
+      }
+
+      .fab-icon {
+        width: 32px;
+        height: 32px;
+        stroke: white !important;
+      }
+    `;
 
   declare _bootstrap: AppBootstrapResult | null;
   declare _runtime: RuntimeSessionState | null;
@@ -290,6 +322,7 @@ export class SrpApp extends LitElement {
   declare _sidebarOpen: boolean;
   declare _chatPanelOpen: boolean;
   declare _mode: "auditor" | "developer";
+  declare _whiteboardOpen: boolean;
 
   constructor() {
     super();
@@ -301,6 +334,7 @@ export class SrpApp extends LitElement {
     this._skills = [];
     this._sidebarOpen = true;
     this._mode = "auditor";
+    this._whiteboardOpen = false;
 
     console.log("SRP Senior App initialized");
     
@@ -324,6 +358,12 @@ export class SrpApp extends LitElement {
     });
 
     setInterval(() => this.poll(), 5000);
+  }
+
+  override updated(changedProps: Map<string, any>) {
+    if (changedProps.has("_whiteboardOpen")) {
+      console.log("WhiteboardOverlay: _whiteboardOpen =", this._whiteboardOpen);
+    }
   }
 
   async refresh() {
@@ -404,6 +444,25 @@ export class SrpApp extends LitElement {
     }
 
     return html`
+      <!-- Floating Audit Tools -->
+      <button 
+        class="floating-fab" 
+        @click=${() => { 
+          this._whiteboardOpen = !this._whiteboardOpen;
+          console.log("FAB Click: _whiteboardOpen =", this._whiteboardOpen);
+        }} 
+        title="Open Audit Drawing Whiteboard"
+      >
+        <svg class="fab-icon" fill="none" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+        </svg>
+      </button>
+
+      <whiteboard-overlay 
+        ?open=${this._whiteboardOpen}
+        @close-whiteboard=${() => { console.log("Closing whiteboard"); this._whiteboardOpen = false; }}
+      ></whiteboard-overlay>
+
       <div class="app-container">
         <!-- Minimal Sidebar -->
         <aside class="sidebar ${this._sidebarOpen ? '' : 'closed'}">
@@ -412,7 +471,7 @@ export class SrpApp extends LitElement {
               <span class="logo">SRP Protocol</span>
               <span class="logo-badge">v1.0</span>
             </div>
-            <button class="toggle-btn" style="background:none; border:none; cursor:pointer; color:var(--text-muted);" @click=${() => this._sidebarOpen = false}>
+            <button class="toggle-btn" style="background:none; border:none; cursor:pointer; color:var(--text-muted);" @click=${() => { console.log("Sidebar toggled"); this._sidebarOpen = false; }}>
               <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
             </button>
           </div>

@@ -75,6 +75,7 @@ export async function createGatewayServer(
 
   const routerConfig = { rootDirectory, environment };
 
+  console.log(`[Server] Initializing SRP Gateway on ${host}:${port}...`);
   const server = createHttpServer((req, res) => {
     routeRequest(req, res, routerConfig).catch((err: unknown) => {
       // Last-resort: swallow unhandled handler errors so the server stays up

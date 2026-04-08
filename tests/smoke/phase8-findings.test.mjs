@@ -149,10 +149,12 @@ test("Inference Bridge computes deterministic mock findings from Hypotheses and 
     assert.equal(registry.findings.length, 2);
     
     const f0 = registry.findings[0];
+    assert.equal(f0.id, "FIND-001");
     assert.equal(f0.severity, "High"); // from high likelihood hyp
     assert.equal(f0.status, "Confirmed");
 
     const f1 = registry.findings[1];
+    assert.equal(f1.id, "FIND-002");
     assert.equal(f1.severity, "Critical"); // from critical eco risk
     assert.equal(f1.status, "Confirmed");
 
@@ -170,8 +172,9 @@ test("Phase-8 emits Findings Registry directly to runtime status via HTTP and SS
     const runtimeApi = createRuntimeClient(baseUrl);
     const sseUrl = `${baseUrl}/api/events`;
 
-    // phases 0, 1, 2, 3, 4, 5, 6, 7, 8 -> 9 phases * 2 events = 18 events for phase-8 completed
-    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 18);
+    // Wait for audit-verify completion
+    // phases 0-16. index 33 is completion.
+    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 34);
 
     await new Promise((r) => setTimeout(r, 50)); 
 
@@ -180,21 +183,20 @@ test("Phase-8 emits Findings Registry directly to runtime status via HTTP and SS
 
     const phaseEvents = await phaseEventsP;
     
-    // index 17 is phase-8-finding-verification "completed"
-    assert.equal(phaseEvents[17].phase, "phase-8-finding-verification");
-    assert.equal(phaseEvents[17].status, "completed");
+    // index 33 is audit-verify "completed"
+    assert.equal(phaseEvents[33].phase, "audit-verify");
+    assert.equal(phaseEvents[33].status, "completed");
 
-    // Re-verify the getter now that Phase 8 completed
+    // Re-verify the getter now that Phase completed
     const pollRes = await runtimeApi.getSessionState();
     assert.equal(pollRes.ok, true);
     
-    // Assert Phase 8 succeeded
+    // Assert Phase 8 (now part of 17) succeeded
     assert.ok(pollRes.data.findingRegistry !== undefined, "Finding registry missing");
     
-    // Because the workspace was empty, it falls back to the informational find-gen-01
     const registry = pollRes.data.findingRegistry;
     assert.ok(registry.findings.length > 0);
-    assert.equal(registry.findings[0].id, "FIND-GEN-01");
+    assert.equal(registry.findings[0].id, "FIND-001");
 
   } finally {
     await srv.stop();

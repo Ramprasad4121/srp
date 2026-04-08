@@ -451,6 +451,9 @@ export class MethodologyView extends LitElement {
     if (phase.phase === 'synthesis-entry-exit') return this.renderEntryExit(data as any);
     if (phase.phase === 'synthesis-invariants') return this.renderInvariants(data as any);
     if (phase.phase === 'visual-flow-map') return this.renderDiagram(data as any);
+    if (phase.phase === 'audit-hunt') return this.renderInvariants(data as any); // Use invariant style for hypotheses
+    if (phase.phase === 'audit-verify') return this.renderVerifiedFindings(data as any);
+    if (phase.phase === 'audit-report') return this.renderFormalReport(data as any);
     
     // Synthesis fallback
     return html`
@@ -628,6 +631,43 @@ export class MethodologyView extends LitElement {
     `;
   }
 
+  private renderVerifiedFindings(data: any) {
+    const findings = data.findings || [];
+    return html`
+      <div class="artifact-card">
+        <div class="artifact-title">🚩 Verified Vulnerabilities</div>
+        <p style="font-size: 13px; color: #6b7280; margin-bottom: 1.5rem;">${data.summary}</p>
+        ${findings.map((f: any) => html`
+          <div style="border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; background: ${f.severity === 'Critical' || f.severity === 'High' ? '#fff1f2' : '#fefce8'};">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+              <h4 style="margin: 0; font-size: 18px; font-weight: 800;">${f.title}</h4>
+              <span class="pill" style="background: ${f.severity === 'Critical' ? '#be123c' : (f.severity === 'High' ? '#e11d48' : '#eab308')}; color: #fff;">${f.severity}</span>
+            </div>
+            <div style="font-size: 14px; line-height: 1.6; color: #374151; white-space: pre-wrap;">${f.description}</div>
+            <div style="margin-top: 1rem; font-size: 12px; font-weight: 600; color: #6b7280;">IMPACT: ${f.impact || "Not specified"}</div>
+            <div style="margin-top: 4px; font-size: 12px; font-weight: 600; color: #6b7280;">REMEDIATION: ${f.remediation || "Not specified"}</div>
+          </div>
+        `)}
+      </div>
+    `;
+  }
+
+  private renderFormalReport(data: any) {
+    return html`
+      <div class="artifact-card" style="background: #111827; color: #e5e7eb; border: none; padding: 3rem;">
+        <div style="color: #60a5fa; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 1rem;">SECURITY PROTOCOL DELIVERABLE</div>
+        <h1 style="color: #fff; font-size: 2.5rem; font-weight: 800; margin-bottom: 2rem; letter-spacing: -0.02em;">${data.title || 'Security Audit Report'}</h1>
+        <div class="markdown-body" style="font-size: 16px; line-height: 1.8; color: #d1d5db; white-space: pre-wrap; font-family: 'Inter', system-ui, sans-serif;">
+          ${data.markdownContent}
+        </div>
+        <div style="margin-top: 4rem; padding-top: 2rem; border-top: 1px solid #374151; display: flex; justify-content: space-between; font-size: 12px;">
+          <span>GENERATED: ${new Date(data.generatedAt).toLocaleString()}</span>
+          <span>IDENTIFIED BY: SRP INTELLIGENCE ENGINE</span>
+        </div>
+      </div>
+    `;
+  }
+
   private mapPhaseToKey(phase: string): string {
     const map: Record<string, string> = {
       "discovery-docs": "discoveryRegistry",
@@ -640,7 +680,14 @@ export class MethodologyView extends LitElement {
       "synthesis-functions": "functionMap",
       "synthesis-entry-exit": "entryExitMatrix",
       "synthesis-invariants": "invariantRegistry",
-      "visual-flow-map": "protocolDiagram"
+      "visual-flow-map": "protocolDiagram",
+      "audit-resolve-input": "discoveryRegistry",
+      "audit-setup": "discoveryRegistry",
+      "audit-map": "discoveryRegistry",
+      "audit-hunt": "hypothesisRegistry",
+      "audit-attack": "discoveryRegistry",
+      "audit-verify": "findingRegistry",
+      "audit-report": "formalReport"
     };
     return map[phase] || "";
   }

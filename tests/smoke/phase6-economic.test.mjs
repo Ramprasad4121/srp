@@ -135,8 +135,9 @@ test("Phase-6 emits Economic Analysis directly to runtime status via HTTP and SS
     const runtimeApi = createRuntimeClient(baseUrl);
     const sseUrl = `${baseUrl}/api/events`;
 
-    // phase 0, 1, 2, 3, 4, 5, 6 -> 7 phases * 2 events = 14 events for phase-6 completed
-    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 14);
+    // Wait for audit-hunt completion
+    // phases 0-14. index 29 is completion.
+    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 30);
 
     await new Promise((r) => setTimeout(r, 50)); 
 
@@ -145,23 +146,22 @@ test("Phase-6 emits Economic Analysis directly to runtime status via HTTP and SS
 
     const phaseEvents = await phaseEventsP;
     
-    // index 13 is phase-6-economic-modeling "completed"
-    assert.equal(phaseEvents[13].phase, "phase-6-economic-modeling");
-    assert.equal(phaseEvents[13].status, "completed");
+    // index 29 is audit-hunt "completed"
+    assert.equal(phaseEvents[29].phase, "audit-hunt");
+    assert.equal(phaseEvents[29].status, "completed");
 
-    // Re-verify the getter now that Phase 6 completed
+    // Re-verify the getter now that Phase completed
     const pollRes = await runtimeApi.getSessionState();
     assert.equal(pollRes.ok, true);
     
-    // Assert Phase 6 succeeded
+    // Assert Phase 6 (now part of 15) succeeded
     assert.ok(pollRes.data.economicAnalysis !== undefined, "Economic analysis missing");
     
-    // Because the workspace was empty, it falls back to the generic fallback risk
     const analysis = pollRes.data.economicAnalysis;
     assert.ok(analysis.risks.length > 0);
     const r0 = analysis.risks[0];
-    assert.equal(r0.id, "ECO-GEN-01");
-    assert.equal(r0.severity, "Low");
+    assert.equal(r0.id, "ECO-001");
+    assert.equal(r0.severity, "Critical");
 
   } finally {
     await srv.stop();

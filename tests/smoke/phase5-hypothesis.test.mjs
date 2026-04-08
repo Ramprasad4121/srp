@@ -166,8 +166,9 @@ test("Phase-5 emits Hypothesis Registry directly to runtime status via HTTP and 
     const runtimeApi = createRuntimeClient(baseUrl);
     const sseUrl = `${baseUrl}/api/events`;
 
-    // phase 0, 1, 2, 3, 4, 5 -> 6 phases * 2 events = 12 events for phase-5 completed
-    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 12);
+    // Wait for audit-hunt completion
+    // phases 0-14. index 29 is completion.
+    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 30);
 
     await new Promise((r) => setTimeout(r, 50)); 
 
@@ -176,23 +177,22 @@ test("Phase-5 emits Hypothesis Registry directly to runtime status via HTTP and 
 
     const phaseEvents = await phaseEventsP;
     
-    // index 11 is phase-5-attack-simulation "completed"
-    assert.equal(phaseEvents[11].phase, "phase-5-attack-simulation");
-    assert.equal(phaseEvents[11].status, "completed");
+    // index 29 is audit-hunt "completed"
+    assert.equal(phaseEvents[29].phase, "audit-hunt");
+    assert.equal(phaseEvents[29].status, "completed");
 
-    // Re-verify the getter now that Phase 5 completed
+    // Re-verify the getter now that Phase completed
     const pollRes = await runtimeApi.getSessionState();
     assert.equal(pollRes.ok, true);
     
-    // Assert Phase 5 succeeded
+    // Assert Phase 5 (now part of 15) succeeded
     assert.ok(pollRes.data.hypothesisRegistry !== undefined, "Hypothesis registry missing");
     
-    // Because the workspace was empty, it falls back to the general fallback architecture -> general hypothesis
     const registry = pollRes.data.hypothesisRegistry;
     assert.ok(registry.hypotheses.length > 0);
     const h0 = registry.hypotheses[0];
-    assert.equal(h0.id, "HYP-GEN-01");
-    assert.equal(h0.likelihood, "Low");
+    assert.equal(h0.id, "HYP-001");
+    assert.equal(h0.likelihood, "Medium");
 
   } finally {
     await srv.stop();

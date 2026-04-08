@@ -1,0 +1,42 @@
+{
+  "phase": "SETUP",
+  "timestamp": "2026-04-07T12:48:34.921Z",
+  "scope": {
+    "rootDir": "",
+    "solidityFiles": [],
+    "solcVersion": "",
+    "totalSolFiles": 0
+  },
+  "slither": {
+    "available": false,
+    "error": "No Solidity files found",
+    "findingCounts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "informational": 0
+    },
+    "topFindings": []
+  },
+  "aderyn": {
+    "available": false,
+    "error": "No Solidity files found",
+    "findingCounts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "informational": 0
+    },
+    "topFindings": []
+  },
+  "checklist": {
+    "loaded": false,
+    "itemCount": 0
+  },
+  "warnings": [
+    "No Solidity files found",
+    "Both Slither and Aderyn failed. Audit proceeds in manual-only mode."
+  ]
+}

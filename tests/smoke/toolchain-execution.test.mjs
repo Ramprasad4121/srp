@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
+import http from "node:http";
 import { createGatewayServer } from "../../apps/gateway/dist/index.js";
 import { createRuntimeClient } from "../../apps/web/dist/api/runtime-client.js";
 
@@ -10,7 +11,51 @@ async function makeFreshRoot() {
   return mkdtemp(join(tmpdir(), "srp-toolchain-"));
 }
 
-test("Toolchain runner produces logs and persists artifact in phase 4", async () => {
+function captureSseEvents(url, targetEventType, maxCount) {
+  return new Promise((resolve, reject) => {
+    let rawData = "";
+    const captured = [];
+
+    const req = http.get(url, (res) => {
+      if (res.statusCode !== 200) {
+        req.destroy();
+        return reject(new Error(`Failed to connect to SSE: HTTP ${res.statusCode}`));
+      }
+
+      res.on("data", (chunk) => {
+        rawData += chunk.toString("utf8");
+
+        const parts = rawData.split("\n\n");
+        if (parts.length > 1) {
+          for (let i = 0; i < parts.length - 1; i++) {
+            const frame = parts[i].trim();
+            if (frame.startsWith("data: ")) {
+              const jsonStr = frame.substring("data: ".length);
+              try {
+                const event = JSON.parse(jsonStr);
+                if (event.type === targetEventType) {
+                  captured.push(event);
+                  if (captured.length >= maxCount) {
+                    req.destroy();
+                    resolve(captured);
+                    return;
+                  }
+                }
+              } catch (e) {}
+            }
+          }
+          rawData = parts[parts.length - 1];
+        }
+      });
+
+      res.on("error", reject);
+    });
+
+    req.on("error", reject);
+  });
+}
+
+test("Toolchain runner produces logs and persists artifact in audit-setup phase", async () => {
   const root = await makeFreshRoot();
   process.env.SRP_TOOLCHAIN_MODE = "mock";
   const srv = await createGatewayServer({ port: 0, rootDirectory: root, environment: {} });
@@ -18,12 +63,17 @@ test("Toolchain runner produces logs and persists artifact in phase 4", async ()
   try {
     const baseUrl = `http://127.0.0.1:${srv.port}`;
     const runtimeClient = createRuntimeClient(baseUrl);
+    const sseUrl = `${baseUrl}/api/events`;
+
+    // Wait for audit-setup completion
+    // phases 0-12. index 25 is completion.
+    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 26);
 
     const start = await runtimeClient.startSession();
     assert.equal(start.ok, true);
     assert.ok(start.data.runId);
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await phaseEventsP;
 
     const runtimeState = await runtimeClient.getSessionState();
     assert.equal(runtimeState.ok, true);

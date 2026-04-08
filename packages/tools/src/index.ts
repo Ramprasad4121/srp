@@ -3,6 +3,14 @@ import type { ToolchainExecution } from "@srp/shared-types";
 export * from "./adapters/slither.js";
 export * from "./adapters/forge.js";
 export * from "./adapters/aderyn.js";
+export * from "./adapters/sc-auditor/run-slither.js";
+export * from "./adapters/sc-auditor/run-aderyn.js";
+export * from "./adapters/sc-auditor/run-echidna.js";
+export * from "./adapters/sc-auditor/run-halmos.js";
+export * from "./adapters/sc-auditor/run-medusa.js";
+export * from "./adapters/sc-auditor/search-findings.js";
+export * from "./adapters/sc-auditor/get-checklist.js";
+export * from "./adapters/sc-auditor/generate-foundry-poc.js";
 
 /**
  * Supported toolchain identifiers per the master plan.
@@ -14,7 +22,9 @@ export type ToolchainId =
   | "slither"
   | "aderyn"
   | "echidna"
-  | "docker";
+  | "docker"
+  | "sc-auditor"
+  | "agent";
 
 /**
  * Describes a toolchain integration.
@@ -87,6 +97,14 @@ export const TOOLCHAIN_REGISTRY: readonly ToolchainDefinition[] = [
     command: "docker",
     requiresDocker: false,
     categories: []
+  },
+  {
+    id: "sc-auditor",
+    name: "SC-Auditor",
+    description: "Orchestrated security auditing toolsuite.",
+    command: "node",
+    requiresDocker: false,
+    categories: ["static-analysis", "fuzzing"]
   }
 ];
 

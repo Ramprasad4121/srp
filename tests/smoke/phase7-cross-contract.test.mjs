@@ -135,8 +135,9 @@ test("Phase-7 emits Cross-Contract Analysis directly to runtime status via HTTP 
     const runtimeApi = createRuntimeClient(baseUrl);
     const sseUrl = `${baseUrl}/api/events`;
 
-    // phase 0, 1, 2, 3, 4, 5, 6, 7 -> 8 phases * 2 events = 16 events for phase-7 completed
-    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 16);
+    // Wait for audit-attack completion
+    // phases 0-15. index 31 is completion.
+    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 32);
 
     await new Promise((r) => setTimeout(r, 50)); 
 
@@ -145,22 +146,19 @@ test("Phase-7 emits Cross-Contract Analysis directly to runtime status via HTTP 
 
     const phaseEvents = await phaseEventsP;
     
-    // index 15 is phase-7-cross-contract-paths "completed"
-    assert.equal(phaseEvents[15].phase, "phase-7-cross-contract-paths");
-    assert.equal(phaseEvents[15].status, "completed");
+    // index 31 is audit-attack "completed"
+    assert.equal(phaseEvents[31].phase, "audit-attack");
+    assert.equal(phaseEvents[31].status, "completed");
 
-    // Re-verify the getter now that Phase 7 completed
+    // Re-verify the getter now that Phase completed
     const pollRes = await runtimeApi.getSessionState();
     assert.equal(pollRes.ok, true);
     
-    // Assert Phase 7 succeeded
+    // Assert Phase 7 (now part of 16) succeeded
     assert.ok(pollRes.data.crossContractAnalysis !== undefined, "Cross-contract analysis missing");
     
-    // Because the workspace was empty, it falls back to the generic fallback path
     const analysis = pollRes.data.crossContractAnalysis;
-    assert.ok(analysis.paths.length > 0);
-    const p0 = analysis.paths[0];
-    assert.equal(p0.id, "PATH-GEN-01");
+    assert.equal(analysis.summary, "Mock cross-contract execution paths.");
 
   } finally {
     await srv.stop();

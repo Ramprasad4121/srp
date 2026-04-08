@@ -115,7 +115,7 @@ test("full integration: entire audit pipeline runs with all packages", async () 
   });
   phaseRecords = markPhaseCompleted(phaseRecords, "synthesis-invariants", 2);
 
-  // Remaining phases
+  // Remaining Synthesis
   for (const phase of ["synthesis-functions", "synthesis-entry-exit"]) {
     phaseRecords = markPhaseRunning(phaseRecords, phase);
     phaseRecords = markPhaseCompleted(phaseRecords, phase, 1);
@@ -123,7 +123,7 @@ test("full integration: entire audit pipeline runs with all packages", async () 
 
   // Phase: Visual Map
   phaseRecords = markPhaseRunning(phaseRecords, "visual-flow-map");
-
+  
   memoryStore.extract({
     kind: "vulnerability-class",
     title: "Flash loan price manipulation",
@@ -135,11 +135,17 @@ test("full integration: entire audit pipeline runs with all packages", async () 
 
   phaseRecords = markPhaseCompleted(phaseRecords, "visual-flow-map", 1);
 
-  // Phase: Findings (Simulated)
-  eventBus.emit(createFindingRegisteredEvent({
-    runId, projectId,
-    findingId: "F-001", severity: "Critical", title: "Oracle Manipulation"
-  }));
+  // Audit Phases
+  for (const phase of ["audit-resolve-input", "audit-setup", "audit-map", "audit-hunt", "audit-attack", "audit-verify", "audit-report"]) {
+    phaseRecords = markPhaseRunning(phaseRecords, phase);
+    if (phase === "audit-report") {
+       eventBus.emit(createFindingRegisteredEvent({
+        runId, projectId,
+        findingId: "F-001", severity: "Critical", title: "Oracle Manipulation"
+      }));
+    }
+    phaseRecords = markPhaseCompleted(phaseRecords, phase, 1);
+  }
 
   // 5. Final assertions
   const progress = computeRunProgress(phaseRecords);
@@ -154,7 +160,7 @@ test("full integration: entire audit pipeline runs with all packages", async () 
 
   eventBus.emit(createSessionCompletedEvent({
     runId, projectId, sessionId,
-    totalPhases: 11, totalArtifacts: 12, durationMs: 5000
+    totalPhases: 18, totalArtifacts: 20, durationMs: 5000
   }));
 
   assert.ok(eventLog.length >= 3); // started + finding + completed

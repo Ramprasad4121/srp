@@ -93,7 +93,7 @@ test("Phase-7 CLI: srp audit (happy path)", async () => {
     }
     assert.equal(code, 0);
     assert.ok(stdout.includes("Starting SRP Audit methodology"));
-    assert.ok(stdout.includes("phase-0-preparation"));
+    assert.ok(stdout.includes("discovery-docs"));
     assert.ok(stdout.includes("Audit methodology completed successfully"));
     assert.ok(stdout.includes("Report generated"));
   } finally {

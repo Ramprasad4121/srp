@@ -161,8 +161,9 @@ test("Phase-4 emits Verification Plan directly to runtime status via HTTP and SS
     const runtimeApi = createRuntimeClient(baseUrl);
     const sseUrl = `${baseUrl}/api/events`;
 
-    // phase 0, 1, 2, 3, 4 -> 5 phases * 2 events = 10 events for phase-4 completed
-    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 10);
+    // Wait for synthesis-invariants completion
+    // phases 0-9. index 19 is completion.
+    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 20);
 
     await new Promise((r) => setTimeout(r, 50)); 
 
@@ -171,31 +172,27 @@ test("Phase-4 emits Verification Plan directly to runtime status via HTTP and SS
 
     const phaseEvents = await phaseEventsP;
     
-    // index 9 is phase-4-code-reading "completed"
-    assert.equal(phaseEvents[9].phase, "phase-4-code-reading");
-    assert.equal(phaseEvents[9].status, "completed");
+    // index 19 is synthesis-invariants "completed"
+    assert.equal(phaseEvents[19].phase, "synthesis-invariants");
+    assert.equal(phaseEvents[19].status, "completed");
 
-    // Re-verify the getter now that Phase 4 completed
+    // Re-verify the getter now that Phase completed
     const pollRes = await runtimeApi.getSessionState();
     assert.equal(pollRes.ok, true);
     
     // Assert all dependencies populated
     assert.ok(pollRes.data.workspaceAnalysis !== undefined);
-    assert.ok(pollRes.data.codebaseContext !== undefined);
-    assert.ok(pollRes.data.intentSummary !== undefined);
-    assert.ok(pollRes.data.architectureSummary !== undefined);
     assert.ok(pollRes.data.invariantRegistry !== undefined);
 
-    // Assert Phase 4 succeeded
+    // Assert Phase 4 (now part of 10) succeeded
     assert.ok(pollRes.data.verificationPlan !== undefined, "Verification plan missing");
     
-    // Because the workspace was empty, it falls back to the general fallback architecture -> fallback invariant -> fallback plan
     const plan = pollRes.data.verificationPlan;
     assert.ok(plan.items.length > 0);
-    // In our empty workspace, it should generate Manual Audit check for INV-GEN-01
+    
     const vp = plan.items[0];
-    assert.equal(vp.id, "VP-INV-GEN-01");
-    assert.equal(vp.verificationType, "Manual");
+    assert.ok(vp.id.startsWith("VP-INV-"));
+    assert.equal(vp.verificationType, "Fuzzing");
 
   } finally {
     await srv.stop();

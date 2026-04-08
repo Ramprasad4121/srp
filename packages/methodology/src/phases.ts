@@ -14,7 +14,14 @@ export const METHODOLOGY_PHASES: readonly MethodologyPhase[] = [
   "synthesis-functions",
   "synthesis-entry-exit",
   "synthesis-invariants",
-  "visual-flow-map"
+  "visual-flow-map",
+  "audit-resolve-input",
+  "audit-setup",
+  "audit-map",
+  "audit-hunt",
+  "audit-attack",
+  "audit-verify",
+  "audit-report"
 ] as const;
 
 /**
@@ -31,7 +38,14 @@ export const PHASE_LABELS: Readonly<Record<MethodologyPhase, string>> = {
   "synthesis-functions": "Synthesis: Main Contracts & Functions",
   "synthesis-entry-exit": "Synthesis: Entry & Exit points",
   "synthesis-invariants": "Synthesis: Protocol Invariants",
-  "visual-flow-map": "Visual: Protocol Flow Map"
+  "visual-flow-map": "Visual: Protocol Flow Map",
+  "audit-resolve-input": "Audit: Resolve Input",
+  "audit-setup": "Audit: Setup & Static Analysis",
+  "audit-map": "Audit: System Mapping",
+  "audit-hunt": "Audit: Vulnerability Hunting",
+  "audit-attack": "Audit: Exploit Proofing (Attack)",
+  "audit-verify": "Audit: Skeptic-Judge Verification",
+  "audit-report": "Audit: Final Structured Report"
 };
 
 export interface PhaseDefinition {
@@ -119,6 +133,55 @@ export const PHASE_DEFINITIONS: readonly PhaseDefinition[] = [
     description: "Generate interactive Excalidraw value flow diagrams.",
     expectedArtifactKinds: ["diagram"],
     dependsOn: ["synthesis-invariants"]
+  },
+  {
+    phase: "audit-resolve-input",
+    label: PHASE_LABELS["audit-resolve-input"],
+    description: "Resolve audit scope from GitHub URLs or local paths.",
+    expectedArtifactKinds: ["note"],
+    dependsOn: []
+  },
+  {
+    phase: "audit-setup",
+    label: PHASE_LABELS["audit-setup"],
+    description: "Run initial static analysis (Slither, Aderyn) and setup environment.",
+    expectedArtifactKinds: ["note"],
+    dependsOn: ["audit-resolve-input"]
+  },
+  {
+    phase: "audit-map",
+    label: PHASE_LABELS["audit-map"],
+    description: "Deep dive into architecture, trust boundaries, and invariants.",
+    expectedArtifactKinds: ["note"],
+    dependsOn: ["audit-setup"]
+  },
+  {
+    phase: "audit-hunt",
+    label: PHASE_LABELS["audit-hunt"],
+    description: "Parallel hunt lanes for common and advanced vulnerability patterns.",
+    expectedArtifactKinds: ["hypothesis"],
+    dependsOn: ["audit-map"]
+  },
+  {
+    phase: "audit-attack",
+    label: PHASE_LABELS["audit-attack"],
+    description: "Develop Proof-of-Concepts and exploit sketches for candidate issues.",
+    expectedArtifactKinds: ["test"],
+    dependsOn: ["audit-hunt"]
+  },
+  {
+    phase: "audit-verify",
+    label: PHASE_LABELS["audit-verify"],
+    description: "Formal verification and skeptic review of exploit claims.",
+    expectedArtifactKinds: ["finding"],
+    dependsOn: ["audit-attack"]
+  },
+  {
+    phase: "audit-report",
+    label: PHASE_LABELS["audit-report"],
+    description: "Generate final high-fidelity audit report.",
+    expectedArtifactKinds: ["report"],
+    dependsOn: ["audit-verify"]
   }
 ];
 

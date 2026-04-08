@@ -108,7 +108,6 @@ export async function routeRequest(
       const segments = path.split("/");
       const id = segments[4];
       const action = segments[5];
-      console.log(`[Router] Chat Route - ID: ${id}, Action: ${action}, Method: ${method}`);
 
       if (id && method === "GET" && !action) {
         await handleGetConversation(req, res, { id });
@@ -119,11 +118,9 @@ export async function routeRequest(
          return;
       }
       if (id && method === "POST" && action === "stream") {
-         console.log(`[Router] Calling handleStreamingChat for ${id}`);
          await handleStreamingChat(req, res, { id }, setupConfig);
          return;
       }
-      console.log(`[Router] No match inside chat block for ${method} ${path}`);
     }
 
     if (method === "GET" && path.startsWith("/api/skills/")) {

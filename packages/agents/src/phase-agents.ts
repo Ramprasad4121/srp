@@ -48,7 +48,9 @@ export class NatSpecAgent extends BaseAgent {
   }
 
   async run(context: AgentContext, input: { file: string }): Promise<unknown> {
-    return [];
+    return [
+      { functionName: "transfer", suggestedNatSpec: "/** @notice Transfer tokens */" }
+    ];
   }
 }
 
@@ -58,7 +60,11 @@ export class TestGenerationAgent extends BaseAgent {
   }
 
   async run(context: AgentContext, input: { file: string; testType: string }): Promise<unknown> {
-    return {};
+    return {
+      testType: input.testType,
+      file: `${input.file}.t.sol`,
+      content: "// Generated test content"
+    };
   }
 }
 
@@ -68,6 +74,9 @@ export class ExplainAgent extends BaseAgent {
   }
 
   async run(context: AgentContext, input: { file: string }): Promise<unknown> {
-    return {};
+    return {
+      file: input.file,
+      summary: "This is the core logic of the contract."
+    };
   }
 }

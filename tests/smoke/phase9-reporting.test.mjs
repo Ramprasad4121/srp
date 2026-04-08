@@ -197,8 +197,9 @@ test("Phase-9 emits Formal Report directly to runtime status via HTTP and SSE", 
     const runtimeApi = createRuntimeClient(baseUrl);
     const sseUrl = `${baseUrl}/api/events`;
 
-    // phases 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 9 -> 11 phases * 2 events = 22 events for phase-9 completed
-    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 22);
+    // Wait for audit-report completion
+    // phases 0-17. index 35 is completion.
+    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 36);
 
     await new Promise((r) => setTimeout(r, 50)); 
 
@@ -207,15 +208,15 @@ test("Phase-9 emits Formal Report directly to runtime status via HTTP and SSE", 
 
     const phaseEvents = await phaseEventsP;
     
-    // index 21 is phase-9-reporting "completed"
-    assert.equal(phaseEvents[21].phase, "phase-9-reporting");
-    assert.equal(phaseEvents[21].status, "completed");
+    // index 35 is audit-report "completed"
+    assert.equal(phaseEvents[35].phase, "audit-report");
+    assert.equal(phaseEvents[35].status, "completed");
 
-    // Re-verify the getter now that Phase 9 completed
+    // Re-verify the getter now that Phase 9 (18) completed
     const pollRes = await runtimeApi.getSessionState();
     assert.equal(pollRes.ok, true);
     
-    // Assert Phase 9 succeeded
+    // Assert Phase 9 (18) succeeded
     assert.ok(pollRes.data.formalReport !== undefined, "Formal report missing");
     assert.ok(pollRes.data.formalReport.markdownContent.includes("# Formal Security Audit Report"));
 

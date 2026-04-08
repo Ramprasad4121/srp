@@ -149,9 +149,9 @@ test("Phase-10 emits Remediation Plan directly to runtime status via HTTP and SS
     const runtimeApi = createRuntimeClient(baseUrl);
     const sseUrl = `${baseUrl}/api/events`;
 
-    // phases 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 9 -> 11 phases * 2 events = 22 events for phase-9 completed
-    // phase-10 is event index 18, 19
-    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 20); // 10 phases completed
+    // Wait for audit-report completion
+    // phases 0-17. index 35 is completion.
+    const phaseEventsP = captureSseEvents(sseUrl, "phase.status.changed", 36);
 
     await new Promise((r) => setTimeout(r, 50)); 
 
@@ -160,21 +160,20 @@ test("Phase-10 emits Remediation Plan directly to runtime status via HTTP and SS
 
     const phaseEvents = await phaseEventsP;
     
-    // index 19 is phase-10-remediation "completed"
-    assert.equal(phaseEvents[19].phase, "phase-10-remediation");
-    assert.equal(phaseEvents[19].status, "completed");
+    // index 35 is audit-report "completed"
+    assert.equal(phaseEvents[35].phase, "audit-report");
+    assert.equal(phaseEvents[35].status, "completed");
 
-    // Re-verify the getter now that Phase 10 completed
+    // Re-verify the getter now that Phase completed
     const pollRes = await runtimeApi.getSessionState();
     assert.equal(pollRes.ok, true);
     
-    // Assert Phase 10 succeeded
+    // Assert Phase 10 (now part of 18) succeeded
     assert.ok(pollRes.data.remediationPlan !== undefined, "Remediation plan missing");
     
-    // Because the finding registry fell back to FIND-GEN-01, remediation should have 1 action
     const plan = pollRes.data.remediationPlan;
     assert.ok(plan.actions.length > 0);
-    assert.equal(plan.actions[0].id, "REM-FIND-GEN-01");
+    assert.equal(plan.actions[0].id, "REM-FIND-001");
 
   } finally {
     await srv.stop();
