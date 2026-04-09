@@ -272,12 +272,12 @@
 
     .view {
       height: 100%;
-      display: none;
+      display: none !important;
       flex-direction: column;
     }
 
     .view.active {
-      display: flex;
+      display: flex !important;
     }
 
     .chat-shell {
@@ -377,7 +377,7 @@
     }
 
     .input-area {
-      padding: 1rem;
+      padding: 1rem 7rem 1rem 1rem;
       border-top: 1px solid #f3f4f6;
       background: #fff;
       display: flex;
@@ -812,7 +812,7 @@
 
     .floating-fab {
       position: fixed;
-      bottom: 32px;
+      bottom: 56px;
       right: 32px;
       width: 60px;
       height: 60px;
@@ -866,7 +866,7 @@
     .whiteboard-panel {
       position: absolute;
       right: 20px;
-      bottom: 92px;
+      bottom: 124px;
       width: min(960px, calc(100vw - 32px));
       height: min(720px, calc(100vh - 120px));
       background: #ffffff;
