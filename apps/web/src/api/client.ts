@@ -3,7 +3,9 @@ import type {
   RuntimeSessionState, 
   SetupManifest, 
   RuntimeMode,
-  MethodologyPhase
+  MethodologyPhase,
+  RunManifest,
+  AuditRoomProjection
 } from "@srp/shared-types";
 
 export class GatewayClient {
@@ -27,6 +29,14 @@ export class GatewayClient {
 
   async getRuntime(): Promise<RuntimeSessionState> {
     return this.request<RuntimeSessionState>("/runtime");
+  }
+
+  async getRuns(): Promise<readonly RunManifest[]> {
+    return this.request<readonly RunManifest[]>("/runs");
+  }
+
+  async getRunProjection(runId: string): Promise<AuditRoomProjection> {
+    return this.request<AuditRoomProjection>(`/runs/${runId}/projection`);
   }
 
   async startRuntime(mode: RuntimeMode): Promise<void> {

@@ -26,7 +26,7 @@ function pushUniqueEdge(edges: ArtifactGraphEdge[], edge: ArtifactGraphEdge): vo
 }
 
 function createTimelineEntry(event: RunEventLogEntry): RuntimeTimelineEntry {
-  const entry: RuntimeTimelineEntry = {
+  const entry = {
     id: event.eventId,
     at: event.emittedAt,
     type: event.type,
@@ -38,12 +38,12 @@ function createTimelineEntry(event: RunEventLogEntry): RuntimeTimelineEntry {
           ? `${event.phase ?? "phase"} ${event.status ?? "updated"}`
           : event.type.replace(".", " "))
   };
-  return {
-    ...entry,
-    ...(event.detail ? { detail: event.detail } : {}),
-    ...(event.phase ? { phase: event.phase } : {}),
-    ...(event.status ? { status: event.status as RuntimeTimelineEntry["status"] } : {})
-  };
+  return Object.assign(
+    entry,
+    event.detail ? { detail: event.detail } : {},
+    event.phase ? { phase: event.phase } : {},
+    event.status ? { status: event.status as RuntimeTimelineEntry["status"] } : {}
+  ) as RuntimeTimelineEntry;
 }
 
 export class AuditRoomProjector {

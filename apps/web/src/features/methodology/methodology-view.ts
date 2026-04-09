@@ -341,6 +341,185 @@ export class MethodologyView extends LitElement {
       color: #6b7280;
       line-height: 1.5;
     }
+
+    .surface-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .surface-panel {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 1.25rem;
+      min-height: 220px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .surface-panel.wide {
+      grid-column: 1 / -1;
+    }
+
+    .surface-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .surface-title {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #111827;
+    }
+
+    .surface-count {
+      font-size: 11px;
+      font-weight: 700;
+      color: #6b7280;
+      text-transform: uppercase;
+    }
+
+    .surface-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .surface-item {
+      border: 1px solid #eef2f7;
+      border-radius: 12px;
+      padding: 0.85rem 0.9rem;
+      background: #f9fafb;
+    }
+
+    .surface-item-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .surface-item-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #111827;
+      line-height: 1.4;
+    }
+
+    .surface-item-meta {
+      font-size: 11px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+
+    .phase-chip,
+    .severity-chip,
+    .finding-status-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 0.18rem 0.55rem;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .phase-chip {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .severity-chip.critical,
+    .finding-status-chip.false-positive {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .severity-chip.high {
+      background: #ffedd5;
+      color: #c2410c;
+    }
+
+    .severity-chip.medium,
+    .finding-status-chip.mitigated {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .severity-chip.low,
+    .severity-chip.informational,
+    .finding-status-chip.draft {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .finding-status-chip.confirmed {
+      background: #dcfce7;
+      color: #047857;
+    }
+
+    .timeline-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .timeline-item {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+      border-top: 1px solid #f3f4f6;
+    }
+
+    .timeline-item:first-child {
+      border-top: none;
+      padding-top: 0;
+    }
+
+    .timeline-time {
+      font-size: 11px;
+      color: #6b7280;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .timeline-body {
+      min-width: 0;
+    }
+
+    .timeline-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 0.2rem;
+    }
+
+    .timeline-meta {
+      font-size: 11px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 1100px) {
+      .surface-grid,
+      .room-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .timeline-item {
+        grid-template-columns: 1fr;
+      }
+    }
   `;
 
   declare _state: RuntimeSessionState | null;
@@ -359,7 +538,30 @@ export class MethodologyView extends LitElement {
 
   async refresh() {
     try {
-      this._state = await gatewayClient.getRuntime();
+      const runtime = await gatewayClient.getRuntime();
+      if (runtime.auditRoom || runtime.isRunning || runtime.runId) {
+        this._state = runtime;
+        return;
+      }
+
+      const runs = await gatewayClient.getRuns();
+      const latestRun = [...runs].sort((left, right) => {
+        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+      })[0];
+
+      if (!latestRun) {
+        this._state = runtime;
+        return;
+      }
+
+      const projection = await gatewayClient.getRunProjection(latestRun.runId);
+      this._state = {
+        ...runtime,
+        runId: latestRun.runId,
+        sessionId: latestRun.sessionId,
+        currentPhase: latestRun.currentPhase ?? runtime.currentPhase,
+        auditRoom: projection
+      };
     } catch (e) {
       console.error("Discovery refresh failed", e);
     }
@@ -486,7 +688,147 @@ export class MethodologyView extends LitElement {
           <div class="room-meta">Recent runtime events reconstructed from append-only log.</div>
         </div>
       </div>
+      ${this.renderAuditRoomSurfaces(room)}
     `;
+  }
+
+  private renderAuditRoomSurfaces(room: NonNullable<RuntimeSessionState["auditRoom"]>) {
+    return html`
+      <div class="surface-grid">
+        <section class="surface-panel">
+          <div class="surface-header">
+            <div class="surface-title">Notes</div>
+            <div class="surface-count">${room.notes.length} artifacts</div>
+          </div>
+          ${this.renderArtifactSurfaceList(room.notes, "No note artifacts projected yet.")}
+        </section>
+
+        <section class="surface-panel">
+          <div class="surface-header">
+            <div class="surface-title">Diagram Board</div>
+            <div class="surface-count">${room.diagrams.length} diagrams</div>
+          </div>
+          ${this.renderArtifactSurfaceList(room.diagrams, "No diagram scenes have been projected yet.")}
+        </section>
+
+        <section class="surface-panel">
+          <div class="surface-header">
+            <div class="surface-title">Findings Registry</div>
+            <div class="surface-count">${room.findings.length} tracked</div>
+          </div>
+          ${this.renderFindingsSurface(room)}
+        </section>
+
+        <section class="surface-panel">
+          <div class="surface-header">
+            <div class="surface-title">Evidence / PoC</div>
+            <div class="surface-count">${room.evidence.length} entries</div>
+          </div>
+          ${this.renderArtifactSurfaceList(room.evidence, "No verification evidence has been recorded yet.")}
+        </section>
+
+        <section class="surface-panel wide">
+          <div class="surface-header">
+            <div class="surface-title">Timeline</div>
+            <div class="surface-count">${room.timeline.length} recent events</div>
+          </div>
+          ${this.renderTimelineSurface(room)}
+        </section>
+      </div>
+    `;
+  }
+
+  private renderArtifactSurfaceList(
+    artifacts: NonNullable<RuntimeSessionState["auditRoom"]>["notes"],
+    emptyLabel: string
+  ) {
+    if (!artifacts.length) {
+      return html`<div class="empty-state" style="padding: 2rem 1rem;">${emptyLabel}</div>`;
+    }
+
+    return html`
+      <div class="surface-list">
+        ${artifacts.slice(0, 5).map((artifact) => html`
+          <article class="surface-item">
+            <div class="surface-item-header">
+              <div class="surface-item-title">${artifact.title}</div>
+              <span class="phase-chip">${this.formatPhaseLabel(artifact.phase)}</span>
+            </div>
+            <div class="surface-item-meta">
+              Kind: ${artifact.kind}<br />
+              Created: ${this.formatTimestamp(artifact.createdAt)}
+            </div>
+          </article>
+        `)}
+      </div>
+    `;
+  }
+
+  private renderFindingsSurface(room: NonNullable<RuntimeSessionState["auditRoom"]>) {
+    if (!room.findings.length) {
+      return html`<div class="empty-state" style="padding: 2rem 1rem;">No findings have entered the registry yet.</div>`;
+    }
+
+    return html`
+      <div class="surface-list">
+        ${room.findings.slice(0, 6).map((finding) => html`
+          <article class="surface-item">
+            <div class="surface-item-header">
+              <div class="surface-item-title">${finding.title}</div>
+              <span class="severity-chip ${finding.severity.toLowerCase()}">${finding.severity}</span>
+            </div>
+            <div class="surface-item-meta">
+              <span class="finding-status-chip ${this.toClassToken(finding.status)}">${finding.status}</span>
+              ${finding.phase ? html`<span class="phase-chip" style="margin-left: 0.45rem;">${this.formatPhaseLabel(finding.phase)}</span>` : ""}
+              <div style="margin-top: 0.45rem;">
+                Evidence links: ${finding.evidenceCount}
+              </div>
+            </div>
+          </article>
+        `)}
+      </div>
+    `;
+  }
+
+  private renderTimelineSurface(room: NonNullable<RuntimeSessionState["auditRoom"]>) {
+    if (!room.timeline.length) {
+      return html`<div class="empty-state" style="padding: 2rem 1rem;">No runtime events have been projected yet.</div>`;
+    }
+
+    return html`
+      <div class="timeline-list">
+        ${room.timeline.slice(0, 8).map((entry) => html`
+          <article class="timeline-item">
+            <div class="timeline-time">${this.formatTimestamp(entry.at)}</div>
+            <div class="timeline-body">
+              <div class="timeline-title">${entry.title}</div>
+              <div class="timeline-meta">
+                Type: ${entry.type}
+                ${entry.phase ? html`<br />Phase: ${this.formatPhaseLabel(entry.phase)}` : ""}
+                ${entry.status ? html`<br />Status: ${entry.status}` : ""}
+                ${entry.detail ? html`<br />${entry.detail}` : ""}
+              </div>
+            </div>
+          </article>
+        `)}
+      </div>
+    `;
+  }
+
+  private formatPhaseLabel(phase: string) {
+    return phase.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  private toClassToken(value: string) {
+    return value.toLowerCase().replace(/\s+/g, "-");
+  }
+
+  private formatTimestamp(value: string) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return date.toLocaleString();
   }
 
   private renderKnowledgeBus() {

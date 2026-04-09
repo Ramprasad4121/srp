@@ -63,6 +63,9 @@ async function findWebEntryScript(webDistPath: string): Promise<string | null> {
 
     for (let index = candidates.length - 1; index >= 0; index -= 1) {
       const file = candidates[index];
+      if (!file) {
+        continue;
+      }
       const details = await stat(join(webDistPath, "assets", file));
       if (details.size > 0) {
         return `/assets/${file}`;
