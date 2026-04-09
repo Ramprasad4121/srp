@@ -4,6 +4,7 @@ import { sendJson, sendError } from "../http-utils.js";
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 import { PersistenceManager } from "../runtime/persistence-manager.js";
+import { rebuildAuditRoomProjection } from "../runtime/room-projection.js";
 
 export async function handleGetRuns(
   req: IncomingMessage,
@@ -60,6 +61,23 @@ export async function handleGetRunDetail(
     if (sub === "events") {
       const events = await pm.listEvents(runId);
       sendJson(res, 200, events);
+      return;
+    }
+
+    if (sub === "projection") {
+      const run = await pm.getRun(runId);
+      if (!run) return sendError(res, 404, "not_found", "Run not found");
+      const events = await pm.listEvents(runId);
+      const payloads: Record<string, unknown> = {};
+      for (const artifact of run.artifacts) {
+        payloads[artifact.artifactId] = await pm.getArtifact(runId, artifact.artifactId);
+      }
+      const projection = rebuildAuditRoomProjection({
+        manifest: run,
+        events,
+        payloads
+      });
+      sendJson(res, 200, projection);
       return;
     }
 

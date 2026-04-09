@@ -304,6 +304,43 @@ export class MethodologyView extends LitElement {
       padding: 4rem 2rem;
       color: #6b7280;
     }
+
+    .room-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .room-card {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+    }
+
+    .room-card h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #111827;
+    }
+
+    .room-stat {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #111827;
+    }
+
+    .room-meta {
+      margin-top: 0.35rem;
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
   `;
 
   declare _state: RuntimeSessionState | null;
@@ -363,6 +400,7 @@ export class MethodologyView extends LitElement {
 
         <main class="content">
           ${this.renderFactoryStatus()}
+          ${this.renderAuditRoomOverview()}
 
           ${activePhase ? html`
             <div class="header">
@@ -402,6 +440,51 @@ export class MethodologyView extends LitElement {
             <div class="agent-task">${a.activeTask || a.status.toUpperCase()}</div>
           </div>
         `)}
+      </div>
+    `;
+  }
+
+  private renderAuditRoomOverview() {
+    const room = this._state?.auditRoom;
+    if (!room) return "";
+
+    const highSignalFindings = room.findings.filter((finding) => finding.severity === "Critical" || finding.severity === "High").length;
+
+    return html`
+      <div class="room-grid">
+        <div class="room-card">
+          <h3>Mission Control</h3>
+          <div class="room-stat">${room.missionControl.completedPhases}/${room.missionControl.totalPhases}</div>
+          <div class="room-meta">
+            Run status: ${room.missionControl.runStatus}<br />
+            Current phase: ${room.missionControl.currentPhase ?? "idle"}
+          </div>
+        </div>
+        <div class="room-card">
+          <h3>Notes</h3>
+          <div class="room-stat">${room.notes.length}</div>
+          <div class="room-meta">Projected from the event log and artifact graph.</div>
+        </div>
+        <div class="room-card">
+          <h3>Diagram Board</h3>
+          <div class="room-stat">${room.diagrams.length}</div>
+          <div class="room-meta">Live scene artifacts linked to audit phases.</div>
+        </div>
+        <div class="room-card">
+          <h3>Findings Registry</h3>
+          <div class="room-stat">${room.findings.length}</div>
+          <div class="room-meta">${highSignalFindings} high-signal findings with structured lifecycle tracking.</div>
+        </div>
+        <div class="room-card">
+          <h3>Evidence / PoC</h3>
+          <div class="room-stat">${room.evidence.length}</div>
+          <div class="room-meta">Verification artifacts and proof ledger entries.</div>
+        </div>
+        <div class="room-card">
+          <h3>Timeline</h3>
+          <div class="room-stat">${room.timeline.length}</div>
+          <div class="room-meta">Recent runtime events reconstructed from append-only log.</div>
+        </div>
       </div>
     `;
   }

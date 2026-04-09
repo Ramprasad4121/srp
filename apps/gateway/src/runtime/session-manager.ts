@@ -17,15 +17,10 @@ import type {
   ProtocolDiagram,
   IntelligenceArtifact,
   DiscoveryRegistry,
-  AgentDefinition,
-  AgentInstance,
-  AgentRegistryState,
-  KnowledgeNode,
-  KnowledgeBusState,
-  KnowledgeKind
+  ProtocolFunctionMap,
+  EntryExitMatrix,
+  InvariantRegistry
 } from "@srp/shared-types";
-import { createArtifactCreatedEvent, createPhaseStatusChangedEvent, createSessionStartedEvent } from "@srp/events";
-import { sharedEventBus } from "../events/event-bus.js";
 import { 
   analyzeWorkspace 
 } from "./analyzers/workspace-analyzer.js";
@@ -52,99 +47,15 @@ import {
 } from "./providers/inference-bridge.js";
 import type { ProviderSelection } from "@srp/shared-types";
 import { randomUUID } from "node:crypto";
-import { setTimeout } from "node:timers/promises";
 import { PersistenceManager } from "./persistence-manager.js";
-import type { ArtifactKind, RunEventLogEntry, ProtocolFunctionMap, EntryExitMatrix, InvariantRegistry } from "@srp/shared-types";
-import { runPoC } from "./poc-runner.js";
 import type { ToolchainExecution } from "@srp/shared-types";
-import { runToolchainWorkflows } from "./toolchain-runner.js";
-
-// ---------------------------------------------------------------------------
-// Knowledge Bus (Hive Mind)
-// ---------------------------------------------------------------------------
-
-class KnowledgeBus {
-  private nodes: KnowledgeNode[] = [];
-  private lastUpdate: string = new Date().toISOString();
-
-  addNode(kind: KnowledgeKind, title: string, data: any, sourceAgentId: string) {
-    const node: KnowledgeNode = {
-      id: `node_${randomUUID()}`,
-      kind,
-      title,
-      data,
-      sourceAgentId,
-      discoveredAt: new Date().toISOString()
-    };
-    this.nodes.push(node);
-    this.lastUpdate = node.discoveredAt;
-    console.log(`[KnowledgeBus] New Node: ${kind}:${title} from ${sourceAgentId}`);
-  }
-
-  getState(): KnowledgeBusState {
-    return {
-      nodes: [...this.nodes],
-      lastUpdateAt: this.lastUpdate
-    };
-  }
-
-  clear() {
-    this.nodes = [];
-    this.lastUpdate = new Date().toISOString();
-  }
-}
+import { AgentRegistry, KnowledgeBus } from "./agent-coordinator.js";
+import { AuditRoomProjector } from "./room-projection.js";
+import { RuntimeArtifactWriter } from "./artifact-writer.js";
 
 const knowledgeBus = new KnowledgeBus();
-
-// ---------------------------------------------------------------------------
-// Agent Registry (Factory)
-// ---------------------------------------------------------------------------
-
-class AgentRegistry {
-  private definitions: AgentDefinition[] = [
-    { id: "discovery-agent", name: "Discovery Agent", role: "researcher", skills: ["web-search", "fetch-content"], toolAccess: ["SEARCH", "FETCH_CONTENT"] },
-    { id: "synthesis-agent", name: "Synthesis Agent", role: "architect", skills: ["logic-synthesis", "actor-mapping"], toolAccess: ["READ_FILE", "LIST_FILES"] },
-    { id: "visual-agent", name: "Visual Agent", role: "architect", skills: ["diagram-generation"], toolAccess: [] },
-    { id: "fuzzer-agent", name: "Fuzzer Agent", role: "developer", skills: ["poc-generation"], toolAccess: ["BASH", "READ_FILE"] },
-    { id: "audit-agent", name: "Audit Agent", role: "auditor", skills: ["security-auditor"], toolAccess: ["READ_FILE", "LIST_FILES", "BASH", "mcp__sc-auditor__run-slither", "mcp__sc-auditor__run-aderyn", "mcp__sc-auditor__get_checklist", "mcp__sc-auditor__search_findings"] },
-    { id: "exploit-agent", name: "Exploit Agent", role: "developer", skills: ["exploit-generation"], toolAccess: ["READ_FILE", "LIST_FILES", "BASH", "mcp__sc-auditor__generate-foundry-poc", "mcp__sc-auditor__run-echidna", "mcp__sc-auditor__run-medusa", "mcp__sc-auditor__run-halmos"] }
-  ];
-  private activeInstances: AgentInstance[] = [];
-
-  spawnInstance(definitionId: string): string {
-    const def = this.definitions.find(d => d.id === definitionId);
-    if (!def) throw new Error(`Unknown agent definition: ${definitionId}`);
-    
-    const instanceId = `inst_${randomUUID()}`;
-    const instance: AgentInstance = {
-      instanceId,
-      definitionId,
-      status: "idle"
-    };
-    this.activeInstances.push(instance);
-    return instanceId;
-  }
-
-  updateInstanceStatus(instanceId: string, status: AgentInstance["status"], lastThought?: string, activeTask?: string) {
-    const idx = this.activeInstances.findIndex(i => i.instanceId === instanceId);
-    if (idx !== -1) {
-      this.activeInstances[idx] = { ...this.activeInstances[idx], status, lastThought, activeTask } as AgentInstance;
-    }
-  }
-
-  getState(): AgentRegistryState {
-    return {
-      definitions: [...this.definitions],
-      activeInstances: [...this.activeInstances]
-    };
-  }
-
-  clear() {
-    this.activeInstances = [];
-  }
-}
-
 const agentRegistry = new AgentRegistry();
+const auditRoomProjector = new AuditRoomProjector();
 
 // ---------------------------------------------------------------------------
 // Simulated methodology pipeline configuration
@@ -201,6 +112,7 @@ let activeAbortController: AbortController | null = null;
 let activePipelineTask: Promise<void> | null = null;
 
 let persistence: PersistenceManager | null = null;
+let artifactWriter: RuntimeArtifactWriter | null = null;
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -217,7 +129,13 @@ export function getSessionState(): RuntimeSessionState {
       : null,
     phases: [...phaseStates],
     agentRegistry: agentRegistry.getState(),
-    knowledgeBus: knowledgeBus.getState()
+    knowledgeBus: knowledgeBus.getState(),
+    auditRoom: auditRoomProjector.snapshot(
+      phaseStates,
+      currentPhaseIndex >= 0 && currentPhaseIndex < TARGET_PHASES.length
+        ? (TARGET_PHASES[currentPhaseIndex] ?? null)
+        : null
+    )
   };
 
   if (pendingDiscoveryRegistry) state.discoveryRegistry = pendingDiscoveryRegistry;
@@ -251,6 +169,7 @@ export function startSession(
 
   // Initialize persistence
   persistence = new PersistenceManager(rootDirectory, outputDirectory);
+  artifactWriter = new RuntimeArtifactWriter(persistence, auditRoomProjector);
 
   // Initialize new session
   activeSessionId = `session_${randomUUID()}`;
@@ -276,20 +195,12 @@ export function startSession(
 
   agentRegistry.clear();
   knowledgeBus.clear();
+  auditRoomProjector.reset(activeRunId, activeSessionId);
 
   phaseStates = TARGET_PHASES.map((p) => ({
     phase: p,
     status: "pending" as PhaseStatus
   }));
-
-  // Emit Session Started
-  sharedEventBus.emit(
-    createSessionStartedEvent({
-      projectId,
-      runId: activeRunId,
-      sessionId: activeSessionId
-    })
-  );
 
   // Kick off background execution loop
   const activeProvider = providers?.find(p => p.enabled) || undefined;
@@ -342,32 +253,14 @@ function updatePhaseStatus(index: number, status: PhaseStatus, projectId: string
   if (status === "completed" || status === "failed") updated.completedAt = new Date().toISOString();
 
   phaseStates[index] = updated as PhaseState;
-
-  const phaseEvent = createPhaseStatusChangedEvent({
-    projectId,
-    runId,
-    phase: updated.phase,
-    status
-  });
-  sharedEventBus.emit(phaseEvent);
-
-  // Sync run status to disk
-  if (persistence) {
-    if (status === "running") {
-      void persistence.updateRunStatus(runId, "running", updated.phase);
-    } else if (index === phaseStates.length - 1 && status === "completed") {
-      void persistence.updateRunStatus(runId, "completed", updated.phase);
-    }
-    const runEvent: RunEventLogEntry = {
-      eventId: `evt_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      runId,
-      projectId,
-      type: "phase.status.changed",
-      emittedAt: phaseEvent.emittedAt,
-      phase: updated.phase,
-      status
-    };
-    void persistence.appendEvent(runId, runEvent);
+  if (artifactWriter) {
+    const sessionStatus =
+      status === "failed"
+        ? "failed"
+        : index === phaseStates.length - 1 && status === "completed"
+          ? "completed"
+          : "running";
+    void artifactWriter.recordPhaseStatus(runId, projectId, updated.phase, status, sessionStatus);
   }
 }
 
@@ -379,33 +272,10 @@ async function persistArtifactAndEmit(
   title: string,
   payload: unknown
 ): Promise<void> {
-  if (!persistence) {
+  if (!artifactWriter) {
     return;
   }
-
-  const metadata = await persistence.saveArtifact(runId, projectId, phase, kind, title, payload);
-  const artifactEvent = createArtifactCreatedEvent({
-    projectId,
-    runId,
-    phase,
-    artifactId: metadata.artifactId,
-    artifactKind: metadata.kind,
-    artifactTitle: metadata.title
-  });
-  sharedEventBus.emit(artifactEvent);
-
-  const runEvent: RunEventLogEntry = {
-    eventId: `evt_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    runId,
-    projectId,
-    type: "artifact.created",
-    emittedAt: artifactEvent.emittedAt,
-    phase,
-    artifactId: metadata.artifactId,
-    artifactKind: metadata.kind,
-    artifactTitle: metadata.title
-  };
-  await persistence.appendEvent(runId, runEvent);
+  await artifactWriter.persistArtifact(runId, projectId, phase, kind, title, payload);
 }
 
 async function runSimulatedPipeline(
@@ -420,14 +290,7 @@ async function runSimulatedPipeline(
     if (persistence) {
       await persistence.init();
       await persistence.createRun(runId, projectId, sessionId);
-      const sessionEvent: RunEventLogEntry = {
-        eventId: `evt_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        runId,
-        projectId,
-        type: "session.started",
-        emittedAt: new Date().toISOString()
-      };
-      await persistence.appendEvent(runId, sessionEvent);
+      await artifactWriter?.recordSessionLifecycle(runId, projectId, "session.started");
     }
 
     const accumulatedArtifacts: IntelligenceArtifact[] = [];
@@ -832,7 +695,7 @@ async function runSimulatedPipeline(
           }, activeProvider);
         }
 
-        await persistArtifactAndEmit(runId, projectId, phaseName, "invariant", "Audit: Verified Findings", pendingFindingRegistry);
+        await persistArtifactAndEmit(runId, projectId, phaseName, "finding", "Audit: Verified Findings", pendingFindingRegistry);
         agentRegistry.updateInstanceStatus(agentId, "finished", "Vulnerability verification complete.");
       }
       // 18. AUDIT: REPORT
@@ -878,7 +741,16 @@ async function runSimulatedPipeline(
     if (signal.aborted) return;
     console.error("Pipeline failed:", err);
     if (currentPhaseIndex >= 0) updatePhaseStatus(currentPhaseIndex, "failed", projectId, runId);
+    await artifactWriter?.recordSessionLifecycle(
+      runId,
+      projectId,
+      "session.failed",
+      err instanceof Error ? err.message : String(err)
+    );
   } finally {
+    if (!signal.aborted && currentPhaseIndex === phaseStates.length - 1 && phaseStates.every((phase) => phase.status === "completed")) {
+      await artifactWriter?.recordSessionLifecycle(runId, projectId, "session.completed");
+    }
     isRunning = false;
     activeAbortController = null;
   }

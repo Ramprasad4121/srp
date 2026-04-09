@@ -303,7 +303,12 @@ export interface RunManifest {
   readonly artifacts: readonly ArtifactMetadata[];
 }
 
-export type RunEventType = "session.started" | "phase.status.changed" | "artifact.created";
+export type RunEventType =
+  | "session.started"
+  | "session.completed"
+  | "session.failed"
+  | "phase.status.changed"
+  | "artifact.created";
 
 export interface RunEventLogEntry {
   readonly eventId: string;
@@ -316,6 +321,87 @@ export interface RunEventLogEntry {
   readonly artifactId?: string;
   readonly artifactKind?: ArtifactKind;
   readonly artifactTitle?: string;
+  readonly title?: string;
+  readonly detail?: string;
+  readonly metadata?: Record<string, unknown>;
+}
+
+export type ArtifactGraphNodeKind =
+  | "artifact"
+  | "note"
+  | "question"
+  | "source"
+  | "diagram"
+  | "finding"
+  | "hypothesis"
+  | "invariant"
+  | "report"
+  | "evidence";
+
+export type ArtifactGraphEdgeType =
+  | "belongs_to"
+  | "derived_from"
+  | "supports"
+  | "contradicts"
+  | "supersedes";
+
+export interface ArtifactGraphNode {
+  readonly id: string;
+  readonly kind: ArtifactGraphNodeKind;
+  readonly title: string;
+  readonly phase?: MethodologyPhase;
+  readonly status?: string;
+  readonly severity?: string;
+  readonly artifactId?: string;
+  readonly createdAt?: string;
+}
+
+export interface ArtifactGraphEdge {
+  readonly id: string;
+  readonly from: string;
+  readonly to: string;
+  readonly type: ArtifactGraphEdgeType;
+}
+
+export interface ArtifactGraphSnapshot {
+  readonly nodes: readonly ArtifactGraphNode[];
+  readonly edges: readonly ArtifactGraphEdge[];
+}
+
+export interface RuntimeTimelineEntry {
+  readonly id: string;
+  readonly at: string;
+  readonly type: RunEventType;
+  readonly title: string;
+  readonly detail?: string;
+  readonly phase?: MethodologyPhase;
+  readonly status?: PhaseStatus | SessionStatus;
+}
+
+export interface AuditFindingProjection {
+  readonly id: string;
+  readonly title: string;
+  readonly severity: FindingSeverity | "Unknown";
+  readonly status: FindingStatus | "Draft";
+  readonly evidenceCount: number;
+  readonly phase?: MethodologyPhase;
+}
+
+export interface AuditRoomProjection {
+  readonly missionControl: {
+    readonly runId: string | null;
+    readonly sessionId: string | null;
+    readonly runStatus: SessionStatus;
+    readonly currentPhase: MethodologyPhase | null;
+    readonly completedPhases: number;
+    readonly totalPhases: number;
+  };
+  readonly timeline: readonly RuntimeTimelineEntry[];
+  readonly notes: readonly ArtifactMetadata[];
+  readonly diagrams: readonly ArtifactMetadata[];
+  readonly findings: readonly AuditFindingProjection[];
+  readonly evidence: readonly ArtifactMetadata[];
+  readonly graph: ArtifactGraphSnapshot;
 }
 
 export interface RuntimeSessionState {
@@ -346,6 +432,7 @@ export interface RuntimeSessionState {
   readonly toolchainExecution?: ToolchainExecution;
   readonly agentRegistry?: AgentRegistryState;
   readonly knowledgeBus?: KnowledgeBusState;
+  readonly auditRoom?: AuditRoomProjection;
 }
 
 // ---------------------------------------------------------------------------
@@ -672,5 +759,4 @@ export interface ProtocolFunctionMap {
   readonly summary: string;
   readonly functions: readonly FunctionMapEntry[];
 }
-
 
