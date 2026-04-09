@@ -6,59 +6,1559 @@
   <title>SRP — Security Reasoning Protocol</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    body {
+    :root {
+      --bg-app: #ffffff;
+      --bg-sidebar: #f9fafb;
+      --border-main: #e5e7eb;
+      --text-primary: #111827;
+      --text-secondary: #6b7280;
+      --text-muted: #9ca3af;
+      --accent: #0052ff;
+      --accent-soft: #eff6ff;
+      --panel: #ffffff;
+      --panel-soft: #f9fafb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
       margin: 0;
-      padding: 0;
-      background: #f7f9fa;
-      color: #000000;
-      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100%;
+      background: var(--bg-app);
+      color: var(--text-primary);
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    #boot-status {
-      padding: 2rem;
-      font-family: 'JetBrains Mono', monospace;
-      color: #00f5a0;
+
+    button, input, textarea {
+      font: inherit;
     }
-    #error-display {
-      display: none;
-      padding: 2rem;
-      margin: 2rem;
-      background: #2a1111;
-      border: 1px solid #ff4d4d;
-      color: #ff4d4d;
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .app-container {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-main);
+      display: flex;
+      flex-direction: column;
+      width: 280px;
+      flex-shrink: 0;
+      transition: width 0.2s ease, opacity 0.2s ease;
+    }
+
+    .sidebar.closed {
+      width: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo {
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .logo-badge {
+      font-size: 10px;
+      background: var(--text-primary);
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .toggle-btn, .hamburger-btn, .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toggle-btn:hover, .hamburger-btn:hover, .icon-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .role-switcher {
+      margin: 1.5rem 0.75rem;
+      background: #f3f4f6;
+      padding: 0.25rem;
       border-radius: 8px;
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .role-btn {
+      flex: 1;
+      padding: 0.5rem;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .role-btn.active {
+      background: #fff;
+      color: var(--text-primary);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 1.5rem 0.75rem 0.5rem;
+    }
+
+    .nav-section {
+      padding: 0.5rem 0.75rem;
+    }
+
+    .nav-item {
+      padding: 0.625rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.15s ease;
+    }
+
+    .nav-item:hover {
+      background: #f3f4f6;
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: #fff;
+      color: var(--text-primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.02);
+      border: 1px solid var(--border-main);
+    }
+
+    .nav-icon {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.7;
+    }
+
+    .skills-footer {
+      margin-top: auto;
+      padding: 1.5rem;
+      border-top: 1px solid var(--border-main);
+    }
+
+    .skills-count {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .skills-pills {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .skill-pill {
+      font-size: 10px;
+      background: #f3f4f6;
+      color: var(--text-secondary);
+      padding: 2px 8px;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+
+    .main-content {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      min-width: 0;
+    }
+
+    .top-bar {
+      height: 60px;
+      border-bottom: 1px solid var(--border-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      background: #fff;
+      z-index: 5;
+      flex-shrink: 0;
+    }
+
+    .page-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16,185,129,0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+    }
+
+    .view-container {
+      flex: 1;
+      overflow: auto;
+      background: #fff;
+    }
+
+    .view {
+      height: 100%;
+      display: none;
+      flex-direction: column;
+    }
+
+    .view.active {
+      display: flex;
+    }
+
+    .chat-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: #fff;
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #f3f4f6;
+      background: #fff;
+    }
+
+    .chat-title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message-list {
+      max-width: 860px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .message {
+      border-radius: 16px;
+      padding: 1rem 1rem 0.9rem;
+      border: 1px solid var(--border-main);
+      background: #fff;
+    }
+
+    .message.user {
+      background: #f8fbff;
+      border-color: #dbeafe;
+    }
+
+    .message-role {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .message-body {
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      color: var(--text-primary);
+    }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-secondary);
+    }
+
+    .empty-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .empty-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-desc {
+      font-size: 0.875rem;
+      max-width: 320px;
+      line-height: 1.5;
+    }
+
+    .input-area {
+      padding: 1rem;
+      border-top: 1px solid #f3f4f6;
+      background: #fff;
+      display: flex;
+      justify-content: center;
+    }
+
+    .input-box {
+      width: 100%;
+      max-width: 860px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.2s;
+    }
+
+    .input-box:focus-within {
+      border-color: var(--accent);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(0,82,255,0.1);
+    }
+
+    .textarea-wrapper {
+      display: flex;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .chat-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 0.5rem 0;
+      font-size: 14px;
+      line-height: 1.5;
+      outline: none;
+      resize: none;
+      max-height: 180px;
+      min-height: 52px;
+      color: var(--text-primary);
+    }
+
+    .input-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.25rem 0.5rem;
+      gap: 10px;
+    }
+
+    .search-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #eff6ff;
+      color: var(--accent);
+    }
+
+    .btn-send {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .btn-send:disabled {
+      background: #e5e7eb;
+      color: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    .methodology-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      height: 100%;
+    }
+
+    .methodology-sidebar {
+      border-right: 1px solid #e5e7eb;
+      background: #f9fafb;
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+
+    .sidebar-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1.5rem;
+    }
+
+    .phase-item {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      font-size: 13px;
+      font-weight: 500;
+      color: #4b5563;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border: 1px solid transparent;
+      background: transparent;
+    }
+
+    .phase-item.active {
+      background: #fff;
+      color: #111827;
+      border-color: #e5e7eb;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .phase-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: #d1d5db;
+    }
+
+    .phase-status-dot.running { background: var(--accent); }
+    .phase-status-dot.completed { background: var(--success); }
+    .phase-status-dot.failed { background: var(--danger); }
+
+    .methodology-content {
+      overflow-y: auto;
+      padding: 2.5rem;
+      background: #fff;
+    }
+
+    .phase-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+
+    .phase-title {
+      font-size: 1.875rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.5rem;
+    }
+
+    .artifact-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .artifact-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111827;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+
+    .artifact-body {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .hero-section {
+      padding: 4rem 2rem;
+      border-bottom: 1px solid #eee;
+      text-align: center;
+      background: #fcfcfc;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .hero-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      margin-bottom: 1rem;
+    }
+
+    .hero-subtitle {
+      font-size: 1rem;
+      color: #666;
+      max-width: 620px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 2rem;
+      padding: 3rem 2rem;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .feature-card {
+      border: 1px solid #eee;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .feature-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .feature-title span {
+      font-size: 0.75rem;
+      background: #000;
+      color: #fff;
+      padding: 2px 6px;
+      text-transform: uppercase;
+    }
+
+    .feature-description {
+      font-size: 0.875rem;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .btn-action {
+      margin-top: auto;
+      background: #000;
+      color: #fff;
+      border: none;
+      padding: 0.75rem;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .section-header {
+      padding: 2rem 2rem 0;
+      font-size: 0.75rem;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .command-list {
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .command-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 1rem;
+      background: #f9f9f9;
+      border: 1px solid #eee;
+    }
+
+    .command-code {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .command-desc {
+      font-size: 0.875rem;
+      color: #666;
+    }
+
+    .team-view {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: #fff;
+      font-family: "JetBrains Mono", monospace;
+      color: #000;
+    }
+
+    .stats-bar {
+      padding: 1rem 2rem;
+      background: #fcfcfc;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      gap: 3rem;
+      font-size: 11px;
+      color: #999;
+      letter-spacing: 1px;
+      flex-shrink: 0;
+    }
+
+    .stat-item span {
+      color: #000;
+      font-weight: 700;
+      margin-right: 0.5rem;
+    }
+
+    .team-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      overflow: hidden;
+    }
+
+    .members-sidebar {
+      border-right: 1px solid #eee;
+      padding: 2rem;
+      background: #fff;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .member-item {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+      padding: 0.5rem 0;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      background: #000;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .member-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .member-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 2px;
+    }
+
+    .member-role {
+      font-size: 10px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-active { background: var(--accent); box-shadow: 0 0 8px rgba(0,82,255,0.5); }
+    .status-idle { background: var(--warning); }
+    .status-offline { background: #ddd; }
+
+    .activity-feed {
+      display: flex;
+      flex-direction: column;
+      padding: 2rem 3rem;
+      overflow-y: auto;
+      background: #fff;
+    }
+
+    .activity-item {
+      padding: 1rem 0;
+      border-bottom: 1px solid #f9f9f9;
+      font-size: 13px;
+      display: flex;
+      gap: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .timestamp {
+      color: #ccc;
+      min-width: 80px;
+      font-size: 11px;
+    }
+
+    .activity-text {
+      color: #666;
+    }
+
+    .btn-invite {
+      margin-top: auto;
+      background: #000;
+      color: #fff;
+      border: none;
+      padding: 1rem;
+      font-size: 11px;
+      font-family: "JetBrains Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .floating-fab {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      border: 2px solid white;
+      transition: all 0.2s ease;
+    }
+
+    .floating-fab:hover {
+      transform: translateY(-4px) scale(1.05);
+      background: #0041cc;
+    }
+
+    .fab-icon {
+      width: 32px;
+      height: 32px;
+      stroke: white;
+    }
+
+    .whiteboard-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 11000;
+    }
+
+    .whiteboard-overlay.open {
+      pointer-events: auto;
+    }
+
+    .whiteboard-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.24);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .whiteboard-overlay.open .whiteboard-backdrop {
+      opacity: 1;
+    }
+
+    .whiteboard-panel {
+      position: absolute;
+      right: 20px;
+      bottom: 92px;
+      width: min(960px, calc(100vw - 32px));
+      height: min(720px, calc(100vh - 120px));
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1), 0 4px 10px rgba(0,0,0,0.05);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .whiteboard-overlay.open .whiteboard-panel {
+      display: flex;
+    }
+
+    .whiteboard-header {
+      padding: 0 1rem;
+      height: 48px;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .whiteboard-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .whiteboard-controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .control-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      cursor: pointer;
+    }
+
+    .control-btn:hover {
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    .whiteboard-textarea {
+      flex: 1;
+      border: none;
+      outline: none;
+      resize: none;
+      width: 100%;
+      padding: 1.25rem;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .whiteboard-note {
+      padding: 0.75rem 1rem;
+      border-top: 1px solid #e5e7eb;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .setup-view {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #fff;
+      padding: 2rem;
+    }
+
+    .setup-card {
+      width: min(800px, 100%);
+      border: 1px solid var(--border-main);
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+      background: #fff;
+    }
+
+    .setup-card h1 {
+      margin-top: 0;
+    }
+
+    .setup-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .setup-option {
+      padding: 1.5rem;
+      background: #f9fafb;
+      border: 1px solid var(--border-main);
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .setup-option.selected {
+      border-color: var(--accent);
+      background: #eff6ff;
+    }
+
+    @media (max-width: 900px) {
+      .sidebar {
+        position: fixed;
+        z-index: 20;
+        height: 100vh;
+      }
+
+      .methodology-layout,
+      .team-container {
+        grid-template-columns: 1fr;
+      }
+
+      .methodology-sidebar,
+      .members-sidebar {
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .setup-options {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
-  <script type="module" crossorigin src="/assets/index-C5YQ_K8N.js"></script>
 </head>
 <body>
-  <div id="boot-status">🚀 Initializing SRP Agent Army...</div>
-  <div id="error-display">
-    <h2>Frontend Error</h2>
-    <pre id="error-content"></pre>
+  <div id="setupView" class="setup-view" hidden>
+    <div class="setup-card">
+      <h1>SRP Onboarding</h1>
+      <p>Choose your primary methodology focus. This is the compatibility boot screen while the checked-in frontend bundles are being repaired.</p>
+      <div class="setup-options">
+        <div class="setup-option selected" data-role="auditor">
+          <strong>Auditor</strong>
+          <p>Deep security reasoning, invariant extraction, and exploit proving.</p>
+        </div>
+        <div class="setup-option" data-role="developer">
+          <strong>Developer</strong>
+          <p>NatSpec generation, test suite expansion, and secure build feedback.</p>
+        </div>
+      </div>
+      <button id="setupContinue" class="btn-send" style="width:auto;padding:0.8rem 1.2rem;">Continue</button>
+    </div>
   </div>
-  
-  <srp-app></srp-app>
+
+  <div id="appRoot" class="app-container">
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-container">
+          <span class="logo">SRP Protocol</span>
+          <span class="logo-badge">v1.0</span>
+        </div>
+        <button id="closeSidebar" class="toggle-btn" title="Hide sidebar">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+        </button>
+      </div>
+
+      <div class="role-switcher">
+        <div class="role-btn active" data-mode="auditor">Auditor</div>
+        <div class="role-btn" data-mode="developer">Developer</div>
+      </div>
+
+      <div id="workspaceLabel" class="section-label">AUDITOR WORKSPACE</div>
+      <nav class="nav-section">
+        <div class="nav-item active" data-path="/">
+          <div class="nav-icon">◈</div> Chat Engine
+        </div>
+        <div class="nav-item" data-path="/audit" data-auditor-only="true">
+          <div class="nav-icon">🛡️</div> Start Methodology Audit
+        </div>
+        <div class="nav-item" data-path="/build" data-developer-only="true" hidden>
+          <div class="nav-icon">⌬</div> Build from Scratch
+        </div>
+        <div class="nav-item" data-path="/team">
+          <div class="nav-icon">◎</div> Virtual Room
+        </div>
+      </nav>
+
+      <div class="section-label">System</div>
+      <nav class="nav-section">
+        <div class="nav-item" data-path="/setup">
+          <div class="nav-icon">⚙</div> Settings
+        </div>
+      </nav>
+
+      <div class="skills-footer">
+        <div class="skills-count">Active Agents: <span id="skillsCount">0</span></div>
+        <div id="skillsPills" class="skills-pills"></div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="top-bar">
+        <div class="page-title">
+          <button id="openSidebar" class="hamburger-btn" hidden>
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <span id="pageTitle">Security Chat</span>
+        </div>
+        <div class="status-indicator">
+          <div class="pulse-dot"></div>
+          <span>Protocol Active</span>
+        </div>
+      </header>
+
+      <div class="view-container">
+        <section id="view-chat" class="view chat-shell active">
+          <div class="chat-header">
+            <div class="chat-title">Security Chat</div>
+            <button id="refreshChat" class="icon-btn" title="Refresh">
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0A8.003 8.003 0 015.582 15m13.837 0H15"/></svg>
+            </button>
+          </div>
+          <div class="chat-container">
+            <div id="messageList" class="message-list"></div>
+            <div id="chatEmptyState" class="empty-state">
+              <div class="empty-icon">◈</div>
+              <div class="empty-title">Security reasoning workspace</div>
+              <div class="empty-desc">Bootstrap, runtime state, and gateway messages will appear here. Use the composer to test the chat flow.</div>
+            </div>
+          </div>
+          <div class="input-area">
+            <div class="input-box">
+              <div class="textarea-wrapper">
+                <textarea id="chatInput" class="chat-input" placeholder="Ask SRP about your current workspace, findings, or audit plan."></textarea>
+              </div>
+              <div class="input-footer">
+                <div class="search-toggle">Web Search Off</div>
+                <button id="sendBtn" class="btn-send" title="Send">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7-7l7 7-7 7"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-audit" class="view">
+          <div class="methodology-layout">
+            <aside class="methodology-sidebar">
+              <div class="sidebar-title">Methodology</div>
+              <div id="phaseSidebar"></div>
+            </aside>
+            <div class="methodology-content">
+              <div class="phase-label">Live Pipeline</div>
+              <h2 id="activePhaseTitle" class="phase-title">Audit Not Started</h2>
+              <p id="activePhaseSummary" style="color:#6b7280;max-width:760px;line-height:1.6;">
+                Start a runtime session to populate the methodology pipeline, artifacts, and execution phases.
+              </p>
+              <div class="artifact-card">
+                <div class="artifact-title">Session State</div>
+                <div id="runtimeStateBlock" class="artifact-body">No session data yet.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-build" class="view">
+          <div class="hero-section">
+            <div class="hero-title">BUILD FROM SCRATCH</div>
+            <p class="hero-subtitle">
+              Powered by <strong>.gstack</strong>. Turn SRP into a virtual engineering team. Initialize new protocols, design architectures, and ship production-ready code with an army of agents.
+            </p>
+          </div>
+          <div class="section-header">Core GSTACK Agents</div>
+          <div class="grid-container">
+            <div class="feature-card">
+              <div class="feature-title">CEO Agent <span>Product</span></div>
+              <div class="feature-description">Rethinks product requirements and aligns technical goals with business vision.</div>
+              <button class="btn-action">Run /plan-ceo-review</button>
+            </div>
+            <div class="feature-card">
+              <div class="feature-title">EM Agent <span>Arch</span></div>
+              <div class="feature-description">Locks down system architecture and ensures modular, scalable design patterns.</div>
+              <button class="btn-action">Run /plan-eng-review</button>
+            </div>
+            <div class="feature-card">
+              <div class="feature-title">QA Agent <span>Browser</span></div>
+              <div class="feature-description">Automates browser-based testing and functional verification of your protocol.</div>
+              <button class="btn-action">Run /qa</button>
+            </div>
+            <div class="feature-card">
+              <div class="feature-title">Ship Agent <span>Deploy</span></div>
+              <div class="feature-description">Handles CI/CD pipelines, land-and-deploy sequences, and production releases.</div>
+              <button class="btn-action">Run /ship</button>
+            </div>
+          </div>
+          <div class="section-header">Direct Command Interface</div>
+          <div class="command-list">
+            <div class="command-item"><span class="command-code">/office-hours</span><span class="command-desc">Describe what you want to build from scratch.</span></div>
+            <div class="command-item"><span class="command-code">/autoplan</span><span class="command-desc">Generate a multi-phase implementation roadmap.</span></div>
+            <div class="command-item"><span class="command-code">/codex</span><span class="command-desc">Access the deep knowledge base of protocol patterns.</span></div>
+          </div>
+        </section>
+
+        <section id="view-team" class="view team-view">
+          <div class="stats-bar">
+            <div class="stat-item"><span>4</span> AUDITORS_ONLINE</div>
+            <div class="stat-item"><span>2</span> DEVELOPERS_CONNECTED</div>
+            <div class="stat-item">PROTOCOL_V1.0_SHARING_ACTIVE</div>
+          </div>
+          <div class="team-container">
+            <aside class="members-sidebar">
+              <div class="section-header" style="padding:0 0 2rem;">Active Team</div>
+              <div id="memberList"></div>
+              <button class="btn-invite">Invite Collaborator</button>
+            </aside>
+            <div id="activityFeed" class="activity-feed"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <button id="whiteboardFab" class="floating-fab" title="Open Audit Drawing Whiteboard">
+    <svg class="fab-icon" fill="none" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+    </svg>
+  </button>
+
+  <div id="whiteboardOverlay" class="whiteboard-overlay">
+    <div id="whiteboardBackdrop" class="whiteboard-backdrop"></div>
+    <div class="whiteboard-panel">
+      <div class="whiteboard-header">
+        <div class="whiteboard-title">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+          Audit Whiteboard
+        </div>
+        <div class="whiteboard-controls">
+          <button id="closeWhiteboard" class="control-btn" title="Close">✕</button>
+        </div>
+      </div>
+      <textarea id="whiteboardInput" class="whiteboard-textarea" placeholder="Sketch your findings, trust boundaries, and attack notes here."></textarea>
+      <div class="whiteboard-note">Compatibility mode whiteboard. Saved locally until the real Excalidraw build is regenerated.</div>
+    </div>
+  </div>
 
   <script>
-    // Defensive shim for Ethereum provider extensions (Rabby / MetaMask)
-    // Prevents "Uncaught TypeError: Cannot set property ethereum of #<Window> which has only a getter"
-    if (!window.ethereum) {
-      let _eth = undefined;
-      Object.defineProperty(window, 'ethereum', {
-        get: () => _eth,
-        set: (val) => { _eth = val; },
-        configurable: true,
-        enumerable: true
+    const state = {
+      bootstrap: null,
+      runtime: null,
+      skills: [],
+      path: window.location.pathname,
+      mode: "auditor",
+      sidebarOpen: true,
+      whiteboardOpen: false,
+      whiteboardKey: "srp_whiteboard_data_fallback",
+      selectedSetupRole: "auditor",
+      teamMembers: [
+        { name: "Alice (Lead)", role: "auditor", status: "active" },
+        { name: "Bob", role: "auditor", status: "active" },
+        { name: "Charlie", role: "auditor", status: "idle" },
+        { name: "Dave", role: "auditor", status: "offline" },
+        { name: "Eve (Dev)", role: "developer", status: "active" },
+        { name: "Frank (Dev)", role: "developer", status: "active" }
+      ],
+      teamActivity: [
+        "Alice uploaded a new finding: REENTRANCY_IN_VAULT",
+        "Bob started reviewing phase: ARCHITECTURE_ANALYSIS",
+        "Eve merged PR: FIX_SLIPPAGE_CHECKS",
+        "System: New invariant identified by SRP_AGENT: VAULT_SOLVENCY",
+        "Frank connected to the room",
+        "Alice: Team, let's focus on the economic modeling phase next.",
+        "Charlie marked invariant INV-04 as verified",
+        "System: Audit coverage reached 85%"
+      ]
+    };
+
+    const els = {
+      appRoot: document.getElementById("appRoot"),
+      setupView: document.getElementById("setupView"),
+      sidebar: document.getElementById("sidebar"),
+      openSidebar: document.getElementById("openSidebar"),
+      closeSidebar: document.getElementById("closeSidebar"),
+      pageTitle: document.getElementById("pageTitle"),
+      skillsCount: document.getElementById("skillsCount"),
+      skillsPills: document.getElementById("skillsPills"),
+      workspaceLabel: document.getElementById("workspaceLabel"),
+      phaseSidebar: document.getElementById("phaseSidebar"),
+      activePhaseTitle: document.getElementById("activePhaseTitle"),
+      activePhaseSummary: document.getElementById("activePhaseSummary"),
+      runtimeStateBlock: document.getElementById("runtimeStateBlock"),
+      messageList: document.getElementById("messageList"),
+      chatEmptyState: document.getElementById("chatEmptyState"),
+      chatInput: document.getElementById("chatInput"),
+      sendBtn: document.getElementById("sendBtn"),
+      refreshChat: document.getElementById("refreshChat"),
+      memberList: document.getElementById("memberList"),
+      activityFeed: document.getElementById("activityFeed"),
+      whiteboardFab: document.getElementById("whiteboardFab"),
+      whiteboardOverlay: document.getElementById("whiteboardOverlay"),
+      whiteboardBackdrop: document.getElementById("whiteboardBackdrop"),
+      closeWhiteboard: document.getElementById("closeWhiteboard"),
+      whiteboardInput: document.getElementById("whiteboardInput"),
+      setupContinue: document.getElementById("setupContinue")
+    };
+
+    function api(path, options) {
+      return fetch(`/api${path}`, {
+        headers: { "Content-Type": "application/json" },
+        ...options
+      }).then(async (response) => {
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`${path} failed: ${response.status} ${response.statusText} ${text}`);
+        }
+        return response.json();
       });
     }
 
-    window.onerror = function(msg, url, line, col, error) {
-      const display = document.getElementById('error-display');
-      const content = document.getElementById('error-content');
-      display.style.display = 'block';
-      content.textContent = msg + '\n' + url + ':' + line + ':' + col;
+    function navigate(path) {
+      if (window.location.pathname !== path) {
+        window.history.pushState({}, "", path);
+      }
+      state.path = path;
+      render();
+    }
+
+    function currentViewTitle() {
+      if (state.path === "/audit") return "Methodology Pipeline";
+      if (state.path === "/build") return "Build Workflow";
+      if (state.path === "/team") return "Collaboration";
+      if (state.path === "/setup") return "Settings";
+      return "Security Chat";
+    }
+
+    function renderSidebar() {
+      els.sidebar.classList.toggle("closed", !state.sidebarOpen);
+      els.openSidebar.hidden = state.sidebarOpen;
+      els.pageTitle.textContent = currentViewTitle();
+      els.workspaceLabel.textContent = `${state.mode.toUpperCase()} WORKSPACE`;
+
+      document.querySelectorAll(".role-btn").forEach((node) => {
+        node.classList.toggle("active", node.dataset.mode === state.mode);
+      });
+
+      document.querySelectorAll(".nav-item").forEach((node) => {
+        const target = node.dataset.path;
+        const isAuditorOnly = node.hasAttribute("data-auditor-only");
+        const isDeveloperOnly = node.hasAttribute("data-developer-only");
+        if (isAuditorOnly) {
+          node.hidden = state.mode !== "auditor";
+        }
+        if (isDeveloperOnly) {
+          node.hidden = state.mode !== "developer";
+        }
+        node.classList.toggle("active", target === state.path);
+      });
+    }
+
+    function renderViews() {
+      const ready = state.bootstrap && state.bootstrap.decision === "ready";
+      els.setupView.hidden = !(state.path === "/setup" || !ready);
+      els.appRoot.hidden = !els.setupView.hidden;
+
+      document.querySelectorAll(".view").forEach((view) => view.classList.remove("active"));
+      if (state.path === "/audit") document.getElementById("view-audit").classList.add("active");
+      else if (state.path === "/build") document.getElementById("view-build").classList.add("active");
+      else if (state.path === "/team") document.getElementById("view-team").classList.add("active");
+      else document.getElementById("view-chat").classList.add("active");
+    }
+
+    function renderSkills() {
+      els.skillsCount.textContent = String(state.skills.length);
+      els.skillsPills.innerHTML = state.skills.slice(0, 6).map((skill) => `<div class="skill-pill">${skill.name || skill.id}</div>`).join("");
+      if (state.skills.length > 6) {
+        els.skillsPills.insertAdjacentHTML("beforeend", `<div class="skill-pill">+${state.skills.length - 6}</div>`);
+      }
+    }
+
+    function renderChat() {
+      const runtime = state.runtime;
+      const bootstrap = state.bootstrap;
+      const messages = [];
+
+      if (bootstrap) {
+        messages.push({
+          role: "system",
+          body:
+            `Decision: ${bootstrap.decision}\nRole: ${bootstrap.role}\nInitial route: ${bootstrap.initialRoute}\nHealthy providers: ${bootstrap.providers.healthyKinds.join(", ") || "none"}`
+        });
+      }
+
+      if (runtime) {
+        messages.push({
+          role: "assistant",
+          body:
+            `Session running: ${runtime.isRunning}\nCurrent phase: ${runtime.currentPhase || "none"}\nRun ID: ${runtime.runId || "none"}\nPhases tracked: ${runtime.phases.length}`
+        });
+      }
+
+      if (!messages.length) {
+        els.messageList.innerHTML = "";
+        els.chatEmptyState.hidden = false;
+        return;
+      }
+
+      els.chatEmptyState.hidden = true;
+      els.messageList.innerHTML = messages.map((message) => `
+        <div class="message ${message.role === "system" ? "" : "user"}">
+          <div class="message-role">${message.role}</div>
+          <div class="message-body">${message.body}</div>
+        </div>
+      `).join("");
+    }
+
+    function phaseStatusClass(status) {
+      if (status === "running") return "running";
+      if (status === "completed") return "completed";
+      if (status === "failed") return "failed";
+      return "";
+    }
+
+    function renderAudit() {
+      const phases = state.runtime && Array.isArray(state.runtime.phases) ? state.runtime.phases : [];
+      const currentPhase = state.runtime && state.runtime.currentPhase ? state.runtime.currentPhase : "Audit Not Started";
+      els.activePhaseTitle.textContent = currentPhase;
+      els.activePhaseSummary.textContent = state.runtime && state.runtime.isRunning
+        ? "The methodology runtime is active. Follow the phase registry on the left to inspect progression."
+        : "Start a runtime session to populate the methodology pipeline, artifacts, and execution phases.";
+      els.runtimeStateBlock.textContent = JSON.stringify(state.runtime || { hasSession: false, isRunning: false }, null, 2);
+
+      els.phaseSidebar.innerHTML = phases.length
+        ? phases.map((phase) => `
+            <div class="phase-item ${phase.phase === currentPhase ? "active" : ""}">
+              <span class="phase-status-dot ${phaseStatusClass(phase.status)}"></span>
+              <span>${phase.phase}</span>
+            </div>
+          `).join("")
+        : `
+          <div class="phase-item active">
+            <span class="phase-status-dot"></span>
+            <span>Waiting for runtime start</span>
+          </div>
+        `;
+    }
+
+    function renderTeam() {
+      els.memberList.innerHTML = state.teamMembers.map((member) => `
+        <div class="member-item">
+          <div class="avatar">${member.name[0]}</div>
+          <div class="member-info">
+            <div class="member-name">${member.name}</div>
+            <div class="member-role">${member.role}</div>
+          </div>
+          <div class="status-dot status-${member.status}"></div>
+        </div>
+      `).join("");
+
+      els.activityFeed.innerHTML = state.teamActivity.map((item, index) => `
+        <div class="activity-item">
+          <div class="timestamp">${String(index + 1).padStart(2, "0")}:00</div>
+          <div class="activity-text">${item}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderWhiteboard() {
+      els.whiteboardOverlay.classList.toggle("open", state.whiteboardOpen);
+    }
+
+    function render() {
+      renderSidebar();
+      renderViews();
+      renderSkills();
+      renderChat();
+      renderAudit();
+      renderTeam();
+      renderWhiteboard();
+    }
+
+    function refresh() {
+      return Promise.all([
+        api("/bootstrap").catch(() => null),
+        api("/runtime").catch(() => null),
+        api("/skills").catch(() => [])
+      ]).then(([bootstrap, runtime, skills]) => {
+        if (bootstrap) {
+          state.bootstrap = bootstrap;
+          state.mode = bootstrap.role === "developer" ? "developer" : "auditor";
+        }
+        if (runtime) state.runtime = runtime;
+        state.skills = Array.isArray(skills) ? skills : [];
+        render();
+      });
+    }
+
+    function startAuditSession() {
+      return api("/runtime/start", {
+        method: "POST",
+        body: "{}"
+      }).then((runtime) => {
+        state.runtime = runtime;
+        navigate("/audit");
+      }).then(refresh);
+    }
+
+    document.querySelectorAll(".nav-item").forEach((node) => {
+      node.addEventListener("click", () => navigate(node.dataset.path));
+    });
+
+    document.querySelectorAll(".role-btn").forEach((node) => {
+      node.addEventListener("click", () => {
+        state.mode = node.dataset.mode;
+        if (state.mode === "developer" && state.path === "/audit") {
+          navigate("/build");
+        } else if (state.mode === "auditor" && state.path === "/build") {
+          navigate("/audit");
+        } else {
+          render();
+        }
+      });
+    });
+
+    document.querySelectorAll(".setup-option").forEach((node) => {
+      node.addEventListener("click", () => {
+        state.selectedSetupRole = node.dataset.role;
+        document.querySelectorAll(".setup-option").forEach((option) => option.classList.remove("selected"));
+        node.classList.add("selected");
+      });
+    });
+
+    els.setupContinue.addEventListener("click", () => {
+      state.mode = state.selectedSetupRole;
+      navigate("/");
+      render();
+    });
+
+    els.closeSidebar.addEventListener("click", () => {
+      state.sidebarOpen = false;
+      render();
+    });
+
+    els.openSidebar.addEventListener("click", () => {
+      state.sidebarOpen = true;
+      render();
+    });
+
+    els.refreshChat.addEventListener("click", refresh);
+    els.sendBtn.addEventListener("click", refresh);
+    els.whiteboardFab.addEventListener("click", () => {
+      state.whiteboardOpen = !state.whiteboardOpen;
+      renderWhiteboard();
+    });
+    els.closeWhiteboard.addEventListener("click", () => {
+      state.whiteboardOpen = false;
+      renderWhiteboard();
+    });
+    els.whiteboardBackdrop.addEventListener("click", () => {
+      state.whiteboardOpen = false;
+      renderWhiteboard();
+    });
+    els.whiteboardInput.value = localStorage.getItem(state.whiteboardKey) || "";
+    els.whiteboardInput.addEventListener("input", () => {
+      localStorage.setItem(state.whiteboardKey, els.whiteboardInput.value);
+    });
+
+    window.addEventListener("popstate", () => {
+      state.path = window.location.pathname;
+      render();
+    });
+
+    if (state.path === "/build") {
+      state.mode = "developer";
+    }
+
+    refresh().then(() => {
+      if (state.bootstrap && state.bootstrap.decision !== "ready" && state.path !== "/setup") {
+        navigate("/setup");
+      } else {
+        render();
+      }
+    });
+
+    setInterval(refresh, 5000);
+
+    window.onerror = function(msg, url, line, col) {
+      console.error("Frontend Error:", msg, url, line, col);
       return false;
     };
   </script>

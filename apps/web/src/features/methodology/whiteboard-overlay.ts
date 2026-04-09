@@ -6,7 +6,7 @@ const STORAGE_KEY = "srp_whiteboard_data";
 
 @customElement("whiteboard-overlay")
 export class WhiteboardOverlay extends LitElement {
-  @property({ type: Boolean }) open = false;
+  @property({ type: Boolean, reflect: true }) open = false;
 
   @state() private _elements: any[] = [];
   @state() private _appState: any = {};
@@ -15,12 +15,11 @@ export class WhiteboardOverlay extends LitElement {
   static override styles = css`
     :host {
       display: block !important;
-      --whiteboard-width: 800px;
-      --whiteboard-height: 600px;
-      
+      --whiteboard-width: min(960px, calc(100vw - 32px));
+      --whiteboard-height: min(720px, calc(100vh - 120px));
+
       position: fixed;
-      bottom: 80px;
-      right: 20px;
+      inset: 0;
       z-index: 11000 !important;
       pointer-events: none;
     }
@@ -29,7 +28,18 @@ export class WhiteboardOverlay extends LitElement {
       pointer-events: auto;
     }
 
+    .backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.24);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
     .container {
+      position: absolute;
+      right: 20px;
+      bottom: 92px;
       width: var(--whiteboard-width);
       height: var(--whiteboard-height);
       background: #ffffff;
@@ -56,6 +66,10 @@ export class WhiteboardOverlay extends LitElement {
       opacity: 0 !important;
       pointer-events: none !important;
       visibility: hidden !important;
+    }
+
+    :host([open]) .backdrop {
+      opacity: 1;
     }
 
     .container.minimized {
@@ -126,6 +140,13 @@ export class WhiteboardOverlay extends LitElement {
       width: 14px;
       height: 14px;
     }
+
+    @media (max-width: 768px) {
+      .container {
+        right: 8px;
+        bottom: 84px;
+      }
+    }
   `;
 
   override connectedCallback() {
@@ -184,6 +205,7 @@ export class WhiteboardOverlay extends LitElement {
 
   override render() {
     return html`
+      <div class="backdrop" ?hidden=${!this.open} @click=${this._handleClose}></div>
       <div class="container ${this.open ? 'open' : 'closed'} ${this._isMinimized ? 'minimized' : ''}">
         <div class="header" @dblclick=${this._toggleMinimize}>
           <div class="title">

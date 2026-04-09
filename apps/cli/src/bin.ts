@@ -72,7 +72,7 @@ Commands:
 async function startGateway(rootDir: string) {
   console.log("🚀 Starting SRP Gateway...");
   const srv = await createGatewayServer({ port: 6969, rootDirectory: rootDir });
-  const url = `http://${srv.host}:${srv.port}`;
+  const url = `http://localhost:${srv.port}`;
 
   console.log(`\n✅ SRP Web UI is running at: ${url}`);
   console.log("Press Ctrl+C to stop the server.\n");
@@ -164,4 +164,3 @@ main().catch(err => {
   console.error(err);
   process.exit(1);
 });
-

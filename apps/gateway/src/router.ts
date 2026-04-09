@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { handleGetRuntime, handlePostRuntimeStart } from "./handlers/runtime.js";
@@ -34,6 +34,68 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export interface RouterConfig {
   readonly rootDirectory: string;
   readonly environment: NodeJS.ProcessEnv;
+}
+
+async function resolveWebDistPath(rootDirectory: string, gatewayDir: string): Promise<string> {
+  const candidates = [
+    join(rootDirectory, "apps/web/dist-web"),
+    join(gatewayDir, "../../apps/web/dist-web")
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      await readFile(join(candidate, "index.html"), "utf8");
+      return candidate;
+    } catch {
+      // try next candidate
+    }
+  }
+
+  throw new Error(`Unable to locate web build output. Tried: ${candidates.join(", ")}`);
+}
+
+async function findWebEntryScript(webDistPath: string): Promise<string | null> {
+  try {
+    const assets = await readdir(join(webDistPath, "assets"));
+    const candidates = assets
+      .filter((file) => /^index-.*\.js$/.test(file))
+      .sort();
+
+    for (let index = candidates.length - 1; index >= 0; index -= 1) {
+      const file = candidates[index];
+      const details = await stat(join(webDistPath, "assets", file));
+      if (details.size > 0) {
+        return `/assets/${file}`;
+      }
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function loadIndexHtml(webDistPath: string): Promise<string> {
+  const indexPath = join(webDistPath, "index.html");
+  let content = await readFile(indexPath, "utf-8");
+  const entryScript = await findWebEntryScript(webDistPath);
+
+  if (!entryScript) {
+    return content;
+  }
+
+  if (content.includes('src="/src/index.ts"')) {
+    content = content.replace(
+      /<script[^>]*type="module"[^>]*src="\/src\/index\.ts"[^>]*><\/script>/,
+      `<script type="module" crossorigin src="${entryScript}"></script>`
+    );
+  }
+
+  if (!content.includes(entryScript) && !/src="\/assets\/index-.*\.js"/.test(content)) {
+    content = content.replace("</head>", `  <script type="module" crossorigin src="${entryScript}"></script>\n</head>`);
+  }
+
+  return content;
 }
 
 // ---------------------------------------------------------------------------
@@ -178,10 +240,8 @@ export async function routeRequest(
   // ── Static Web UI ───────────────────────────────────────────────────────────
   if (method === "GET" || method === "HEAD") {
     try {
-      // Find the SRP monorepo root relative to THIS file
-      // dist/router.js is at apps/gateway/dist/router.js
-      const gatewayDir = dirname(__dirname); 
-      const webDistPath = join(gatewayDir, "../../apps/web/dist-web");
+      const gatewayDir = dirname(__dirname);
+      const webDistPath = await resolveWebDistPath(config.rootDirectory, gatewayDir);
 
       // First try to serve specific files (assets)
       if (path !== "/" && path !== "/setup" && path !== "/audit" && path !== "/audit-flow") {
@@ -220,8 +280,7 @@ export async function routeRequest(
       }
 
       // Serve index.html for everything else (SPA fallback)
-      const indexPath = join(webDistPath, "index.html");
-      const content = await readFile(indexPath, "utf-8");
+      const content = await loadIndexHtml(webDistPath);
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       if (method === "GET") {
         res.end(content);
