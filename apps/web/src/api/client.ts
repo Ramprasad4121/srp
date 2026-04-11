@@ -5,7 +5,8 @@ import type {
   RuntimeMode,
   MethodologyPhase,
   RunManifest,
-  AuditRoomProjection
+  AuditRoomProjection,
+  RunEventLogEntry
 } from "@srp/shared-types";
 
 export class GatewayClient {
@@ -33,6 +34,18 @@ export class GatewayClient {
 
   async getRuns(): Promise<readonly RunManifest[]> {
     return this.request<readonly RunManifest[]>("/runs");
+  }
+
+  async getRun(runId: string): Promise<RunManifest> {
+    return this.request<RunManifest>(`/runs/${runId}`);
+  }
+
+  async getRunArtifact(runId: string, artifactId: string): Promise<unknown> {
+    return this.request<unknown>(`/runs/${runId}/artifacts/${artifactId}`);
+  }
+
+  async getRunEvents(runId: string): Promise<readonly RunEventLogEntry[]> {
+    return this.request<readonly RunEventLogEntry[]>(`/runs/${runId}/events`);
   }
 
   async getRunProjection(runId: string): Promise<AuditRoomProjection> {

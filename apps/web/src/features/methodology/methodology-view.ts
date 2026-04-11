@@ -1,7 +1,35 @@
 import { LitElement, html, css } from "lit";
 import { gatewayClient } from "../../api/client.js";
-import type { RuntimeSessionState, PhaseState } from "@srp/shared-types";
+import type {
+  ArtifactMetadata,
+  MethodologyPhase,
+  PhaseState,
+  RunEventLogEntry,
+  RunManifest,
+  RuntimeSessionState
+} from "@srp/shared-types";
 import "./excalidraw-wrapper.js";
+
+const METHODOLOGY_PHASES: readonly MethodologyPhase[] = [
+  "discovery-docs",
+  "discovery-audits",
+  "discovery-governance",
+  "discovery-tokenomics",
+  "discovery-onchain",
+  "synthesis-intent",
+  "synthesis-actors",
+  "synthesis-functions",
+  "synthesis-entry-exit",
+  "synthesis-invariants",
+  "visual-flow-map",
+  "audit-resolve-input",
+  "audit-setup",
+  "audit-map",
+  "audit-hunt",
+  "audit-attack",
+  "audit-verify",
+  "audit-report"
+] as const;
 
 export class MethodologyView extends LitElement {
   static override properties = {
@@ -554,17 +582,99 @@ export class MethodologyView extends LitElement {
         return;
       }
 
-      const projection = await gatewayClient.getRunProjection(latestRun.runId);
-      this._state = {
-        ...runtime,
-        runId: latestRun.runId,
-        sessionId: latestRun.sessionId,
-        currentPhase: latestRun.currentPhase ?? runtime.currentPhase,
-        auditRoom: projection
-      };
+      this._state = await this.buildPersistedRunState(runtime, latestRun.runId);
     } catch (e) {
       console.error("Discovery refresh failed", e);
     }
+  }
+
+  private async buildPersistedRunState(runtime: RuntimeSessionState, runId: string): Promise<RuntimeSessionState> {
+    const [run, projection, events] = await Promise.all([
+      gatewayClient.getRun(runId),
+      gatewayClient.getRunProjection(runId),
+      gatewayClient.getRunEvents(runId)
+    ]);
+
+    const payloadEntries = await Promise.all(
+      run.artifacts.map(async (artifact) => {
+        return [artifact.artifactId, await gatewayClient.getRunArtifact(runId, artifact.artifactId)] as const;
+      })
+    );
+
+    const payloads = new Map(payloadEntries);
+
+    const persistedState = Object.assign(
+      {
+        ...runtime,
+        runId: run.runId,
+        sessionId: run.sessionId,
+        currentPhase: run.currentPhase ?? runtime.currentPhase,
+        phases: this.rebuildPhaseStates(events),
+        auditRoom: projection
+      },
+      this.withStateField("discoveryRegistry", this.readLatestArtifact<RuntimeSessionState["discoveryRegistry"]>(run, payloads, "discovery-docs", "note")),
+      this.withStateField("intentSummary", this.readLatestArtifact<RuntimeSessionState["intentSummary"]>(run, payloads, "synthesis-intent", "note")),
+      this.withStateField("architectureSummary", this.readLatestArtifact<RuntimeSessionState["architectureSummary"]>(run, payloads, "synthesis-actors", "note")),
+      this.withStateField("functionMap", this.readLatestArtifact<RuntimeSessionState["functionMap"]>(run, payloads, "synthesis-functions", "note")),
+      this.withStateField("entryExitMatrix", this.readLatestArtifact<RuntimeSessionState["entryExitMatrix"]>(run, payloads, "synthesis-entry-exit", "note")),
+      this.withStateField("invariantRegistry", this.readLatestArtifact<RuntimeSessionState["invariantRegistry"]>(run, payloads, "synthesis-invariants", "invariant")),
+      this.withStateField("protocolDiagram", this.readLatestArtifact<RuntimeSessionState["protocolDiagram"]>(run, payloads, "visual-flow-map", "diagram")),
+      this.withStateField("hypothesisRegistry", this.readLatestArtifact<RuntimeSessionState["hypothesisRegistry"]>(run, payloads, "audit-hunt", "hypothesis")),
+      this.withStateField("findingRegistry", this.readLatestArtifact<RuntimeSessionState["findingRegistry"]>(run, payloads, "audit-verify", "finding")),
+      this.withStateField("formalReport", this.readLatestArtifact<RuntimeSessionState["formalReport"]>(run, payloads, "audit-report", "report"))
+    );
+
+    return persistedState as RuntimeSessionState;
+  }
+
+  private rebuildPhaseStates(events: readonly RunEventLogEntry[]): readonly PhaseState[] {
+    const phaseMap = new Map<MethodologyPhase, PhaseState>();
+
+    for (const phase of METHODOLOGY_PHASES) {
+      phaseMap.set(phase, { phase, status: "pending" });
+    }
+
+    for (const event of events) {
+      if (event.type !== "phase.status.changed" || !event.phase || !event.status) {
+        continue;
+      }
+
+      const current = phaseMap.get(event.phase) ?? { phase: event.phase, status: "pending" as const };
+      phaseMap.set(
+        event.phase,
+        Object.assign(
+          {},
+          current,
+          { status: event.status },
+          event.status === "running" ? { startedAt: event.emittedAt } : {},
+          event.status === "completed" || event.status === "failed" ? { completedAt: event.emittedAt } : {}
+        ) as PhaseState
+      );
+    }
+
+    return METHODOLOGY_PHASES.map((phase) => phaseMap.get(phase) ?? { phase, status: "pending" });
+  }
+
+  private readLatestArtifact<T>(
+    run: RunManifest,
+    payloads: ReadonlyMap<string, unknown>,
+    phase: MethodologyPhase,
+    kind: ArtifactMetadata["kind"]
+  ): T | undefined {
+    const artifact = [...run.artifacts]
+      .filter((candidate) => candidate.phase === phase && candidate.kind === kind)
+      .sort((left, right) => {
+        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+      })[0];
+
+    return artifact ? (payloads.get(artifact.artifactId) as T | undefined) : undefined;
+  }
+
+  private withStateField<K extends keyof RuntimeSessionState>(
+    key: K,
+    value: RuntimeSessionState[K] | undefined
+  ): Partial<RuntimeSessionState> {
+    return value === undefined ? {} : { [key]: value } as Partial<RuntimeSessionState>;
   }
 
   private async startAudit() {
