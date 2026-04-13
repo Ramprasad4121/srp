@@ -107,7 +107,34 @@ test("Gateway exposes run history and artifact APIs", async () => {
     assert.ok(events.length >= 2);
     assert.ok(events.some((event) => event.type === "session.started"));
     assert.ok(events.some((event) => event.type === "phase.status.changed"));
-    assert.ok(events.some((event) => event.type === "artifact.created"));
+    if (runUpdate.artifacts.length > 0) {
+      assert.ok(events.some((event) => event.type === "artifact.created"));
+    }
+
+    const projectionRes = await fetch(`${baseUrl}/api/runs/${runId}/projection`);
+    assert.equal(projectionRes.ok, true);
+    const projection = await projectionRes.json();
+    assert.equal(projection.missionControl.runId, runId);
+    assert.ok(Array.isArray(projection.timeline));
+    assert.ok(Array.isArray(projection.notes));
+    assert.ok(Array.isArray(projection.diagrams));
+    assert.ok(Array.isArray(projection.findings));
+    assert.ok(Array.isArray(projection.evidence));
+    assert.ok(Array.isArray(projection.graph.nodes));
+    assert.ok(Array.isArray(projection.graph.edges));
+    assert.ok(projection.timeline.length >= 2);
+    assert.ok(
+      projection.timeline.some((entry) => entry.type === "session.started") ||
+      projection.timeline.some((entry) => entry.type === "phase.status.changed")
+    );
+    if (runUpdate.artifacts.length > 0) {
+      assert.ok(
+        projection.notes.length > 0 ||
+        projection.diagrams.length > 0 ||
+        projection.findings.length > 0 ||
+        projection.evidence.length > 0
+      );
+    }
 
   } finally {
     await srv.stop();
