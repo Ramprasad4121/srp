@@ -22,6 +22,7 @@ import type {
   VerificationPlan,
   WorkspaceAnalysis
 } from "@srp/shared-types";
+import { getPhaseDefinition } from "@srp/methodology";
 import { analyzeWorkspace } from "./analyzers/workspace-analyzer.js";
 import { buildCodebaseContext } from "./analyzers/codebase-context.js";
 import {
@@ -90,6 +91,28 @@ interface WorkflowDeps {
   ) => Promise<void>;
 }
 
+function assertArtifactKindAllowed(phase: MethodologyPhase, kind: ArtifactKind): void {
+  const definition = getPhaseDefinition(phase);
+  if (!definition.expectedArtifactKinds.includes(kind)) {
+    throw new Error(
+      `Playbook violation: ${phase} emitted ${kind}, expected one of ${definition.expectedArtifactKinds.join(", ")}`
+    );
+  }
+}
+
+async function persistPlaybookArtifact(
+  persistArtifact: WorkflowDeps["persistArtifact"],
+  runId: string,
+  projectId: string,
+  phase: MethodologyPhase,
+  kind: ArtifactKind,
+  title: string,
+  payload: unknown
+): Promise<void> {
+  assertArtifactKindAllowed(phase, kind);
+  await persistArtifact(runId, projectId, phase, kind, title, payload);
+}
+
 export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
   const {
     projectId,
@@ -135,7 +158,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
 
         accumulatedArtifacts.push(...arts);
         runtimeMemory.pendingDiscoveryRegistry = { artifacts: [...accumulatedArtifacts], totalSources: accumulatedArtifacts.length };
-        await persistArtifact(runId, projectId, phaseName, "note", "Discovery: Documentation", { artifacts: arts, totalSources: arts.length });
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Discovery: Documentation", { artifacts: arts, totalSources: arts.length });
 
         knowledgeBus.addNode("contract", "Core Solidity Files", {
           count: runtimeMemory.pendingWorkspaceAnalysis.solidityFileCount,
@@ -155,7 +178,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
 
         accumulatedArtifacts.push(...arts);
         runtimeMemory.pendingDiscoveryRegistry = { artifacts: [...accumulatedArtifacts], totalSources: accumulatedArtifacts.length };
-        await persistArtifact(runId, projectId, phaseName, "note", "Discovery: Prior Audits", { artifacts: arts, totalSources: arts.length });
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Discovery: Prior Audits", { artifacts: arts, totalSources: arts.length });
         agentRegistry.updateInstanceStatus(agentId, "finished", `Identified ${arts.length} audit sources.`);
       } else if (phaseName === "discovery-governance") {
         const agentId = agentRegistry.spawnInstance("discovery-agent");
@@ -169,7 +192,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
 
         accumulatedArtifacts.push(...arts);
         runtimeMemory.pendingDiscoveryRegistry = { artifacts: [...accumulatedArtifacts], totalSources: accumulatedArtifacts.length };
-        await persistArtifact(runId, projectId, phaseName, "note", "Discovery: Governance", { artifacts: arts, totalSources: arts.length });
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Discovery: Governance", { artifacts: arts, totalSources: arts.length });
         agentRegistry.updateInstanceStatus(agentId, "finished", "Governance trust model mapped.");
       } else if (phaseName === "discovery-tokenomics") {
         const agentId = agentRegistry.spawnInstance("discovery-agent");
@@ -183,7 +206,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
 
         accumulatedArtifacts.push(...arts);
         runtimeMemory.pendingDiscoveryRegistry = { artifacts: [...accumulatedArtifacts], totalSources: accumulatedArtifacts.length };
-        await persistArtifact(runId, projectId, phaseName, "note", "Discovery: Tokenomics", { artifacts: arts, totalSources: arts.length });
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Discovery: Tokenomics", { artifacts: arts, totalSources: arts.length });
         agentRegistry.updateInstanceStatus(agentId, "finished", "Economic layer analysis complete.");
       } else if (phaseName === "discovery-onchain") {
         const agentId = agentRegistry.spawnInstance("discovery-agent");
@@ -197,7 +220,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
 
         accumulatedArtifacts.push(...arts);
         runtimeMemory.pendingDiscoveryRegistry = { artifacts: [...accumulatedArtifacts], totalSources: accumulatedArtifacts.length };
-        await persistArtifact(runId, projectId, phaseName, "note", "Discovery: On-Chain", { artifacts: arts, totalSources: arts.length });
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Discovery: On-Chain", { artifacts: arts, totalSources: arts.length });
         agentRegistry.updateInstanceStatus(agentId, "finished", "On-chain state verified.");
       } else if (phaseName === "synthesis-intent") {
         const agentId = agentRegistry.spawnInstance("synthesis-agent");
@@ -211,7 +234,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           discoveryRegistry: { artifacts: accumulatedArtifacts, totalSources: accumulatedArtifacts.length },
           knowledgeBus: knowledgeBus.getState()
         }, activeProvider);
-        await persistArtifact(runId, projectId, phaseName, "note", "Protocol Intent", runtimeMemory.pendingIntentSummary);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Protocol Intent", runtimeMemory.pendingIntentSummary);
         knowledgeBus.addNode("flow", "Intended Value Flow", { summary: runtimeMemory.pendingIntentSummary.draftSummary }, agentId);
         agentRegistry.updateInstanceStatus(agentId, "finished", "Protocol intent synthesized.");
       } else if (phaseName === "synthesis-actors") {
@@ -225,7 +248,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           discoveryRegistry: { artifacts: accumulatedArtifacts, totalSources: accumulatedArtifacts.length },
           knowledgeBus: knowledgeBus.getState()
         }, activeProvider);
-        await persistArtifact(runId, projectId, phaseName, "note", "Actor Model", runtimeMemory.pendingArchitectureSummary);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Actor Model", runtimeMemory.pendingArchitectureSummary);
         knowledgeBus.addNode("actor", "Identified Actors", { components: runtimeMemory.pendingArchitectureSummary.keyComponents }, agentId);
         agentRegistry.updateInstanceStatus(agentId, "finished", "Actor model mapped.");
       } else if (phaseName === "synthesis-functions") {
@@ -239,7 +262,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           architecture: runtimeMemory.pendingArchitectureSummary!,
           knowledgeBus: knowledgeBus.getState()
         }, activeProvider);
-        await persistArtifact(runId, projectId, phaseName, "note", "Function Map", runtimeMemory.pendingFunctionMap);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Function Map", runtimeMemory.pendingFunctionMap);
         agentRegistry.updateInstanceStatus(agentId, "finished", "Function surface area cataloged.");
       } else if (phaseName === "synthesis-entry-exit") {
         const agentId = agentRegistry.spawnInstance("synthesis-agent");
@@ -252,7 +275,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           architecture: runtimeMemory.pendingArchitectureSummary!,
           knowledgeBus: knowledgeBus.getState()
         }, activeProvider);
-        await persistArtifact(runId, projectId, phaseName, "note", "Entry/Exit Matrix", runtimeMemory.pendingEntryExitMatrix);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Entry/Exit Matrix", runtimeMemory.pendingEntryExitMatrix);
         agentRegistry.updateInstanceStatus(agentId, "finished", "Value drainage paths identified.");
       } else if (phaseName === "synthesis-invariants") {
         const agentId = agentRegistry.spawnInstance("synthesis-agent");
@@ -265,7 +288,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           architecture: runtimeMemory.pendingArchitectureSummary!,
           knowledgeBus: knowledgeBus.getState()
         }, activeProvider);
-        await persistArtifact(runId, projectId, phaseName, "invariant", "Invariant Registry", runtimeMemory.pendingInvariantRegistry);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "invariant", "Invariant Registry", runtimeMemory.pendingInvariantRegistry);
 
         runtimeMemory.pendingVerificationPlan = await generateVerificationPlan({
           workspace: runtimeMemory.pendingWorkspaceAnalysis!,
@@ -275,7 +298,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           invariants: runtimeMemory.pendingInvariantRegistry,
           knowledgeBus: knowledgeBus.getState()
         }, activeProvider);
-        await persistArtifact(runId, projectId, phaseName, "note", "Verification Plan", runtimeMemory.pendingVerificationPlan);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Verification Plan", runtimeMemory.pendingVerificationPlan);
         knowledgeBus.addNode("invariant", "Critical Invariants", { invariants: runtimeMemory.pendingInvariantRegistry.invariants }, agentId);
         agentRegistry.updateInstanceStatus(agentId, "finished", "Security heartbeat defined.");
       } else if (phaseName === "visual-flow-map") {
@@ -289,7 +312,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           architecture: runtimeMemory.pendingArchitectureSummary!,
           knowledgeBus: knowledgeBus.getState()
         }, activeProvider);
-        await persistArtifact(runId, projectId, phaseName, "diagram", "Value Flow Map", runtimeMemory.pendingProtocolDiagram);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "diagram", "Value Flow Map", runtimeMemory.pendingProtocolDiagram);
         agentRegistry.updateInstanceStatus(agentId, "finished", "Protocol map rendered.");
       } else if (phaseName === "audit-resolve-input") {
         const agentId = agentRegistry.spawnInstance("audit-agent");
@@ -299,7 +322,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           framework: runtimeMemory.pendingWorkspaceAnalysis?.isFoundry ? "foundry" : ("hardhat" as const),
           scopeFiles: []
         };
-        await persistArtifact(runId, projectId, phaseName, "note", "Audit: Resolved Input", resolveResult);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Audit: Resolved Input", resolveResult);
         agentRegistry.updateInstanceStatus(agentId, "finished", "Resolution complete.");
       } else if (phaseName === "audit-setup") {
         const agentId = agentRegistry.spawnInstance("audit-agent");
@@ -315,8 +338,8 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           ? { tool: "mock", success: true, logs: "Mock execution: logs available.", generatedAt: new Date().toISOString() }
           : { tool: "slither", success: true, logs: "Slither analysis complete. No high issues found.", generatedAt: new Date().toISOString() };
 
-        await persistArtifact(runId, projectId, phaseName, "note", "Audit: Setup Summary", setupResult);
-        await persistArtifact(runId, projectId, phaseName, "note", "Toolchain Execution", runtimeMemory.pendingToolchainExecution);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Audit: Setup Summary", setupResult);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Toolchain Execution", runtimeMemory.pendingToolchainExecution);
         agentRegistry.updateInstanceStatus(agentId, "finished", "Static analysis complete.");
       } else if (phaseName === "audit-map") {
         const agentId = agentRegistry.spawnInstance("audit-agent");
@@ -328,7 +351,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           architecture: runtimeMemory.pendingArchitectureSummary!,
           knowledgeBus: knowledgeBus.getState()
         }, activeProvider);
-        await persistArtifact(runId, projectId, phaseName, "note", "Audit: System Map", mapArtifact);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Audit: System Map", mapArtifact);
         agentRegistry.updateInstanceStatus(agentId, "finished", "Technical mapping complete.");
       } else if (phaseName === "audit-hunt") {
         const agentId = agentRegistry.spawnInstance("audit-agent");
@@ -356,7 +379,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           }, activeProvider);
         }
 
-        await persistArtifact(runId, projectId, phaseName, "note", "Audit: Hypotheses", runtimeMemory.pendingHypothesisRegistry);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "hypothesis", "Audit: Hypotheses", runtimeMemory.pendingHypothesisRegistry);
         runtimeMemory.pendingEconomicAnalysis = await generateEconomicAnalysis({
           workspace: runtimeMemory.pendingWorkspaceAnalysis!,
           codebase: runtimeMemory.pendingCodebaseContext!,
@@ -384,8 +407,8 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           architecture: runtimeMemory.pendingArchitectureSummary!,
           knowledgeBus: knowledgeBus.getState()
         }, activeProvider);
-        await persistArtifact(runId, projectId, phaseName, "note", "Cross-Contract Analysis", runtimeMemory.pendingCrossContractAnalysis);
-        await persistArtifact(runId, projectId, phaseName, "note", "Audit: Attack Analysis", attackResults);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "test", "Cross-Contract Analysis", runtimeMemory.pendingCrossContractAnalysis);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "test", "Audit: Attack Analysis", attackResults);
         agentRegistry.updateInstanceStatus(agentId, "finished", "Exploit simulation complete.");
       } else if (phaseName === "audit-verify") {
         const agentId = agentRegistry.spawnInstance("audit-agent");
@@ -413,7 +436,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           }, activeProvider);
         }
 
-        await persistArtifact(runId, projectId, phaseName, "finding", "Audit: Verified Findings", runtimeMemory.pendingFindingRegistry);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "finding", "Audit: Verified Findings", runtimeMemory.pendingFindingRegistry);
         agentRegistry.updateInstanceStatus(agentId, "finished", "Vulnerability verification complete.");
       } else if (phaseName === "audit-report") {
         const agentId = agentRegistry.spawnInstance("synthesis-agent");
@@ -441,7 +464,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           economicAnalysis: runtimeMemory.pendingEconomicAnalysis!,
           findingRegistry: runtimeMemory.pendingFindingRegistry!
         }, activeProvider);
-        await persistArtifact(runId, projectId, phaseName, "note", "Formal Audit Report", runtimeMemory.pendingFormalReport);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "report", "Formal Audit Report", runtimeMemory.pendingFormalReport);
         agentRegistry.updateInstanceStatus(agentId, "finished", "Audit report finalized.");
       }
 

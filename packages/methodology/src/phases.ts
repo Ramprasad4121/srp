@@ -155,7 +155,7 @@ export const PHASE_DEFINITIONS: readonly PhaseDefinition[] = [
     label: PHASE_LABELS["synthesis-invariants"],
     description: "Extract list of Global, Function, and Economic invariants.",
     requiredInputs: ["entry/exit matrix", "actor model", "intent summary"],
-    expectedArtifactKinds: ["note"],
+    expectedArtifactKinds: ["invariant"],
     exitCriteria: ["invariant registry generated", "invariant artifact persisted"],
     rescueStrategy: "Fallback to minimal invariant set anchored to custody and accounting.",
     dependsOn: ["synthesis-entry-exit"]

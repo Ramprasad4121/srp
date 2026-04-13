@@ -11,6 +11,7 @@
     "@srp/chat-runtime": "file:../../packages/chat-runtime",
     "@srp/config": "file:../../packages/config",
     "@srp/events": "file:../../packages/events",
+    "@srp/methodology": "file:../../packages/methodology",
     "@srp/providers": "file:../../packages/providers",
     "@srp/security": "file:../../packages/security",
     "@srp/sessions": "file:../../packages/sessions",
