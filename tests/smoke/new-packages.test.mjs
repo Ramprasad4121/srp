@@ -14,6 +14,8 @@ import {
   getPhaseDefinition,
   getPhaseIndex,
   getNextPhase,
+  phaseAllowsArtifactKind,
+  phaseMeetsArtifactGate,
   areDependenciesMet,
   createInitialPhaseRecords,
   markPhaseRunning,
@@ -107,6 +109,17 @@ test("phase index and next phase work correctly", () => {
   assert.equal(getPhaseIndex("audit-report"), 17);
   assert.equal(getNextPhase("discovery-docs"), "discovery-audits");
   assert.equal(getNextPhase("audit-report"), null);
+});
+
+test("phase artifact gates enforce expected artifact kinds", () => {
+  assert.equal(phaseAllowsArtifactKind("audit-hunt", "hypothesis"), true);
+  assert.equal(phaseAllowsArtifactKind("audit-hunt", "note"), false);
+  assert.equal(phaseAllowsArtifactKind("audit-report", "report"), true);
+  assert.equal(phaseAllowsArtifactKind("audit-report", "finding"), false);
+
+  assert.equal(phaseMeetsArtifactGate("audit-hunt", ["hypothesis"]), true);
+  assert.equal(phaseMeetsArtifactGate("audit-attack", ["test"]), true);
+  assert.equal(phaseMeetsArtifactGate("audit-report", ["note"]), false);
 });
 
 test("dependency checking works across phase graph", () => {

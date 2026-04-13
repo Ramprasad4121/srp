@@ -269,3 +269,18 @@ export function getNextPhase(currentPhase: MethodologyPhase): MethodologyPhase |
   }
   return null;
 }
+
+export function phaseAllowsArtifactKind(
+  phase: MethodologyPhase,
+  kind: ArtifactKind
+): boolean {
+  return getPhaseDefinition(phase).expectedArtifactKinds.includes(kind);
+}
+
+export function phaseMeetsArtifactGate(
+  phase: MethodologyPhase,
+  emittedKinds: readonly ArtifactKind[]
+): boolean {
+  const expectedKinds = getPhaseDefinition(phase).expectedArtifactKinds;
+  return emittedKinds.some((kind) => expectedKinds.includes(kind));
+}
