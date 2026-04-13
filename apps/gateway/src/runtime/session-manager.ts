@@ -76,6 +76,33 @@ const runtimeMemory: SessionRuntimeMemory = {
   pendingFormalReport: undefined
 };
 
+function getCurrentPhase(): MethodologyPhase | null {
+  return runtimeMemory.currentPhaseIndex >= 0 && runtimeMemory.currentPhaseIndex < TARGET_PHASES.length
+    ? (TARGET_PHASES[runtimeMemory.currentPhaseIndex] ?? null)
+    : null;
+}
+
+function resetRuntimeMemory(): void {
+  runtimeMemory.currentPhaseIndex = -1;
+  runtimeMemory.pendingDiscoveryRegistry = undefined;
+  runtimeMemory.pendingWorkspaceAnalysis = undefined;
+  runtimeMemory.pendingCodebaseContext = undefined;
+  runtimeMemory.pendingIntentSummary = undefined;
+  runtimeMemory.pendingArchitectureSummary = undefined;
+  runtimeMemory.pendingProtocolDiagram = undefined;
+  runtimeMemory.pendingFunctionMap = undefined;
+  runtimeMemory.pendingEntryExitMatrix = undefined;
+  runtimeMemory.pendingInvariantRegistry = undefined;
+  runtimeMemory.pendingVerificationPlan = undefined;
+  runtimeMemory.pendingToolchainExecution = undefined;
+  runtimeMemory.pendingHypothesisRegistry = undefined;
+  runtimeMemory.pendingEconomicAnalysis = undefined;
+  runtimeMemory.pendingCrossContractAnalysis = undefined;
+  runtimeMemory.pendingFindingRegistry = undefined;
+  runtimeMemory.pendingRemediationPlan = undefined;
+  runtimeMemory.pendingFormalReport = undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -86,17 +113,13 @@ export function getSessionState(): RuntimeSessionState {
     isRunning,
     sessionId: activeSessionId,
     runId: activeRunId,
-    currentPhase: runtimeMemory.currentPhaseIndex >= 0 && runtimeMemory.currentPhaseIndex < TARGET_PHASES.length
-      ? (TARGET_PHASES[runtimeMemory.currentPhaseIndex] ?? null)
-      : null,
+    currentPhase: getCurrentPhase(),
     phases: [...phaseStates],
     agentRegistry: agentRegistry.getState(),
     knowledgeBus: knowledgeBus.getState(),
     auditRoom: auditRoomProjector.snapshot(
       phaseStates,
-      runtimeMemory.currentPhaseIndex >= 0 && runtimeMemory.currentPhaseIndex < TARGET_PHASES.length
-        ? (TARGET_PHASES[runtimeMemory.currentPhaseIndex] ?? null)
-        : null
+      getCurrentPhase()
     )
   };
 
@@ -138,24 +161,7 @@ export function startSession(
   activeRunId = `run_${randomUUID()}`;
   isRunning = true;
   activeAbortController = new AbortController();
-  runtimeMemory.currentPhaseIndex = -1;
-  runtimeMemory.pendingDiscoveryRegistry = undefined;
-  runtimeMemory.pendingWorkspaceAnalysis = undefined;
-  runtimeMemory.pendingCodebaseContext = undefined;
-  runtimeMemory.pendingIntentSummary = undefined;
-  runtimeMemory.pendingArchitectureSummary = undefined;
-  runtimeMemory.pendingProtocolDiagram = undefined;
-  runtimeMemory.pendingFunctionMap = undefined;
-  runtimeMemory.pendingEntryExitMatrix = undefined;
-  runtimeMemory.pendingInvariantRegistry = undefined;
-  runtimeMemory.pendingVerificationPlan = undefined;
-  runtimeMemory.pendingToolchainExecution = undefined;
-  runtimeMemory.pendingHypothesisRegistry = undefined;
-  runtimeMemory.pendingEconomicAnalysis = undefined;
-  runtimeMemory.pendingCrossContractAnalysis = undefined;
-  runtimeMemory.pendingFindingRegistry = undefined;
-  runtimeMemory.pendingRemediationPlan = undefined;
-  runtimeMemory.pendingFormalReport = undefined;
+  resetRuntimeMemory();
 
   agentRegistry.clear();
   knowledgeBus.clear();

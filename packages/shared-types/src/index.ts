@@ -395,6 +395,7 @@ export interface AuditRoomProjection {
     readonly currentPhase: MethodologyPhase | null;
     readonly completedPhases: number;
     readonly totalPhases: number;
+    readonly lastFailure?: string;
   };
   readonly timeline: readonly RuntimeTimelineEntry[];
   readonly notes: readonly ArtifactMetadata[];
@@ -759,4 +760,3 @@ export interface ProtocolFunctionMap {
   readonly summary: string;
   readonly functions: readonly FunctionMapEntry[];
 }
-

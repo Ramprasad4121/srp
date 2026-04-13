@@ -55,6 +55,7 @@ export class AuditRoomProjector {
   private graphNodes: ArtifactGraphNode[] = [];
   private graphEdges: ArtifactGraphEdge[] = [];
   private runStatus: SessionStatus = "idle";
+  private lastFailure: string | undefined;
   private runId: string | null = null;
   private sessionId: string | null = null;
 
@@ -67,6 +68,7 @@ export class AuditRoomProjector {
     this.graphNodes = [];
     this.graphEdges = [];
     this.runStatus = "idle";
+    this.lastFailure = undefined;
     this.runId = runId;
     this.sessionId = sessionId;
   }
@@ -76,7 +78,10 @@ export class AuditRoomProjector {
 
     if (event.type === "session.started") this.runStatus = "running";
     if (event.type === "session.completed") this.runStatus = "completed";
-    if (event.type === "session.failed") this.runStatus = "failed";
+    if (event.type === "session.failed") {
+      this.runStatus = "failed";
+      this.lastFailure = event.detail;
+    }
   }
 
   applyArtifact(metadata: ArtifactMetadata, payload: unknown): void {
@@ -122,7 +127,8 @@ export class AuditRoomProjector {
         runStatus: this.runStatus,
         currentPhase,
         completedPhases,
-        totalPhases: phases.length
+        totalPhases: phases.length,
+        ...(this.lastFailure ? { lastFailure: this.lastFailure } : {})
       },
       timeline: this.timeline,
       notes: this.notes,

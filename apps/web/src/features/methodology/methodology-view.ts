@@ -370,6 +370,30 @@ export class MethodologyView extends LitElement {
       line-height: 1.5;
     }
 
+    .failure-banner {
+      margin-bottom: 1rem;
+      padding: 1rem 1.1rem;
+      border-radius: 12px;
+      border: 1px solid #fecaca;
+      background: #fff1f2;
+      color: #881337;
+    }
+
+    .failure-title {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+    }
+
+    .failure-detail {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #9f1239;
+      white-space: pre-wrap;
+    }
+
     .surface-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -763,6 +787,12 @@ export class MethodologyView extends LitElement {
     const highSignalFindings = room.findings.filter((finding) => finding.severity === "Critical" || finding.severity === "High").length;
 
     return html`
+      ${room.missionControl.lastFailure ? html`
+        <div class="failure-banner">
+          <div class="failure-title">Run Failed</div>
+          <div class="failure-detail">${room.missionControl.lastFailure}</div>
+        </div>
+      ` : ""}
       <div class="room-grid">
         <div class="room-card">
           <h3>Mission Control</h3>

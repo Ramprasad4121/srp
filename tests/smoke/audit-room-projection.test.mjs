@@ -159,3 +159,54 @@ test("audit room projection rebuild is deterministic and preserves core surfaces
     )
   );
 });
+
+test("audit room projection surfaces failure detail from session.failed event", () => {
+  const manifest = {
+    runId: "run_projection_fail",
+    projectId: "project_projection_fail",
+    sessionId: "session_projection_fail",
+    status: "failed",
+    createdAt: "2026-04-13T10:00:00.000Z",
+    currentPhase: "discovery-docs",
+    artifacts: []
+  };
+
+  const events = [
+    {
+      eventId: "evt_fail_1",
+      runId: "run_projection_fail",
+      projectId: "project_projection_fail",
+      type: "session.started",
+      emittedAt: "2026-04-13T10:00:00.000Z"
+    },
+    {
+      eventId: "evt_fail_2",
+      runId: "run_projection_fail",
+      projectId: "project_projection_fail",
+      type: "phase.status.changed",
+      emittedAt: "2026-04-13T10:00:05.000Z",
+      phase: "discovery-docs",
+      status: "failed",
+      title: "discovery-docs failed"
+    },
+    {
+      eventId: "evt_fail_3",
+      runId: "run_projection_fail",
+      projectId: "project_projection_fail",
+      type: "session.failed",
+      emittedAt: "2026-04-13T10:00:06.000Z",
+      title: "session failed",
+      detail: "Provider authentication failed"
+    }
+  ];
+
+  const projection = rebuildAuditRoomProjection({
+    manifest,
+    events,
+    payloads: {}
+  });
+
+  assert.equal(projection.missionControl.runStatus, "failed");
+  assert.equal(projection.missionControl.lastFailure, "Provider authentication failed");
+  assert.equal(projection.timeline[0].type, "session.failed");
+});
