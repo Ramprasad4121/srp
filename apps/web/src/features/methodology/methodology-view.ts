@@ -8,28 +8,8 @@ import type {
   RunManifest,
   RuntimeSessionState
 } from "@srp/shared-types";
+import { METHODOLOGY_PHASES, PHASE_LABELS, getPhaseDefinition } from "@srp/methodology";
 import "./excalidraw-wrapper.js";
-
-const METHODOLOGY_PHASES: readonly MethodologyPhase[] = [
-  "discovery-docs",
-  "discovery-audits",
-  "discovery-governance",
-  "discovery-tokenomics",
-  "discovery-onchain",
-  "synthesis-intent",
-  "synthesis-actors",
-  "synthesis-functions",
-  "synthesis-entry-exit",
-  "synthesis-invariants",
-  "visual-flow-map",
-  "audit-resolve-input",
-  "audit-setup",
-  "audit-map",
-  "audit-hunt",
-  "audit-attack",
-  "audit-verify",
-  "audit-report"
-] as const;
 
 export class MethodologyView extends LitElement {
   static override properties = {
@@ -394,6 +374,66 @@ export class MethodologyView extends LitElement {
       white-space: pre-wrap;
     }
 
+    .playbook-panel {
+      margin-bottom: 2rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      background: #fcfcfd;
+      padding: 1.25rem;
+    }
+
+    .playbook-title {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.75rem;
+      color: #111827;
+    }
+
+    .playbook-description {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #374151;
+      margin-bottom: 1rem;
+    }
+
+    .playbook-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .playbook-block {
+      background: #ffffff;
+      border: 1px solid #eef2f7;
+      border-radius: 12px;
+      padding: 0.95rem;
+    }
+
+    .playbook-block h3 {
+      margin: 0 0 0.55rem 0;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #4b5563;
+    }
+
+    .playbook-list {
+      margin: 0;
+      padding-left: 1rem;
+      color: #111827;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .playbook-rescue {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #7c2d12;
+    }
+
     .surface-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -565,6 +605,10 @@ export class MethodologyView extends LitElement {
     @media (max-width: 1100px) {
       .surface-grid,
       .room-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .playbook-grid {
         grid-template-columns: 1fr;
       }
 
@@ -742,11 +786,12 @@ export class MethodologyView extends LitElement {
             <div class="header">
               <div>
                 <div class="phase-label">INTELLIGENCE DOMAIN</div>
-                <h1 class="phase-title">${activePhase.phase.toUpperCase().replace(/-/g, ' ')}</h1>
+                <h1 class="phase-title">${PHASE_LABELS[activePhase.phase] ?? activePhase.phase.toUpperCase().replace(/-/g, ' ')}</h1>
               </div>
               <div class="status-badge ${activePhase.status}">${activePhase.status}</div>
             </div>
 
+            ${this.renderPlaybookDetails(activePhase.phase)}
             ${this.renderPhaseContent(activePhase)}
           ` : html`
             <div class="empty-state">
@@ -988,6 +1033,34 @@ export class MethodologyView extends LitElement {
           `)}
         </div>
       </div>
+    `;
+  }
+
+  private renderPlaybookDetails(phase: MethodologyPhase) {
+    const definition = getPhaseDefinition(phase);
+    return html`
+      <section class="playbook-panel">
+        <div class="playbook-title">Playbook Contract</div>
+        <div class="playbook-description">${definition.description}</div>
+        <div class="playbook-grid">
+          <div class="playbook-block">
+            <h3>Required Inputs</h3>
+            <ul class="playbook-list">
+              ${definition.requiredInputs.map((item) => html`<li>${item}</li>`)}
+            </ul>
+          </div>
+          <div class="playbook-block">
+            <h3>Exit Criteria</h3>
+            <ul class="playbook-list">
+              ${definition.exitCriteria.map((item) => html`<li>${item}</li>`)}
+            </ul>
+          </div>
+          <div class="playbook-block">
+            <h3>Rescue Path</h3>
+            <div class="playbook-rescue">${definition.rescueStrategy}</div>
+          </div>
+        </div>
+      </section>
     `;
   }
 

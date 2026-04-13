@@ -94,6 +94,12 @@ test("phase definitions have valid dependency chains", () => {
 
   // Unknown phase throws
   assert.throws(() => getPhaseDefinition("phase-99-fake"), /Unknown methodology phase/);
+
+  for (const definition of PHASE_DEFINITIONS) {
+    assert.ok(definition.requiredInputs.length >= 1, `Missing requiredInputs for ${definition.phase}`);
+    assert.ok(definition.exitCriteria.length >= 1, `Missing exitCriteria for ${definition.phase}`);
+    assert.ok(definition.rescueStrategy.length >= 10, `Missing rescueStrategy for ${definition.phase}`);
+  }
 });
 
 test("phase index and next phase work correctly", () => {

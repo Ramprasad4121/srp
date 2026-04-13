@@ -16,6 +16,7 @@
     "@excalidraw/excalidraw": "^0.18.0",
     "@srp/config": "file:../../packages/config",
     "@srp/events": "file:../../packages/events",
+    "@srp/methodology": "file:../../packages/methodology",
     "@srp/providers": "file:../../packages/providers",
     "@srp/security": "file:../../packages/security",
     "@srp/shared-types": "file:../../packages/shared-types",
