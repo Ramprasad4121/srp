@@ -28,7 +28,7 @@ export const providerCatalog: readonly ProviderDefinition[] = [
     supportsStreaming: true,
     supportsTools: false,
     supportsReasoning: true,
-    defaultModel: "meta/llama-3.1-70b-instruct",
+    defaultModel: "NVIDIA llama-3.3-nemotron-super-49b-v1.5",
     credentialProfiles: [{ envVar: "NVIDIA_API_KEY", required: true }]
   },
   {

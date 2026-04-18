@@ -2,8 +2,9 @@ import { LitElement, html, css } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import React from "react";
 import { createRoot, Root } from "react-dom/client";
-import { Excalidraw } from "@excalidraw/excalidraw";
-import "@excalidraw/excalidraw/index.css";
+import { Excalidraw, MainMenu, WelcomeScreen } from "@excalidraw/excalidraw";
+// @ts-ignore
+import excalidrawCss from "@excalidraw/excalidraw/index.css?inline";
 
 /**
  * A Lit wrapper for the Excalidraw React component.
@@ -22,23 +23,27 @@ export class ExcalidrawWrapper extends LitElement {
   private _excalidrawApi: any;
   private _lastSceneHash = "";
 
-  static override styles = css`
-    :host {
-      display: block;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
+  override createRenderRoot() {
+    return this; // Render in light DOM so React events fire correctly for canvas
+  }
+
+  private _injectGlobalCSS() {
+    // Inject Excalidraw CSS into document.head so toolbars/menus/portals render correctly
+    if (!document.querySelector('#excalidraw-global-css')) {
+      const style = document.createElement('style');
+      style.id = 'excalidraw-global-css';
+      style.textContent = excalidrawCss;
+      document.head.appendChild(style);
     }
-    #container {
-      width: 100%;
-      height: 100%;
-    }
-  `;
+  }
 
   override firstUpdated() {
-    this._container = this.shadowRoot?.getElementById("container") as HTMLDivElement;
-    this._root = createRoot(this._container);
-    this._renderReact();
+    this._injectGlobalCSS();
+    this._container = this.querySelector("#container") as HTMLDivElement;
+    if (this._container) {
+      this._root = createRoot(this._container);
+      this._renderReact();
+    }
   }
 
   override updated(changedProps: Map<string, any>) {
@@ -61,6 +66,12 @@ export class ExcalidrawWrapper extends LitElement {
     if (sanitizedState.collaborators && !(sanitizedState.collaborators instanceof Map)) {
       delete sanitizedState.collaborators;
     }
+    // Strip transient state that breaks toolbar/menu visibility
+    delete sanitizedState.selectedElementIds;
+    delete sanitizedState.selectedGroupIds;
+    delete sanitizedState.editingElement;
+    delete sanitizedState.editingGroupId;
+    delete sanitizedState.editingLinearElement;
 
     this._root.render(
       React.createElement(Excalidraw, {
@@ -70,9 +81,16 @@ export class ExcalidrawWrapper extends LitElement {
             ...sanitizedState,
             viewBackgroundColor: "#ffffff",
             currentItemFontFamily: 3, // Monospace
-            theme: "light", // TODO: Sync with global SRP theme state
+            theme: "light",
+            // CRITICAL: Force these to false so toolbar and menu always render
+            viewModeEnabled: false,
+            zenModeEnabled: false,
+            gridModeEnabled: false,
           }
         },
+        // Explicitly ensure these props are set at the component level too
+        viewModeEnabled: false,
+        zenModeEnabled: false,
         excalidrawAPI: (api: any) => {
           this._excalidrawApi = api;
           this._syncScene();
@@ -123,7 +141,28 @@ export class ExcalidrawWrapper extends LitElement {
 
   override render() {
     return html`
-      <div id="container"></div>
+      <style>
+        excalidraw-wrapper {
+          display: block;
+          width: 100%;
+          height: 100%;
+        }
+        .excalidraw-container-wrapper {
+          width: 100%;
+          height: 100%;
+          display: block;
+        }
+        #container {
+          width: 100%;
+          height: 100%;
+          min-height: 400px;
+          display: block;
+        }
+      </style>
+      <style>${excalidrawCss}</style>
+      <div class="excalidraw-container-wrapper">
+        <div id="container"></div>
+      </div>
     `;
   }
 }
