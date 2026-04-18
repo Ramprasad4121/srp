@@ -6,6 +6,7 @@ import type {
   MethodologyPhase,
   RunManifest,
   AuditRoomProjection,
+  BuildRoomProjection,
   RunEventLogEntry
 } from "@srp/shared-types";
 
@@ -50,6 +51,10 @@ export class GatewayClient {
 
   async getRunProjection(runId: string): Promise<AuditRoomProjection> {
     return this.request<AuditRoomProjection>(`/runs/${runId}/projection`);
+  }
+
+  async getRunBuildProjection(runId: string): Promise<BuildRoomProjection> {
+    return this.request<BuildRoomProjection>(`/runs/${runId}/build-projection`);
   }
 
   async startRuntime(mode: RuntimeMode): Promise<void> {

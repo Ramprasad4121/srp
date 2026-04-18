@@ -405,6 +405,60 @@ export interface AuditRoomProjection {
   readonly graph: ArtifactGraphSnapshot;
 }
 
+export type BuildStageId = "discover" | "plan" | "design" | "build" | "qa" | "ship";
+export type BuildStageStatus = "pending" | "ready" | "in_progress" | "completed";
+
+export interface BuildStageProjection {
+  readonly id: BuildStageId;
+  readonly code: string;
+  readonly name: string;
+  readonly summary: string;
+  readonly status: BuildStageStatus;
+  readonly artifactCount: number;
+  readonly requiredOutputs: readonly string[];
+  readonly qualityGate: string;
+  readonly latestArtifactTitle?: string;
+}
+
+export interface BuildLaneProjection {
+  readonly id: "protocol" | "dapp" | "hackathon" | "first-aid";
+  readonly title: string;
+  readonly tag: string;
+  readonly body: string;
+  readonly primaryArtifacts: readonly string[];
+  readonly artifactCount: number;
+  readonly latestArtifactTitle?: string;
+}
+
+export interface BuildDeliveryGateProjection {
+  readonly id: "repro" | "patch" | "regression" | "approval" | "release";
+  readonly title: string;
+  readonly summary: string;
+  readonly evidenceHint: string;
+  readonly status: BuildStageStatus;
+}
+
+export interface BuildRoomProjection {
+  readonly missionControl: {
+    readonly runId: string | null;
+    readonly sessionId: string | null;
+    readonly runStatus: SessionStatus;
+    readonly currentStage: BuildStageId | null;
+    readonly completedStages: number;
+    readonly totalStages: number;
+    readonly readyForBuild: boolean;
+  };
+  readonly stages: readonly BuildStageProjection[];
+  readonly lanes: readonly BuildLaneProjection[];
+  readonly deliveryGates: readonly BuildDeliveryGateProjection[];
+  readonly sourcePack: {
+    readonly intentTitle: string;
+    readonly architectureTitle: string;
+    readonly designTitle: string;
+    readonly releaseTitle: string;
+  };
+}
+
 export interface RuntimeSessionState {
   readonly hasSession: boolean;
   readonly isRunning: boolean;
@@ -434,6 +488,7 @@ export interface RuntimeSessionState {
   readonly agentRegistry?: AgentRegistryState;
   readonly knowledgeBus?: KnowledgeBusState;
   readonly auditRoom?: AuditRoomProjection;
+  readonly buildRoom?: BuildRoomProjection;
 }
 
 // ---------------------------------------------------------------------------

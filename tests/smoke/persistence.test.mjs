@@ -136,6 +136,15 @@ test("Gateway exposes run history and artifact APIs", async () => {
       );
     }
 
+    const buildProjectionRes = await fetch(`${baseUrl}/api/runs/${runId}/build-projection`);
+    assert.equal(buildProjectionRes.ok, true);
+    const buildProjection = await buildProjectionRes.json();
+    assert.equal(buildProjection.missionControl.runId, runId);
+    assert.ok(Array.isArray(buildProjection.stages));
+    assert.ok(Array.isArray(buildProjection.lanes));
+    assert.equal(buildProjection.stages.length, 6);
+    assert.equal(buildProjection.lanes.length, 4);
+
   } finally {
     await srv.stop();
     await rm(root, { recursive: true, force: true });

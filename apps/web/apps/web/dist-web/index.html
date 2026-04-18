@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SRP — Security Reasoning Protocol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f7f9fa;
+      color: #000000;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    #boot-status {
+      padding: 2rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: #00f5a0;
+    }
+    #error-display {
+      display: none;
+      padding: 2rem;
+      margin: 2rem;
+      background: #2a1111;
+      border: 1px solid #ff4d4d;
+      color: #ff4d4d;
+      border-radius: 8px;
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/index-DwLhIiU5.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-LGMIhlcU.css">
+</head>
+<body>
+  <div id="boot-status">🚀 Initializing SRP Agent Army...</div>
+  <div id="error-display">
+    <h2>Frontend Error</h2>
+    <pre id="error-content"></pre>
+  </div>
+  
+  <srp-app></srp-app>
+
+  <script>
+    // Defensive shim for Ethereum provider extensions (Rabby / MetaMask)
+    // Prevents "Uncaught TypeError: Cannot set property ethereum of #<Window> which has only a getter"
+    if (!window.ethereum) {
+      let _eth = undefined;
+      Object.defineProperty(window, 'ethereum', {
+        get: () => _eth,
+        set: (val) => { _eth = val; },
+        configurable: true,
+        enumerable: true
+      });
+    }
+
+    window.onerror = function(msg, url, line, col, error) {
+      const display = document.getElementById('error-display');
+      const content = document.getElementById('error-content');
+      display.style.display = 'block';
+      content.textContent = msg + '\n' + url + ':' + line + ':' + col;
+      return false;
+    };
+  </script>
+</body>
+</html>

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 import { PersistenceManager } from "../runtime/persistence-manager.js";
 import { rebuildAuditRoomProjection } from "../runtime/room-projection.js";
+import { rebuildBuildRoomProjection } from "../runtime/build-room-projection.js";
 
 export async function handleGetRuns(
   req: IncomingMessage,
@@ -76,6 +77,16 @@ export async function handleGetRunDetail(
         manifest: run,
         events,
         payloads
+      });
+      sendJson(res, 200, projection);
+      return;
+    }
+
+    if (sub === "build-projection") {
+      const run = await pm.getRun(runId);
+      if (!run) return sendError(res, 404, "not_found", "Run not found");
+      const projection = rebuildBuildRoomProjection({
+        manifest: run
       });
       sendJson(res, 200, projection);
       return;

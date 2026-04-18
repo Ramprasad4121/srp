@@ -8,6 +8,9 @@ import assert from "node:assert/strict";
 
 // Methodology package
 import {
+  BUILD_LANES,
+  BUILD_STAGES,
+  DELIVERY_GATES,
   METHODOLOGY_PHASES,
   PHASE_LABELS,
   PHASE_DEFINITIONS,
@@ -81,6 +84,30 @@ test("every phase has a human-readable label", () => {
     assert.ok(label, `Missing label for ${phase}`);
     assert.ok(label.length > 5, `Label too short for ${phase}: ${label}`);
   }
+});
+
+test("build playbook exports all expected stages and lanes", () => {
+  assert.equal(BUILD_STAGES.length, 6);
+  assert.deepEqual(
+    BUILD_STAGES.map((stage) => stage.id),
+    ["discover", "plan", "design", "build", "qa", "ship"]
+  );
+  assert.equal(BUILD_STAGES[0]?.name, "Discover");
+  assert.equal(BUILD_STAGES[5]?.name, "Ship");
+  assert.ok(BUILD_STAGES.every((stage) => stage.requiredOutputs.length >= 1));
+  assert.ok(BUILD_STAGES.every((stage) => stage.qualityGate.length >= 10));
+
+  assert.equal(BUILD_LANES.length, 4);
+  assert.deepEqual(
+    BUILD_LANES.map((lane) => lane.id),
+    ["protocol", "dapp", "hackathon", "first-aid"]
+  );
+  assert.ok(BUILD_LANES.every((lane) => lane.primaryArtifacts.length >= 1));
+  assert.equal(DELIVERY_GATES.length, 5);
+  assert.deepEqual(
+    DELIVERY_GATES.map((gate) => gate.id),
+    ["repro", "patch", "regression", "approval", "release"]
+  );
 });
 
 test("phase definitions have valid dependency chains", () => {
