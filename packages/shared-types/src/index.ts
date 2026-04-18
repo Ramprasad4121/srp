@@ -462,6 +462,48 @@ export interface BuildRoomProjection {
   };
 }
 
+export interface SkillSupplyProjection {
+  readonly total: number;
+  readonly audit: number;
+  readonly development: number;
+  readonly categories: readonly {
+    readonly label: string;
+    readonly count: number;
+  }[];
+}
+
+export interface FirstAidIncidentProjection {
+  readonly runId: string;
+  readonly title: string;
+  readonly detail: string;
+  readonly source: MethodologyPhase | "runtime";
+  readonly status: "queued" | "active" | "blocked" | "ready";
+  readonly evidenceCount: number;
+}
+
+export interface UpdateControlProjection {
+  readonly source: "repo-local";
+  readonly webDistReady: boolean;
+  readonly skillRegistryReady: boolean;
+  readonly totalRuns: number;
+  readonly failedRuns: number;
+  readonly latestRunId?: string;
+  readonly latestRunStatus?: SessionStatus;
+  readonly latestRunAt?: string;
+  readonly notes: readonly string[];
+}
+
+export interface FactoryControlPlaneProjection {
+  readonly skillSupply: SkillSupplyProjection;
+  readonly firstAid: {
+    readonly openIncidents: number;
+    readonly readyForPromotion: number;
+    readonly releaseBlocked: boolean;
+    readonly incidents: readonly FirstAidIncidentProjection[];
+  };
+  readonly updateControl: UpdateControlProjection;
+}
+
 export interface RuntimeSessionState {
   readonly hasSession: boolean;
   readonly isRunning: boolean;

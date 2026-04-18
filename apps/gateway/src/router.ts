@@ -23,6 +23,7 @@ import {
   handleStreamingChat
 } from "./handlers/chat.js";
 import { handleGetSkill, handleListSkills } from "./handlers/skills.js";
+import { handleGetControlPlane } from "./handlers/control-plane.js";
 import { handleCorsOptions, sendError } from "./http-utils.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -161,6 +162,11 @@ export async function routeRequest(
 
     if (method === "GET" && path === "/api/skills") {
       await handleListSkills(req, res);
+      return;
+    }
+
+    if (method === "GET" && path === "/api/control-plane") {
+      await handleGetControlPlane(req, res, setupConfig);
       return;
     }
 

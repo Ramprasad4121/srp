@@ -2,8 +2,8 @@ import { LitElement, html, css } from "lit";
 import type {
   AuditRoomProjection,
   BuildRoomProjection,
+  FactoryControlPlaneProjection,
   RuntimeSessionState,
-  SkillManifest,
   TeamMember,
   TeamRoom
 } from "@srp/shared-types";
@@ -26,13 +26,6 @@ type TeamRoomState = TeamRoom & {
   readonly assignments: readonly TeamQueueItem[];
   readonly approvals: readonly TeamReviewItem[];
 };
-
-interface SkillSupplyState {
-  readonly total: number;
-  readonly audit: number;
-  readonly development: number;
-  readonly categories: readonly { label: string; count: number }[];
-}
 
 function relativeTime(timestamp: string): string {
   const deltaMinutes = Math.max(0, Math.floor((Date.now() - new Date(timestamp).getTime()) / 60000));
@@ -210,38 +203,10 @@ function deriveRoom(
   };
 }
 
-function deriveSkillSupply(skills: readonly SkillManifest[]): SkillSupplyState {
-  const categoryCounts = new Map<string, number>();
-  let audit = 0;
-  let development = 0;
-
-  for (const skill of skills) {
-    const category = skill.category || "uncategorized";
-    categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
-    const haystack = `${skill.category} ${skill.tags.join(" ")} ${skill.description}`.toLowerCase();
-    if (/(audit|security|vuln|threat|exploit)/.test(haystack)) {
-      audit += 1;
-    }
-    if (/(dev|build|frontend|backend|dapp|contract|ship|ci\/cd|deploy)/.test(haystack)) {
-      development += 1;
-    }
-  }
-
-  return {
-    total: skills.length,
-    audit,
-    development,
-    categories: [...categoryCounts.entries()]
-      .sort((left, right) => right[1] - left[1])
-      .slice(0, 4)
-      .map(([label, count]) => ({ label, count }))
-  };
-}
-
 export class TeamView extends LitElement {
   static override properties = {
     _room: { state: true },
-    _skillSupply: { state: true },
+    _controlPlane: { state: true },
     _loading: { state: true },
     _error: { state: true }
   };
@@ -434,7 +399,7 @@ export class TeamView extends LitElement {
   `;
 
   declare _room: TeamRoomState | null;
-  declare _skillSupply: SkillSupplyState | null;
+  declare _controlPlane: FactoryControlPlaneProjection | null;
   declare _loading: boolean;
   declare _error: string | null;
   private _refreshHandle: number | null = null;
@@ -442,7 +407,7 @@ export class TeamView extends LitElement {
   constructor() {
     super();
     this._room = null;
-    this._skillSupply = null;
+    this._controlPlane = null;
     this._loading = true;
     this._error = null;
   }
@@ -472,9 +437,9 @@ export class TeamView extends LitElement {
       const buildRoom =
         runtime.buildRoom ??
         (runId ? await gatewayClient.getRunBuildProjection(runId) : null);
-      const skillResult = await gatewayClient.getSkills();
+      const controlPlane = await gatewayClient.getControlPlane().catch(() => null);
       this._room = deriveRoom(runtime, auditRoom, buildRoom);
-      this._skillSupply = skillResult.ok ? deriveSkillSupply(skillResult.data) : null;
+      this._controlPlane = controlPlane;
     } catch (error) {
       this._error = error instanceof Error ? error.message : String(error);
     } finally {
@@ -512,6 +477,10 @@ export class TeamView extends LitElement {
         <div class="stat-item">
           <span>${this._room.approvals.filter((item) => item.status === "ready").length}</span>
           <div class="stat-label">approvals ready</div>
+        </div>
+        <div class="stat-item">
+          <span>${this._controlPlane?.firstAid.openIncidents ?? 0}</span>
+          <div class="stat-label">first aid incidents</div>
         </div>
       </div>
 
@@ -571,19 +540,49 @@ export class TeamView extends LitElement {
             </div>
           `)}
 
+          <div class="section-title" style="margin-top:1.4rem;">First Aid Queue</div>
+          ${this._controlPlane?.firstAid.incidents.length
+            ? this._controlPlane.firstAid.incidents.map((incident) => html`
+              <div class="approval-item">
+                <div class="approval-title">${incident.title}</div>
+                <div class="approval-detail">${incident.detail}</div>
+                <div class="approval-detail">source: ${incident.source} · evidence: ${incident.evidenceCount}</div>
+                <div class="status-pill ${incident.status}" style="margin-top:0.7rem;">${incident.status}</div>
+              </div>
+            `)
+            : html`<div class="empty">No active repair incidents.</div>`}
+
           <div class="section-title" style="margin-top:1.4rem;">Skill Supply</div>
-          ${this._skillSupply ? html`
+          ${this._controlPlane ? html`
             <div class="approval-item">
-              <div class="approval-title">${this._skillSupply.total} skills loaded</div>
-              <div class="approval-detail">${this._skillSupply.audit} audit-focused · ${this._skillSupply.development} build-focused</div>
+              <div class="approval-title">${this._controlPlane.skillSupply.total} skills loaded</div>
+              <div class="approval-detail">${this._controlPlane.skillSupply.audit} audit-focused · ${this._controlPlane.skillSupply.development} build-focused</div>
             </div>
-            ${this._skillSupply.categories.map((item) => html`
+            ${this._controlPlane.skillSupply.categories.map((item) => html`
               <div class="approval-item">
                 <div class="approval-title">${item.label}</div>
                 <div class="approval-detail">${item.count} skills in registry</div>
               </div>
             `)}
           ` : html`<div class="empty">Skill registry unavailable.</div>`}
+
+          <div class="section-title" style="margin-top:1.4rem;">Update Control</div>
+          ${this._controlPlane ? html`
+            <div class="approval-item">
+              <div class="approval-title">${this._controlPlane.updateControl.source}</div>
+              <div class="approval-detail">
+                ${this._controlPlane.updateControl.totalRuns} runs tracked ·
+                ${this._controlPlane.updateControl.failedRuns} failed ·
+                web dist ${this._controlPlane.updateControl.webDistReady ? "ready" : "missing"}
+              </div>
+            </div>
+            ${this._controlPlane.updateControl.notes.map((note) => html`
+              <div class="approval-item">
+                <div class="approval-title">Control note</div>
+                <div class="approval-detail">${note}</div>
+              </div>
+            `)}
+          ` : html`<div class="empty">Update control unavailable.</div>`}
         </aside>
       </div>
     `;

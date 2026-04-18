@@ -43,6 +43,7 @@ reports/*.json
 # SRP ephemeral
 .srp-assumptions.json
 .srp-context.json
+.srp/runs/
 .gstack/
 
 test_projects/
