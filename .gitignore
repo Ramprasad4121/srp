@@ -48,3 +48,4 @@ reports/*.json
 
 test_projects/
 test_project/
+.claude/skills/gstack/
