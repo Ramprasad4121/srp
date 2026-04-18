@@ -55,12 +55,19 @@ export class ExcalidrawWrapper extends LitElement {
   private _renderReact() {
     if (!this._root) return;
 
+    // Defense: JSON serialization of AppState can turn collaborators Map into an Object
+    // which causes Excalidraw to crash during initialization.
+    const sanitizedState = { ...(this.appState || {}) };
+    if (sanitizedState.collaborators && !(sanitizedState.collaborators instanceof Map)) {
+      delete sanitizedState.collaborators;
+    }
+
     this._root.render(
       React.createElement(Excalidraw, {
         initialData: {
           elements: this.elements || [],
           appState: {
-            ...(this.appState || {}),
+            ...sanitizedState,
             viewBackgroundColor: "#ffffff",
             currentItemFontFamily: 3, // Monospace
             theme: "light", // TODO: Sync with global SRP theme state

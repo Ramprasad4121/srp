@@ -174,7 +174,11 @@ export class WhiteboardOverlay extends LitElement {
 
   private _saveState(elements: any[], appState: any) {
     try {
-      const data = { elements, appState };
+      // transient properties like collaborators are Maps that break JSON serialization
+      const sanitizedState = { ...appState };
+      delete sanitizedState.collaborators;
+      
+      const data = { elements, appState: sanitizedState };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (e) {
       console.warn("Failed to save whiteboard history", e);
