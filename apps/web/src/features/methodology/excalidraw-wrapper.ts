@@ -8,12 +8,16 @@ import "@excalidraw/excalidraw/index.css";
 /**
  * A Lit wrapper for the Excalidraw React component.
  */
-@customElement("excalidraw-wrapper")
 export class ExcalidrawWrapper extends LitElement {
-  @property({ type: Array }) elements: any[] = [];
-  @property({ type: Object }) appState: any = {};
+  static override properties = {
+    elements: { type: Array },
+    appState: { type: Object }
+  };
 
-  @query("#container") private _container!: HTMLDivElement;
+  declare elements: any[];
+  declare appState: any;
+
+  private _container!: HTMLDivElement;
   private _root?: Root;
   private _excalidrawApi: any;
   private _lastSceneHash = "";
@@ -32,6 +36,7 @@ export class ExcalidrawWrapper extends LitElement {
   `;
 
   override firstUpdated() {
+    this._container = this.shadowRoot?.getElementById("container") as HTMLDivElement;
     this._root = createRoot(this._container);
     this._renderReact();
   }
@@ -53,9 +58,9 @@ export class ExcalidrawWrapper extends LitElement {
     this._root.render(
       React.createElement(Excalidraw, {
         initialData: {
-          elements: this.elements,
+          elements: this.elements || [],
           appState: {
-            ...this.appState,
+            ...(this.appState || {}),
             viewBackgroundColor: "#ffffff",
             currentItemFontFamily: 3, // Monospace
             theme: "light", // TODO: Sync with global SRP theme state
@@ -82,16 +87,16 @@ export class ExcalidrawWrapper extends LitElement {
       return;
     }
 
-    const nextHash = this._createSceneHash(this.elements, this.appState);
+    const nextHash = this._createSceneHash(this.elements || [], this.appState || {});
     if (nextHash === this._lastSceneHash) {
       return;
     }
 
     this._lastSceneHash = nextHash;
     this._excalidrawApi.updateScene({
-      elements: this.elements,
+      elements: this.elements || [],
       appState: {
-        ...this.appState,
+        ...(this.appState || {}),
         viewBackgroundColor: "#ffffff",
         theme: "light"
       }
@@ -101,11 +106,11 @@ export class ExcalidrawWrapper extends LitElement {
   private _createSceneHash(elements: readonly any[], appState: any) {
     try {
       return JSON.stringify({
-        elements,
-        appState
+        elements: elements || [],
+        appState: appState || {}
       });
     } catch {
-      return `${elements.length}:${Object.keys(appState ?? {}).length}`;
+      return `${(elements || []).length}:${Object.keys(appState ?? {}).length}`;
     }
   }
 
@@ -115,3 +120,5 @@ export class ExcalidrawWrapper extends LitElement {
     `;
   }
 }
+
+customElements.define("excalidraw-wrapper", ExcalidrawWrapper);

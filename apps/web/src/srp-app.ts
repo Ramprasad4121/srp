@@ -402,13 +402,14 @@ export class SrpApp extends LitElement {
     }
   }
 
-  async updateMode(mode: "auditor" | "developer") {
-    this._mode = mode;
-    try {
-      await gatewayClient.setRole(mode);
-    } catch(e) {
-      console.warn("Failed to update role on backend", e);
+  private _handleNavigate(e: Event, path: string) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
+    console.log(`Navigating to: ${path}`);
+    window.history.pushState({}, "", path);
+    this._path = path;
   }
 
   override render() {
@@ -438,7 +439,7 @@ export class SrpApp extends LitElement {
         <div style="padding: 4rem; max-width: 600px; margin: auto; text-align: center;">
           <h1 style="font-size: 1.5rem; margin-bottom: 1rem;">Welcome to SRP</h1>
           <p style="color: var(--text-secondary); margin-bottom: 2rem;">Your local environment is not yet configured for security auditing.</p>
-          <a href="/setup" style="background: var(--text-primary); color: #fff; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 6px; font-weight: 600;" @click=${this.navigate}>Configure Environment</a>
+          <a href="/setup" style="background: var(--text-primary); color: #fff; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 6px; font-weight: 600;" @click=${(e: Event) => this._handleNavigate(e, "/setup")}>Configure Environment</a>
         </div>
       `;
     }
@@ -483,28 +484,28 @@ export class SrpApp extends LitElement {
           
           <div class="section-label">${this._mode.toUpperCase()} WORKSPACE</div>
           <nav class="nav-section">
-            <div class="nav-item ${this._path === '/' ? 'active' : ''}" @click=${() => { window.history.pushState({}, "", "/"); this._path = "/"; }}>
+            <div class="nav-item ${this._path === '/' ? 'active' : ''}" @click=${(e: Event) => this._handleNavigate(e, "/")}>
               <div class="nav-icon">◈</div> Chat Engine
             </div>
             
             ${this._mode === 'auditor' ? html`
-              <div class="nav-item ${this._path === '/audit' ? 'active' : ''}" @click=${() => { window.history.pushState({}, "", "/audit"); this._path = "/audit"; }}>
+              <div class="nav-item ${this._path === '/audit' ? 'active' : ''}" @click=${(e: Event) => this._handleNavigate(e, "/audit")}>
                 <div class="nav-icon">🛡️</div> Start Methodology Audit
               </div>
             ` : html`
-              <div class="nav-item ${this._path === '/build' ? 'active' : ''}" @click=${() => { window.history.pushState({}, "", "/build"); this._path = "/build"; }}>
+              <div class="nav-item ${this._path === '/build' ? 'active' : ''}" @click=${(e: Event) => this._handleNavigate(e, "/build")}>
                 <div class="nav-icon">⌬</div> Build from Scratch
               </div>
             `}
 
-            <div class="nav-item ${this._path === '/team' ? 'active' : ''}" @click=${() => { window.history.pushState({}, "", "/team"); this._path = "/team"; }}>
+            <div class="nav-item ${this._path === '/team' ? 'active' : ''}" @click=${(e: Event) => this._handleNavigate(e, "/team")}>
               <div class="nav-icon">◎</div> Virtual Room
             </div>
           </nav>
 
           <div class="section-label">System</div>
           <nav class="nav-section">
-            <div class="nav-item" @click=${() => { window.history.pushState({}, "", "/setup"); this._path = "/setup"; }}>
+            <div class="nav-item ${this._path === '/setup' ? 'active' : ''}" @click=${(e: Event) => this._handleNavigate(e, "/setup")}>
               <div class="nav-icon">⚙</div> Settings
             </div>
           </nav>
@@ -546,11 +547,13 @@ export class SrpApp extends LitElement {
     `;
   }
 
-  private navigate(e: MouseEvent) {
-    e.preventDefault();
-    const href = (e.currentTarget as HTMLAnchorElement).href;
-    window.history.pushState({}, "", href);
-    this._path = window.location.pathname;
+  async updateMode(mode: "auditor" | "developer") {
+    this._mode = mode;
+    try {
+      await gatewayClient.setRole(mode);
+    } catch(e) {
+      console.warn("Failed to update role on backend", e);
+    }
   }
 }
 
