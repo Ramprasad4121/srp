@@ -275,6 +275,17 @@ export class GStackView extends LitElement {
       color: #b91c1c;
     }
 
+    .error-strip {
+      margin-top: 1rem;
+      border: 1px solid #fecaca;
+      border-radius: 18px;
+      padding: 0.95rem 1rem;
+      background: #fef2f2;
+      color: #991b1b;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
     @media (max-width: 1100px) {
       .hero-grid,
       .hero-metric,
@@ -317,6 +328,10 @@ export class GStackView extends LitElement {
       this._loading = true;
       this._error = null;
       const runtime = await gatewayClient.getRuntime();
+      if (runtime.buildRoom) {
+        this._projection = runtime.buildRoom;
+        return;
+      }
       const runId = runtime.runId ?? (await this.getLatestRunId());
       if (!runId) {
         this._projection = null;
@@ -392,6 +407,11 @@ export class GStackView extends LitElement {
               </div>
             </aside>
           </div>
+          ${this._projection.missionControl.lastFailure ? html`
+            <div class="error-strip">
+              Last failure: ${this._projection.missionControl.lastFailure}
+            </div>
+          ` : ""}
         </section>
 
         <section class="section">
@@ -480,7 +500,12 @@ export class GStackView extends LitElement {
                   </div>
                   <div class="stage-status ${gate.status}">${gate.status.replace("_", " ")}</div>
                 </div>
-                <div class="latest-copy">Evidence: ${gate.evidenceHint}</div>
+                <div class="latest-copy">
+                  Evidence: ${gate.evidenceHint}
+                  <br />
+                  ${gate.artifactCount} matched artifact${gate.artifactCount === 1 ? "" : "s"}
+                  ${gate.latestArtifactTitle ? html`<br />Latest: ${gate.latestArtifactTitle}` : ""}
+                </div>
               </article>
             `)}
           </div>

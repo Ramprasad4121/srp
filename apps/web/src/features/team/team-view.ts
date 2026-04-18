@@ -3,6 +3,7 @@ import type {
   AuditRoomProjection,
   BuildRoomProjection,
   RuntimeSessionState,
+  SkillManifest,
   TeamMember,
   TeamRoom
 } from "@srp/shared-types";
@@ -25,6 +26,13 @@ type TeamRoomState = TeamRoom & {
   readonly assignments: readonly TeamQueueItem[];
   readonly approvals: readonly TeamReviewItem[];
 };
+
+interface SkillSupplyState {
+  readonly total: number;
+  readonly audit: number;
+  readonly development: number;
+  readonly categories: readonly { label: string; count: number }[];
+}
 
 function relativeTime(timestamp: string): string {
   const deltaMinutes = Math.max(0, Math.floor((Date.now() - new Date(timestamp).getTime()) / 60000));
@@ -202,9 +210,38 @@ function deriveRoom(
   };
 }
 
+function deriveSkillSupply(skills: readonly SkillManifest[]): SkillSupplyState {
+  const categoryCounts = new Map<string, number>();
+  let audit = 0;
+  let development = 0;
+
+  for (const skill of skills) {
+    const category = skill.category || "uncategorized";
+    categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
+    const haystack = `${skill.category} ${skill.tags.join(" ")} ${skill.description}`.toLowerCase();
+    if (/(audit|security|vuln|threat|exploit)/.test(haystack)) {
+      audit += 1;
+    }
+    if (/(dev|build|frontend|backend|dapp|contract|ship|ci\/cd|deploy)/.test(haystack)) {
+      development += 1;
+    }
+  }
+
+  return {
+    total: skills.length,
+    audit,
+    development,
+    categories: [...categoryCounts.entries()]
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 4)
+      .map(([label, count]) => ({ label, count }))
+  };
+}
+
 export class TeamView extends LitElement {
   static override properties = {
     _room: { state: true },
+    _skillSupply: { state: true },
     _loading: { state: true },
     _error: { state: true }
   };
@@ -397,6 +434,7 @@ export class TeamView extends LitElement {
   `;
 
   declare _room: TeamRoomState | null;
+  declare _skillSupply: SkillSupplyState | null;
   declare _loading: boolean;
   declare _error: string | null;
   private _refreshHandle: number | null = null;
@@ -404,6 +442,7 @@ export class TeamView extends LitElement {
   constructor() {
     super();
     this._room = null;
+    this._skillSupply = null;
     this._loading = true;
     this._error = null;
   }
@@ -430,8 +469,12 @@ export class TeamView extends LitElement {
       const auditRoom =
         runtime.auditRoom ??
         (runId ? await gatewayClient.getRunProjection(runId) : null);
-      const buildRoom = runId ? await gatewayClient.getRunBuildProjection(runId) : null;
+      const buildRoom =
+        runtime.buildRoom ??
+        (runId ? await gatewayClient.getRunBuildProjection(runId) : null);
+      const skillResult = await gatewayClient.getSkills();
       this._room = deriveRoom(runtime, auditRoom, buildRoom);
+      this._skillSupply = skillResult.ok ? deriveSkillSupply(skillResult.data) : null;
     } catch (error) {
       this._error = error instanceof Error ? error.message : String(error);
     } finally {
@@ -527,6 +570,20 @@ export class TeamView extends LitElement {
               <div class="status-pill ${item.status}" style="margin-top:0.7rem;">${item.status}</div>
             </div>
           `)}
+
+          <div class="section-title" style="margin-top:1.4rem;">Skill Supply</div>
+          ${this._skillSupply ? html`
+            <div class="approval-item">
+              <div class="approval-title">${this._skillSupply.total} skills loaded</div>
+              <div class="approval-detail">${this._skillSupply.audit} audit-focused · ${this._skillSupply.development} build-focused</div>
+            </div>
+            ${this._skillSupply.categories.map((item) => html`
+              <div class="approval-item">
+                <div class="approval-title">${item.label}</div>
+                <div class="approval-detail">${item.count} skills in registry</div>
+              </div>
+            `)}
+          ` : html`<div class="empty">Skill registry unavailable.</div>`}
         </aside>
       </div>
     `;

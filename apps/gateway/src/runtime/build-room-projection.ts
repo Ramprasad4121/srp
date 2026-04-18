@@ -116,13 +116,21 @@ function hasArtifactKinds(run: RunManifest, kinds: readonly ArtifactMetadata["ki
   return run.artifacts.some((artifact) => kinds.includes(artifact.kind));
 }
 
+const DELIVERY_GATE_KINDS: Record<BuildDeliveryGateProjection["id"], readonly ArtifactMetadata["kind"][]> = {
+  repro: ["hypothesis", "finding"],
+  patch: ["test", "report"],
+  regression: ["test"],
+  approval: ["finding", "report"],
+  release: ["report"]
+};
+
 function createDeliveryGateProjection(run: RunManifest): readonly BuildDeliveryGateProjection[] {
   const statuses = {
-    repro: hasArtifactKinds(run, ["hypothesis", "finding"]),
-    patch: hasArtifactKinds(run, ["test", "report"]),
-    regression: hasArtifactKinds(run, ["test"]),
-    approval: hasArtifactKinds(run, ["finding", "report"]),
-    release: hasArtifactKinds(run, ["report"])
+    repro: hasArtifactKinds(run, DELIVERY_GATE_KINDS.repro),
+    patch: hasArtifactKinds(run, DELIVERY_GATE_KINDS.patch),
+    regression: hasArtifactKinds(run, DELIVERY_GATE_KINDS.regression),
+    approval: hasArtifactKinds(run, DELIVERY_GATE_KINDS.approval),
+    release: hasArtifactKinds(run, DELIVERY_GATE_KINDS.release)
   } as const;
 
   let unlocked = true;
@@ -130,13 +138,17 @@ function createDeliveryGateProjection(run: RunManifest): readonly BuildDeliveryG
     const completed = statuses[gate.id];
     const status: BuildDeliveryGateProjection["status"] =
       completed ? "completed" : unlocked ? "ready" : "pending";
+    const gateArtifacts = run.artifacts.filter((artifact) => DELIVERY_GATE_KINDS[gate.id].includes(artifact.kind));
+    const latest = latestArtifact(gateArtifacts);
     unlocked = unlocked && completed;
     return {
       id: gate.id,
       title: gate.title,
       summary: gate.summary,
       evidenceHint: gate.evidenceHint,
-      status
+      status,
+      artifactCount: gateArtifacts.length,
+      ...(latest ? { latestArtifactTitle: latest.title } : {})
     };
   });
 }
@@ -148,7 +160,10 @@ function latestForPhaseSet(
   return latestArtifact(run.artifacts.filter((artifact) => phases.includes(artifact.phase)));
 }
 
-export function rebuildBuildRoomProjection(input: { readonly manifest: RunManifest }): BuildRoomProjection {
+export function rebuildBuildRoomProjection(input: {
+  readonly manifest: RunManifest;
+  readonly failureDetail?: string;
+}): BuildRoomProjection {
   const currentStageId = getCurrentStageId(input.manifest);
   const currentStageIndex = currentStageId
     ? BUILD_STAGES.findIndex((stage) => stage.id === currentStageId)
@@ -176,6 +191,8 @@ export function rebuildBuildRoomProjection(input: { readonly manifest: RunManife
         stages.find((stage) => stage.id === "discover")?.artifactCount !== 0 &&
         stages.find((stage) => stage.id === "plan")?.artifactCount !== 0 &&
         stages.find((stage) => stage.id === "design")?.artifactCount !== 0
+      ,
+      ...(input.failureDetail ? { lastFailure: input.failureDetail } : {})
     },
     stages,
     lanes: createLaneProjection(input.manifest),

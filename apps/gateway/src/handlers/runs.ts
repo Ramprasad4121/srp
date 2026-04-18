@@ -85,8 +85,13 @@ export async function handleGetRunDetail(
     if (sub === "build-projection") {
       const run = await pm.getRun(runId);
       if (!run) return sendError(res, 404, "not_found", "Run not found");
+      const events = await pm.listEvents(runId);
+      const failureDetail = [...events]
+        .reverse()
+        .find((event) => event.type === "session.failed")?.detail;
       const projection = rebuildBuildRoomProjection({
-        manifest: run
+        manifest: run,
+        ...(failureDetail ? { failureDetail } : {})
       });
       sendJson(res, 200, projection);
       return;

@@ -1,4 +1,5 @@
 import type {
+  ArtifactMetadata,
   ArtifactKind,
   MethodologyPhase,
   PhaseStatus,
@@ -80,7 +81,7 @@ export class RuntimeArtifactWriter {
     kind: ArtifactKind,
     title: string,
     payload: unknown
-  ): Promise<void> {
+  ): Promise<ArtifactMetadata> {
     const metadata = await this.persistence.saveArtifact(runId, projectId, phase, kind, title, payload);
     this.projector.applyArtifact(metadata, payload);
     const artifactEvent = createArtifactCreatedEvent({
@@ -105,5 +106,6 @@ export class RuntimeArtifactWriter {
       artifactTitle: metadata.title,
       title
     });
+    return metadata;
   }
 }

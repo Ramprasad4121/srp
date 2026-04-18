@@ -436,6 +436,8 @@ export interface BuildDeliveryGateProjection {
   readonly summary: string;
   readonly evidenceHint: string;
   readonly status: BuildStageStatus;
+  readonly artifactCount: number;
+  readonly latestArtifactTitle?: string;
 }
 
 export interface BuildRoomProjection {
@@ -447,6 +449,7 @@ export interface BuildRoomProjection {
     readonly completedStages: number;
     readonly totalStages: number;
     readonly readyForBuild: boolean;
+    readonly lastFailure?: string;
   };
   readonly stages: readonly BuildStageProjection[];
   readonly lanes: readonly BuildLaneProjection[];

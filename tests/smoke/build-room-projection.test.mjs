@@ -49,15 +49,19 @@ test("build room projection maps persisted audit artifacts into build stages and
           projectId: "project_build_1"
         }
       ]
-    }
+    },
+    failureDetail: "regression suite failed on wallet flow"
   });
 
   assert.equal(projection.missionControl.completedStages, 4);
   assert.equal(projection.missionControl.currentStage, "ship");
   assert.equal(projection.missionControl.readyForBuild, true);
+  assert.equal(projection.missionControl.lastFailure, "regression suite failed on wallet flow");
   assert.equal(projection.sourcePack.intentTitle, "Intent synthesis");
   assert.equal(projection.sourcePack.designTitle, "Protocol flow");
   assert.equal(projection.stages[0]?.id, "discover");
   assert.equal(projection.stages[5]?.status, "completed");
+  assert.equal(projection.deliveryGates[4]?.artifactCount, 1);
+  assert.equal(projection.deliveryGates[4]?.latestArtifactTitle, "Final audit report");
   assert.ok(projection.lanes.some((lane) => lane.id === "protocol" && lane.artifactCount >= 1));
 });

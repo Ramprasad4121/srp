@@ -1,15 +1,19 @@
 import type { 
+  ArtifactMetadata,
   ArtifactKind,
   MethodologyPhase, 
   PhaseStatus, 
   PhaseState, 
   RuntimeSessionState, 
-  ProviderSelection
+  ProviderSelection,
+  RunManifest,
+  SessionStatus
 } from "@srp/shared-types";
 import { randomUUID } from "node:crypto";
 import { PersistenceManager } from "./persistence-manager.js";
 import { AgentRegistry, KnowledgeBus } from "./agent-coordinator.js";
 import { AuditRoomProjector } from "./room-projection.js";
+import { rebuildBuildRoomProjection } from "./build-room-projection.js";
 import { RuntimeArtifactWriter } from "./artifact-writer.js";
 import { runAuditWorkflow, type SessionRuntimeMemory } from "./workflow-runner.js";
 
@@ -52,9 +56,13 @@ let isRunning = false;
 let phaseStates: PhaseState[] = [];
 let activeAbortController: AbortController | null = null;
 let activePipelineTask: Promise<void> | null = null;
+let liveRunCreatedAt: string | null = null;
 
 let persistence: PersistenceManager | null = null;
 let artifactWriter: RuntimeArtifactWriter | null = null;
+let liveArtifacts: ArtifactMetadata[] = [];
+let liveRunStatus: SessionStatus = "idle";
+let liveFailureDetail: string | undefined;
 const runtimeMemory: SessionRuntimeMemory = {
   currentPhaseIndex: -1,
   pendingDiscoveryRegistry: undefined,
@@ -108,6 +116,18 @@ function resetRuntimeMemory(): void {
 // ---------------------------------------------------------------------------
 
 export function getSessionState(): RuntimeSessionState {
+  const liveManifest: RunManifest | null =
+    activeRunId && activeSessionId
+      ? {
+          runId: activeRunId,
+          projectId: "default-project",
+          sessionId: activeSessionId,
+          status: liveRunStatus,
+          createdAt: liveRunCreatedAt ?? new Date().toISOString(),
+          ...(getCurrentPhase() ? { currentPhase: getCurrentPhase()! } : {}),
+          artifacts: [...liveArtifacts]
+        }
+      : null;
   const state: any = {
     hasSession: activeSessionId !== null,
     isRunning,
@@ -120,7 +140,15 @@ export function getSessionState(): RuntimeSessionState {
     auditRoom: auditRoomProjector.snapshot(
       phaseStates,
       getCurrentPhase()
-    )
+    ),
+    ...(liveManifest
+      ? {
+          buildRoom: rebuildBuildRoomProjection({
+            manifest: liveManifest,
+            ...(liveFailureDetail ? { failureDetail: liveFailureDetail } : {})
+          })
+        }
+      : {})
   };
 
   if (runtimeMemory.pendingDiscoveryRegistry) state.discoveryRegistry = runtimeMemory.pendingDiscoveryRegistry;
@@ -160,8 +188,12 @@ export function startSession(
   activeSessionId = `session_${randomUUID()}`;
   activeRunId = `run_${randomUUID()}`;
   isRunning = true;
+  liveRunCreatedAt = new Date().toISOString();
   activeAbortController = new AbortController();
   resetRuntimeMemory();
+  liveArtifacts = [];
+  liveRunStatus = "running";
+  liveFailureDetail = undefined;
 
   agentRegistry.clear();
   knowledgeBus.clear();
@@ -191,6 +223,8 @@ export function startSession(
     persistArtifact: persistArtifactAndEmit
   }).catch((err) => {
     if (!activeAbortController?.signal.aborted) {
+      liveRunStatus = "failed";
+      liveFailureDetail = err instanceof Error ? err.message : String(err);
       console.error("Pipeline failed:", err);
     }
   }).finally(() => {
@@ -238,14 +272,14 @@ function updatePhaseStatus(index: number, status: PhaseStatus, projectId: string
   if (status === "completed" || status === "failed") updated.completedAt = new Date().toISOString();
 
   phaseStates[index] = updated as PhaseState;
+  liveRunStatus =
+    status === "failed"
+      ? "failed"
+      : index === phaseStates.length - 1 && status === "completed"
+        ? "completed"
+        : "running";
   if (artifactWriter) {
-    const sessionStatus =
-      status === "failed"
-        ? "failed"
-        : index === phaseStates.length - 1 && status === "completed"
-          ? "completed"
-          : "running";
-    void artifactWriter.recordPhaseStatus(runId, projectId, updated.phase, status, sessionStatus);
+    void artifactWriter.recordPhaseStatus(runId, projectId, updated.phase, status, liveRunStatus);
   }
 }
 
@@ -260,5 +294,6 @@ async function persistArtifactAndEmit(
   if (!artifactWriter) {
     return;
   }
-  await artifactWriter.persistArtifact(runId, projectId, phase, kind, title, payload);
+  const metadata = await artifactWriter.persistArtifact(runId, projectId, phase, kind, title, payload);
+  liveArtifacts = [...liveArtifacts, metadata];
 }
