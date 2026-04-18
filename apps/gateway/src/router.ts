@@ -253,7 +253,7 @@ export async function routeRequest(
       const webDistPath = await resolveWebDistPath(config.rootDirectory, gatewayDir);
 
       // First try to serve specific files (assets)
-      if (path !== "/" && path !== "/setup" && path !== "/audit" && path !== "/audit-flow") {
+      if (path !== "/" && path !== "/setup" && path !== "/audit" && path !== "/audit-flow" && path !== "/build" && path !== "/team" && path !== "/settings") {
         try {
           const filePath = join(webDistPath, path);
           const content = await readFile(filePath);

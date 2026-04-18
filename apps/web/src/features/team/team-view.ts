@@ -35,22 +35,21 @@ function relativeTime(timestamp: string): string {
   return `${deltaHours}h ago`;
 }
 
-function deriveMembers(runtime: RuntimeSessionState, buildRoom: BuildRoomProjection | null): readonly TeamMember[] {
+function deriveMembers(runtime: RuntimeSessionState, buildRoom: BuildRoomProjection | null, auditRoom: AuditRoomProjection | null): readonly TeamMember[] {
   const active = runtime.agentRegistry?.activeInstances ?? [];
   const seen = new Set<string>();
+  
+  // Use the latest timeline event as the anchor for "last activity", or the run creation time
+  const latestEventTime = auditRoom?.timeline?.[0]?.at ?? runtime.hasSession ? new Date().toISOString() : new Date(Date.now() - 3600000).toISOString();
+
   const members: TeamMember[] = active.map((instance) => {
     seen.add(instance.instanceId);
     return {
       id: instance.instanceId,
       name: instance.activeTask ? `${instance.definitionId} / ${instance.activeTask}` : instance.definitionId,
       role: instance.definitionId.toLowerCase().includes("developer") ? "developer" : "auditor",
-      status:
-        instance.status === "busy"
-          ? "active"
-          : instance.status === "idle"
-            ? "idle"
-            : "offline",
-      lastActiveAt: new Date().toISOString()
+      status: instance.status === "busy" ? "active" : instance.status === "idle" ? "idle" : "offline",
+      lastActiveAt: instance.status === "busy" ? new Date().toISOString() : latestEventTime
     };
   });
 
@@ -60,7 +59,7 @@ function deriveMembers(runtime: RuntimeSessionState, buildRoom: BuildRoomProject
       name: "SRP Lead",
       role: buildRoom?.missionControl.currentStage ? "developer" : "auditor",
       status: runtime.isRunning ? "active" : "idle",
-      lastActiveAt: new Date().toISOString()
+      lastActiveAt: runtime.isRunning ? new Date().toISOString() : latestEventTime
     });
   }
 
@@ -70,7 +69,7 @@ function deriveMembers(runtime: RuntimeSessionState, buildRoom: BuildRoomProject
       name: "Build Lane",
       role: "developer",
       status: buildRoom.missionControl.runStatus === "running" ? "active" : "idle",
-      lastActiveAt: new Date().toISOString()
+      lastActiveAt: buildRoom.missionControl.runStatus === "running" ? new Date().toISOString() : latestEventTime
     });
   }
 
@@ -190,7 +189,7 @@ function deriveRoom(
   auditRoom: AuditRoomProjection | null,
   buildRoom: BuildRoomProjection | null
 ): TeamRoomState {
-  const members = deriveMembers(runtime, buildRoom);
+  const members = deriveMembers(runtime, buildRoom, auditRoom);
   return {
     id: runtime.sessionId ?? "team-room",
     name: "SRP Virtual Room",
@@ -456,8 +455,16 @@ export class TeamView extends LitElement {
       return html`<div class="panel"><div class="empty">Team Room failed: ${this._error}</div></div>`;
     }
 
-    if (!this._room) {
-      return html`<div class="panel"><div class="empty">Team Room idle. Start run to hydrate collaboration state.</div></div>`;
+    if (!this._room || this._room.members.length === 0 || (!this._room.assignments.length && !this._room.approvals.length)) {
+      return html`
+        <div class="panel" style="display:flex; height: 100%; align-items:center; justify-content:center; background: #fff;">
+          <div class="empty" style="max-width: 600px; text-align: center; border: 1px dashed #cbd5e1; border-radius: 20px; padding: 4rem 2rem;">
+            <svg width="48" height="48" fill="none" stroke="#64748b" viewBox="0 0 24 24" style="margin-bottom: 1.5rem;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            <h2 style="margin:0 0 0.5rem; font-size: 1.25rem; font-weight: 800; color: #111827;">Virtual Team Room Idle</h2>
+            <p style="margin: 0; color: #64748b; line-height: 1.6;">Start a Methodology Audit or a new Build Run to hydrate collaboration state. Once a run is active, AI agents and real-time team context will populate this room.</p>
+          </div>
+        </div>
+      `;
     }
 
     return html`

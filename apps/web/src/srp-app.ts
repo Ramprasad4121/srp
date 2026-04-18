@@ -311,6 +311,130 @@ export class SrpApp extends LitElement {
         height: 32px;
         stroke: white !important;
       }
+
+      /* In-app settings panel */
+      .settings-shell {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 2.5rem 2rem;
+        overflow-y: auto;
+        height: 100%;
+      }
+
+      .settings-hero {
+        margin-bottom: 2rem;
+      }
+
+      .settings-hero h1 {
+        font-size: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.5rem 0;
+      }
+
+      .settings-hero p {
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 0;
+      }
+
+      .settings-section {
+        background: #f9fafb;
+        border: 1px solid var(--border-main);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.25rem;
+      }
+
+      .settings-section-title {
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+      }
+
+      .settings-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #eef2f7;
+      }
+
+      .settings-row:last-child {
+        border-bottom: none;
+      }
+
+      .settings-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .settings-value {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      .settings-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .settings-badge.ok {
+        background: #dcfce7;
+        color: #047857;
+      }
+
+      .settings-badge.warn {
+        background: #fef3c7;
+        color: #b45309;
+      }
+
+      .settings-badge.off {
+        background: #f3f4f6;
+        color: #6b7280;
+      }
+
+      .settings-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-main);
+        background: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        color: var(--text-primary);
+      }
+
+      .settings-action:hover {
+        background: #f3f4f6;
+      }
+
+      .settings-action.primary {
+        background: var(--text-primary);
+        color: #fff;
+        border-color: var(--text-primary);
+      }
+
+      .settings-action.primary:hover {
+        background: #374151;
+      }
     `;
 
   declare _bootstrap: AppBootstrapResult | null;
@@ -505,7 +629,7 @@ export class SrpApp extends LitElement {
 
           <div class="section-label">System</div>
           <nav class="nav-section">
-            <div class="nav-item ${this._path === '/setup' ? 'active' : ''}" @click=${(e: Event) => this._handleNavigate(e, "/setup")}>
+            <div class="nav-item ${this._path === '/settings' ? 'active' : ''}" @click=${(e: Event) => this._handleNavigate(e, "/settings")}>
               <div class="nav-icon">⚙</div> Settings
             </div>
           </nav>
@@ -528,7 +652,7 @@ export class SrpApp extends LitElement {
                   <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
               ` : ''}
-              ${this._path === '/audit' ? 'Methodology Pipeline' : (this._path === '/build' ? 'Build Workflow' : (this._path === '/team' ? 'Collaboration' : 'Security Chat'))}
+              ${this._path === '/audit' ? 'Methodology Pipeline' : (this._path === '/build' ? 'Build Workflow' : (this._path === '/team' ? 'Collaboration' : (this._path === '/settings' ? 'Settings' : 'Security Chat')))}
             </div>
             <div class="status-indicator">
               <div class="pulse-dot"></div>
@@ -540,7 +664,8 @@ export class SrpApp extends LitElement {
             <methodology-view ?hidden=${this._path !== '/audit'}></methodology-view>
             <gstack-view ?hidden=${this._path !== '/build'}></gstack-view>
             <team-view ?hidden=${this._path !== '/team'}></team-view>
-            <chat-view ?hidden=${this._path !== '/' && this._path !== ''} .mode=${this._mode}></chat-view>
+            ${this._path === '/settings' ? this._renderSettingsPanel() : ''}
+            <chat-view ?hidden=${this._path !== '/' && this._path !== '' && this._path !== '/settings'} .mode=${this._mode}></chat-view>
           </div>
         </main>
       </div>
@@ -554,6 +679,85 @@ export class SrpApp extends LitElement {
     } catch(e) {
       console.warn("Failed to update role on backend", e);
     }
+  }
+
+  private _renderSettingsPanel() {
+    const bs = this._bootstrap;
+    const rt = this._runtime;
+    const providers = bs ? (bs as any).providers : null;
+
+    return html`
+      <div class="settings-shell">
+        <div class="settings-hero">
+          <h1>Protocol Settings</h1>
+          <p>Configure your SRP environment, manage providers, and monitor system health.</p>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Environment</div>
+          <div class="settings-row">
+            <span class="settings-label">Role</span>
+            <span class="settings-badge ok">${this._mode}</span>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Session</span>
+            <span class="settings-value">${rt?.sessionId ? rt.sessionId.slice(0, 20) + '…' : 'No active session'}</span>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Run</span>
+            <span class="settings-value">${rt?.runId ? rt.runId.slice(0, 20) + '…' : 'No active run'}</span>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Pipeline Status</span>
+            <span class="settings-badge ${rt?.isRunning ? 'ok' : 'off'}">${rt?.isRunning ? 'Running' : 'Idle'}</span>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Providers</div>
+          ${providers?.healthyKinds?.length ? providers.healthyKinds.map((kind: string) => html`
+            <div class="settings-row">
+              <span class="settings-label">${kind}</span>
+              <span class="settings-badge ok">● Healthy</span>
+            </div>
+          `) : ''}
+          ${providers?.failingKinds?.length ? providers.failingKinds.map((kind: string) => html`
+            <div class="settings-row">
+              <span class="settings-label">${kind}</span>
+              <span class="settings-badge warn">⚠ Missing Credentials</span>
+            </div>
+          `) : ''}
+          ${!providers ? html`
+            <div class="settings-row">
+              <span class="settings-label">Status</span>
+              <span class="settings-badge off">Unknown</span>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Skills & Extensions</div>
+          <div class="settings-row">
+            <span class="settings-label">Loaded Skills</span>
+            <span class="settings-value">${this._skills.length} skills</span>
+          </div>
+          ${this._skills.slice(0, 8).map(s => html`
+            <div class="settings-row">
+              <span class="settings-label">${(s as any).name}</span>
+              <span class="settings-badge off">${(s as any).category || 'uncategorized'}</span>
+            </div>
+          `)}
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Actions</div>
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; padding-top: 0.5rem;">
+            <button class="settings-action" @click=${(e: Event) => this._handleNavigate(e, '/setup')}>🔧 Re-run Setup Wizard</button>
+            <button class="settings-action" @click=${() => location.reload()}>🔄 Refresh App</button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 }
 

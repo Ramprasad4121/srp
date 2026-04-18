@@ -259,6 +259,28 @@ export class GStackView extends LitElement {
       margin-bottom: 0.55rem;
     }
 
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.4rem;
+      border-radius: 8px;
+      background: var(--text-primary, #111827);
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      margin-top: 1rem;
+    }
+
+    .action-btn:hover {
+      background: #374151;
+      transform: translateY(-1px);
+    }
+
+
     .empty-state {
       margin: 3rem auto;
       max-width: 640px;
@@ -353,6 +375,17 @@ export class GStackView extends LitElement {
     return latestRun?.runId ?? null;
   }
 
+  private async startNewRun() {
+    try {
+      this._loading = true;
+      await gatewayClient.startRuntime("developer");
+      await this.refresh();
+    } catch (e) {
+      this._error = "Failed to start new build run";
+      this._loading = false;
+    }
+  }
+
   override render() {
     if (this._loading && !this._projection) {
       return html`<div class="shell"><div class="empty-state">Loading Build Room projection...</div></div>`;
@@ -366,8 +399,9 @@ export class GStackView extends LitElement {
       return html`
         <div class="shell">
           <div class="empty-state">
-            Build Room waiting for first run.
-            Start audit or synthesis once. Build lane will hydrate from persisted source pack.
+            <h2 style="margin-top: 0; font-size: 1.5rem; color: #111827;">Build Room Ready</h2>
+            <p>Waiting for first run to hydrate build staging. Start a clean build or let the lane hydrate from persisted source packs.</p>
+            <button class="action-btn" @click=${this.startNewRun}>▶ Start Build Run</button>
           </div>
         </div>
       `;
@@ -384,6 +418,7 @@ export class GStackView extends LitElement {
                 Build Room now hydrates from persisted SRP runs. Intent, architecture, diagram pack,
                 and ship packet come from the same event spine as Audit Room.
               </p>
+              <button class="action-btn" @click=${this.startNewRun} style="margin-top: 1.5rem;">↻ Restart Build</button>
             </div>
             <aside class="hero-side">
               <div class="hero-side-title">Build Targets</div>
