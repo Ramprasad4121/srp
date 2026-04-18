@@ -4,13 +4,18 @@ import "./excalidraw-wrapper.js";
 
 const STORAGE_KEY = "srp_whiteboard_data";
 
-@customElement("whiteboard-overlay")
 export class WhiteboardOverlay extends LitElement {
-  @property({ type: Boolean, reflect: true }) open = false;
+  static override properties = {
+    open: { type: Boolean, reflect: true },
+    _elements: { state: true },
+    _appState: { state: true },
+    _isMinimized: { state: true }
+  };
 
-  @state() private _elements: any[] = [];
-  @state() private _appState: any = {};
-  @state() private _isMinimized = false;
+  declare open: boolean;
+  private _elements: any[] = [];
+  private _appState: any = {};
+  private _isMinimized = false;
 
   static override styles = css`
     :host {
@@ -241,3 +246,5 @@ export class WhiteboardOverlay extends LitElement {
     `;
   }
 }
+
+customElements.define("whiteboard-overlay", WhiteboardOverlay);
