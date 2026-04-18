@@ -28,6 +28,8 @@ Available skills:
 - /codex
 - /cso
 - /autoplan
+- /plan-devex-review
+- /devex-review
 - /careful
 - /freeze
 - /guard
