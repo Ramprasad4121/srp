@@ -1,4 +1,4 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { gatewayClient } from "./api/client.js";
 import type { AppBootstrapResult, RuntimeSessionState } from "@srp/shared-types";
 
@@ -109,20 +109,27 @@ export class SrpApp extends LitElement {
 
     .nav-item {
       padding: 0.625rem 0.75rem;
+      width: 100%;
+      border: 1px solid transparent;
       border-radius: 6px;
       cursor: pointer;
       font-size: 13px;
       font-weight: 500;
       color: var(--text-secondary);
+      background: transparent;
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      text-align: left;
+      font-family: inherit;
       transition: all 0.15s ease;
     }
 
-    .nav-item:hover {
+    .nav-item:hover,
+    .nav-item:focus-visible {
       background: #f3f4f6;
       color: var(--text-primary);
+      outline: none;
     }
 
     .nav-item.active {
@@ -154,13 +161,16 @@ export class SrpApp extends LitElement {
     .role-btn {
       flex: 1;
       padding: 0.5rem;
+      border: none;
       border-radius: 6px;
+      background: transparent;
       font-size: 12px;
       font-weight: 600;
       text-align: center;
       cursor: pointer;
       transition: all 0.2s;
       color: var(--text-secondary);
+      font-family: inherit;
     }
 
     .role-btn.active {
@@ -173,6 +183,7 @@ export class SrpApp extends LitElement {
     .main-content {
       position: relative;
       flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       background: #fff;
@@ -435,6 +446,51 @@ export class SrpApp extends LitElement {
       .settings-action.primary:hover {
         background: #374151;
       }
+
+      @media (max-width: 768px) {
+        .app-container {
+          position: relative;
+        }
+
+        .sidebar {
+          position: fixed;
+          inset: 0 auto 0 0;
+          width: min(82vw, 280px);
+          max-width: 280px;
+          box-shadow: 24px 0 48px rgba(15, 23, 42, 0.18);
+        }
+
+        .sidebar.closed {
+          width: min(82vw, 280px);
+          opacity: 0;
+          transform: translateX(-100%);
+        }
+
+        .main-content {
+          width: 100vw;
+          flex-basis: 100vw;
+        }
+
+        .top-bar {
+          padding: 0 1rem;
+        }
+
+        .status-indicator span {
+          display: none;
+        }
+
+        .floating-fab {
+          right: 18px !important;
+          bottom: 20px !important;
+          width: 54px !important;
+          height: 54px !important;
+        }
+
+        .settings-shell {
+          padding: 1.5rem 1rem;
+          max-width: none;
+        }
+      }
     `;
 
   declare _bootstrap: AppBootstrapResult | null;
@@ -456,7 +512,7 @@ export class SrpApp extends LitElement {
     this._path = window.location.pathname;
     this._error = null;
     this._skills = [];
-    this._sidebarOpen = true;
+    this._sidebarOpen = !this._isCompactViewport();
     this._mode = "auditor";
     this._whiteboardOpen = false;
 
@@ -475,11 +531,14 @@ export class SrpApp extends LitElement {
   }
 
   override async firstUpdated() {
+    this._syncViewportState();
     await this.refresh();
     
     window.addEventListener("popstate", () => {
       this._path = window.location.pathname;
     });
+
+    window.addEventListener("resize", () => this._syncViewportState());
 
     setInterval(() => this.poll(), 5000);
   }
@@ -534,6 +593,19 @@ export class SrpApp extends LitElement {
     console.log(`Navigating to: ${path}`);
     window.history.pushState({}, "", path);
     this._path = path;
+    if (this._isCompactViewport()) {
+      this._sidebarOpen = false;
+    }
+  }
+
+  private _isCompactViewport() {
+    return window.matchMedia("(max-width: 768px)").matches;
+  }
+
+  private _syncViewportState() {
+    if (this._isCompactViewport()) {
+      this._sidebarOpen = false;
+    }
   }
 
   override render() {
@@ -577,6 +649,7 @@ export class SrpApp extends LitElement {
           console.log("FAB Click: _whiteboardOpen =", this._whiteboardOpen);
         }} 
         title="Open Audit Drawing Whiteboard"
+        aria-label="Open Audit Drawing Whiteboard"
       >
         <svg class="fab-icon" fill="none" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
@@ -590,48 +663,48 @@ export class SrpApp extends LitElement {
 
       <div class="app-container">
         <!-- Minimal Sidebar -->
-        <aside class="sidebar ${this._sidebarOpen ? '' : 'closed'}">
+        <aside class="sidebar ${this._sidebarOpen ? '' : 'closed'}" aria-hidden=${!this._sidebarOpen ? "true" : nothing} ?inert=${!this._sidebarOpen}>
           <div class="sidebar-header">
             <div class="logo-container">
               <span class="logo">SRP Protocol</span>
               <span class="logo-badge">v1.0</span>
             </div>
-            <button class="toggle-btn" style="background:none; border:none; cursor:pointer; color:var(--text-muted);" @click=${() => { console.log("Sidebar toggled"); this._sidebarOpen = false; }}>
+            <button class="toggle-btn" style="background:none; border:none; cursor:pointer; color:var(--text-muted);" aria-label="Close navigation" title="Close navigation" @click=${() => { console.log("Sidebar toggled"); this._sidebarOpen = false; }}>
               <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
             </button>
           </div>
 
           <div class="role-switcher">
-            <div class="role-btn ${this._mode === 'auditor' ? 'active' : ''}" @click=${() => this.updateMode('auditor')}>Auditor</div>
-            <div class="role-btn ${this._mode === 'developer' ? 'active' : ''}" @click=${() => this.updateMode('developer')}>Developer</div>
+            <button type="button" class="role-btn ${this._mode === 'auditor' ? 'active' : ''}" aria-pressed=${this._mode === 'auditor'} @click=${() => this.updateMode('auditor')}>Auditor</button>
+            <button type="button" class="role-btn ${this._mode === 'developer' ? 'active' : ''}" aria-pressed=${this._mode === 'developer'} @click=${() => this.updateMode('developer')}>Developer</button>
           </div>
           
           <div class="section-label">${this._mode.toUpperCase()} WORKSPACE</div>
           <nav class="nav-section">
-            <div class="nav-item ${this._path === '/' ? 'active' : ''}" @click=${(e: Event) => this._handleNavigate(e, "/")}>
+            <button type="button" class="nav-item ${this._path === '/' ? 'active' : ''}" aria-current=${this._path === '/' ? 'page' : nothing} @click=${(e: Event) => this._handleNavigate(e, "/")}>
               <div class="nav-icon">◈</div> Chat Engine
-            </div>
+            </button>
             
             ${this._mode === 'auditor' ? html`
-              <div class="nav-item ${this._path === '/audit' ? 'active' : ''}" @click=${(e: Event) => this._handleNavigate(e, "/audit")}>
+              <button type="button" class="nav-item ${this._path === '/audit' ? 'active' : ''}" aria-current=${this._path === '/audit' ? 'page' : nothing} @click=${(e: Event) => this._handleNavigate(e, "/audit")}>
                 <div class="nav-icon">🛡️</div> Start Methodology Audit
-              </div>
+              </button>
             ` : html`
-              <div class="nav-item ${this._path === '/build' ? 'active' : ''}" @click=${(e: Event) => this._handleNavigate(e, "/build")}>
+              <button type="button" class="nav-item ${this._path === '/build' ? 'active' : ''}" aria-current=${this._path === '/build' ? 'page' : nothing} @click=${(e: Event) => this._handleNavigate(e, "/build")}>
                 <div class="nav-icon">⌬</div> Build from Scratch
-              </div>
+              </button>
             `}
 
-            <div class="nav-item ${this._path === '/team' ? 'active' : ''}" @click=${(e: Event) => this._handleNavigate(e, "/team")}>
+            <button type="button" class="nav-item ${this._path === '/team' ? 'active' : ''}" aria-current=${this._path === '/team' ? 'page' : nothing} @click=${(e: Event) => this._handleNavigate(e, "/team")}>
               <div class="nav-icon">◎</div> Virtual Room
-            </div>
+            </button>
           </nav>
 
           <div class="section-label">System</div>
           <nav class="nav-section">
-            <div class="nav-item ${this._path === '/settings' ? 'active' : ''}" @click=${(e: Event) => this._handleNavigate(e, "/settings")}>
+            <button type="button" class="nav-item ${this._path === '/settings' ? 'active' : ''}" aria-current=${this._path === '/settings' ? 'page' : nothing} @click=${(e: Event) => this._handleNavigate(e, "/settings")}>
               <div class="nav-icon">⚙</div> Settings
-            </div>
+            </button>
           </nav>
 
           <div class="skills-footer">
@@ -648,7 +721,7 @@ export class SrpApp extends LitElement {
           <header class="top-bar">
             <div class="page-title">
               ${!this._sidebarOpen ? html`
-                <button class="hamburger-btn" @click=${() => this._sidebarOpen = true}>
+                <button class="hamburger-btn" aria-label="Open navigation" title="Open navigation" @click=${() => this._sidebarOpen = true}>
                   <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
               ` : ''}

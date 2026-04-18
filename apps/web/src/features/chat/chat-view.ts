@@ -63,6 +63,10 @@ export class ChatView extends LitElement {
       transition: all 0.2s;
     }
 
+    button.icon-btn {
+      font: inherit;
+    }
+
     .icon-btn:hover {
       background: #f3f4f6;
       color: #111827;
@@ -209,6 +213,8 @@ export class ChatView extends LitElement {
       border-radius: 6px;
       cursor: pointer;
       transition: all 0.2s;
+      border: none;
+      font: inherit;
     }
 
     .search-toggle.active {
@@ -583,7 +589,7 @@ export class ChatView extends LitElement {
         <div class="settings-menu">
           <div class="menu-header">
             <span class="menu-title">Settings</span>
-            <button class="menu-close" @click=${() => this._showSettings = false}>
+            <button class="menu-close" aria-label="Close settings" title="Close settings" @click=${() => this._showSettings = false}>
               <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -649,19 +655,19 @@ export class ChatView extends LitElement {
           <div class="input-footer">
             <div style="display: flex; gap: 8px;">
               <input type="file" id="fileInput" hidden @change=${this.handleFileChange} accept=".sol,.md,.pdf,.txt,.ts,.js">
-              <div class="icon-btn" title="Attach File" @click=${() => (this.shadowRoot?.getElementById('fileInput') as HTMLInputElement).click()}>
+              <button type="button" class="icon-btn" title="Attach File" aria-label="Attach File" @click=${() => (this.shadowRoot?.getElementById('fileInput') as HTMLInputElement).click()}>
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 11-2.828-2.828l6.414-6.586a4 2 0 015.656 5.656l-6.415 6.585a6 6 0 11-8.486-8.486L10.5 3.5"/>
                 </svg>
-              </div>
-              <div class="search-toggle ${this._webSearchEnabled ? 'active' : 'inactive'}" @click=${() => this._webSearchEnabled = !this._webSearchEnabled}>
+              </button>
+              <button type="button" class="search-toggle ${this._webSearchEnabled ? 'active' : 'inactive'}" aria-label=${this._webSearchEnabled ? "Disable web search" : "Enable web search"} @click=${() => this._webSearchEnabled = !this._webSearchEnabled}>
                 <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
                 </svg>
                 Search
-              </div>
+              </button>
             </div>
-            <button class="btn-send" @click=${() => this.sendMessage()} ?disabled=${this._isLoading || !this._chatInput.trim()}>
+            <button type="button" class="btn-send" aria-label="Send message" title="Send message" @click=${() => this.sendMessage()} ?disabled=${this._isLoading || !this._chatInput.trim()}>
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
