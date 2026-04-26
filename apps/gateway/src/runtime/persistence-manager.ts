@@ -5,19 +5,62 @@ import type {
   ArtifactMetadata, 
   ArtifactKind, 
   MethodologyPhase,
+  ProjectMemory,
   SessionStatus,
   RunEventLogEntry
 } from "@srp/shared-types";
+import { createDefaultProjectMemory } from "@srp/config";
 
 export class PersistenceManager {
   private readonly runsDir: string;
+  private readonly projectMemoryPath: string;
 
   constructor(rootDirectory: string, outputDirectory: string = ".srp") {
     this.runsDir = join(rootDirectory, outputDirectory, "runs");
+    this.projectMemoryPath = join(rootDirectory, outputDirectory, "project-memory.json");
   }
 
   async init(): Promise<void> {
     await mkdir(this.runsDir, { recursive: true });
+  }
+
+  async loadOrCreateProjectMemory(identity: ProjectMemory["identity"]): Promise<ProjectMemory> {
+    const existing = await this.getProjectMemory();
+    if (existing) {
+      if (
+        existing.identity.userProfile === identity.userProfile &&
+        existing.identity.goal === identity.goal &&
+        existing.identity.department === identity.department
+      ) {
+        return existing;
+      }
+
+      const updated: ProjectMemory = {
+        ...existing,
+        identity,
+        updatedAt: new Date().toISOString()
+      };
+      await this.saveProjectMemory(updated);
+      return updated;
+    }
+
+    const created = createDefaultProjectMemory(identity);
+    await this.saveProjectMemory(created);
+    return created;
+  }
+
+  async getProjectMemory(): Promise<ProjectMemory | null> {
+    try {
+      const content = await readFile(this.projectMemoryPath, "utf8");
+      return JSON.parse(content) as ProjectMemory;
+    } catch {
+      return null;
+    }
+  }
+
+  async saveProjectMemory(projectMemory: ProjectMemory): Promise<void> {
+    const data = JSON.parse(JSON.stringify(projectMemory));
+    await writeFile(this.projectMemoryPath, JSON.stringify(data, null, 2), "utf8");
   }
 
   async createRun(runId: string, projectId: string, sessionId: string): Promise<RunManifest> {
@@ -35,6 +78,16 @@ export class PersistenceManager {
     };
 
     await this.saveManifest(manifest);
+    const projectMemory = await this.getProjectMemory();
+    if (projectMemory) {
+      await this.saveProjectMemory({
+        ...projectMemory,
+        activeRunId: runId,
+        latestRunId: runId,
+        updatedAt: new Date().toISOString(),
+        runIds: [...new Set([...projectMemory.runIds, runId])]
+      });
+    }
     return manifest;
   }
 
@@ -92,6 +145,16 @@ export class PersistenceManager {
         artifacts: [...manifest.artifacts, metadata]
       };
       await this.saveManifest(updated);
+    }
+
+    const projectMemory = await this.getProjectMemory();
+    if (projectMemory) {
+      await this.saveProjectMemory({
+        ...projectMemory,
+        latestRunId: runId,
+        updatedAt: new Date().toISOString(),
+        artifactIds: [...new Set([...projectMemory.artifactIds, artifactId])]
+      });
     }
 
     return metadata;

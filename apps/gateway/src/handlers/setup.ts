@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   buildOnboardingReadiness,
   loadOrCreateSetupManifest,
+  persistSetupIdentity,
   persistProviderSelections,
   persistProviderSetupCompleted,
   persistSetupRole,
@@ -11,12 +12,14 @@ import {
   persistWorkspaceSetupCompleted
 } from "@srp/config";
 import type {
+  Department,
   InternetMode,
   ProviderSelection,
   RuntimeMode,
+  SetupIdentity,
   SetupManifest
 } from "@srp/shared-types";
-import { createSetupUpdatedEvent, createBootstrapUpdatedEvent } from "@srp/events";
+import { createSetupUpdatedEvent } from "@srp/events";
 
 import { readJsonBody, sendError, sendJson } from "../http-utils.js";
 import { sharedEventBus } from "../events/event-bus.js";
@@ -57,6 +60,24 @@ function isString(v: unknown): v is string {
 
 function isRuntimeMode(v: unknown): v is RuntimeMode {
   return v === "auditor" || v === "developer" || v === "hybrid";
+}
+
+function isDepartment(v: unknown): v is Department {
+  return v === "teaching" || v === "build" || v === "audit";
+}
+
+function isUserProfile(v: unknown): boolean {
+  return v === "founder" || v === "builder" || v === "auditor" || v === "learner";
+}
+
+function isUserGoal(v: unknown): boolean {
+  return v === "learn" || v === "build" || v === "audit";
+}
+
+function isSetupIdentity(v: unknown): v is SetupIdentity {
+  if (typeof v !== "object" || v === null) return false;
+  const obj = v as Record<string, unknown>;
+  return isUserProfile(obj["userProfile"]) && isUserGoal(obj["goal"]) && isDepartment(obj["department"]);
 }
 
 function isInternetMode(v: unknown): v is InternetMode {
@@ -119,6 +140,37 @@ export async function handleGetSetup(
 
 interface SetRoleBody {
   readonly role: RuntimeMode;
+}
+
+interface SetIdentityBody {
+  readonly identity: SetupIdentity;
+}
+
+export async function handlePostSetupIdentity(
+  req: IncomingMessage,
+  res: ServerResponse,
+  config: SetupHandlerConfig
+): Promise<void> {
+  const body = await readJsonBody<SetIdentityBody>(req);
+
+  if (body === null || !isSetupIdentity(body.identity)) {
+    sendError(
+      res,
+      400,
+      "invalid_body",
+      "Expected { identity: { userProfile, goal, department } }"
+    );
+    return;
+  }
+
+  try {
+    const manifest = await persistSetupIdentity(config.rootDirectory, body.identity);
+    sharedEventBus.emit(createSetupUpdatedEvent());
+    sendJson(res, 200, makeSetupResponse(manifest));
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    sendError(res, 500, "setup_identity_failed", detail);
+  }
 }
 
 export async function handlePostSetupRole(
@@ -280,7 +332,6 @@ export async function handlePostCompleteWorkspace(
   try {
     const manifest = await persistWorkspaceSetupCompleted(config.rootDirectory);
     sharedEventBus.emit(createSetupUpdatedEvent());
-    sharedEventBus.emit(createBootstrapUpdatedEvent());
     sendJson(res, 200, makeSetupResponse(manifest));
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);

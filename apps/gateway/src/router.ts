@@ -10,6 +10,7 @@ import {
   handlePostCompleteProviders,
   handlePostCompleteWelcome,
   handlePostCompleteWorkspace,
+  handlePostSetupIdentity,
   handlePostSetupProviders,
   handlePostSetupRole,
   handlePostSetupWorkspace
@@ -214,6 +215,11 @@ export async function routeRequest(
 
     if (method === "POST" && path === "/api/setup/role") {
       await handlePostSetupRole(req, res, setupConfig);
+      return;
+    }
+
+    if (method === "POST" && path === "/api/setup/identity") {
+      await handlePostSetupIdentity(req, res, setupConfig);
       return;
     }
 

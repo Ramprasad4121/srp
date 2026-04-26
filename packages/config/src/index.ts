@@ -1,15 +1,24 @@
 import type {
   ApprovedDomainRule,
+  Department,
   InternetMode,
   ProviderSelection,
+  ProjectMemory,
+  RouteDefinition,
   RuntimeMode,
   SetupManifest,
+  SetupIdentity,
   SetupState,
   SetupStep,
+  UserGoal,
+  UserProfile,
   WorkspaceSelection
 } from "@srp/shared-types";
 
 export const runtimeModes: readonly RuntimeMode[] = ["auditor", "developer", "hybrid"];
+export const userProfiles: readonly UserProfile[] = ["founder", "builder", "auditor", "learner"];
+export const userGoals: readonly UserGoal[] = ["learn", "build", "audit"];
+export const departments: readonly Department[] = ["teaching", "build", "audit"];
 export const setupSteps: readonly SetupStep[] = [
   "welcome",
   "role-selection",
@@ -23,6 +32,11 @@ export const setupSteps: readonly SetupStep[] = [
 
 export const defaultRuntimeMode: RuntimeMode = "hybrid";
 export const defaultInternetMode: InternetMode = "local-plus-docs";
+export const defaultIdentity: SetupIdentity = {
+  userProfile: "builder",
+  goal: "build",
+  department: "build"
+};
 
 export interface ModelPolicy {
   readonly defaultTask: "chat" | "analysis" | "generation";
@@ -59,6 +73,7 @@ export const runtimeModeDefaults: readonly RuntimeModeDefaults[] = [
 ] as const;
 
 export interface SetupDefaults {
+  readonly identity: SetupIdentity;
   readonly role: RuntimeMode;
   readonly internetMode: InternetMode;
   readonly providers: readonly ProviderSelection[];
@@ -67,6 +82,7 @@ export interface SetupDefaults {
 }
 
 export const defaultSetupDefaults: SetupDefaults = {
+  identity: defaultIdentity,
   role: defaultRuntimeMode,
   internetMode: defaultInternetMode,
   providers: [
@@ -90,13 +106,106 @@ export const defaultSetupDefaults: SetupDefaults = {
   ]
 };
 
+export function deriveRuntimeModeFromIdentity(identity: SetupIdentity): RuntimeMode {
+  if (identity.department === "audit") {
+    return "auditor";
+  }
+  if (identity.department === "build") {
+    return identity.goal === "audit" ? "hybrid" : "developer";
+  }
+  return "hybrid";
+}
+
+export function createCanonicalRouteRegistry(identity: SetupIdentity): readonly RouteDefinition[] {
+  const routes: RouteDefinition[] = [
+    {
+      id: "overview",
+      path: "/overview",
+      label: "Overview",
+      department: "system",
+      visibility: "primary",
+      goals: ["learn", "build", "audit"]
+    },
+    {
+      id: "teaching",
+      path: "/",
+      label: "Teaching Desk",
+      department: "teaching",
+      visibility: identity.department === "teaching" ? "primary" : "secondary",
+      goals: ["learn", "build", "audit"]
+    },
+    {
+      id: "build",
+      path: "/build",
+      label: "Build Room",
+      department: "build",
+      visibility: identity.department === "build" ? "primary" : "secondary",
+      goals: ["build", "audit"]
+    },
+    {
+      id: "audit",
+      path: "/audit",
+      label: "Audit Room",
+      department: "audit",
+      visibility: identity.department === "audit" ? "primary" : "secondary",
+      goals: ["audit", "build"]
+    },
+    {
+      id: "team",
+      path: "/team",
+      label: "Team Board",
+      department: "system",
+      visibility: "secondary",
+      goals: ["learn", "build", "audit"]
+    },
+    {
+      id: "settings",
+      path: "/settings",
+      label: "Settings",
+      department: "system",
+      visibility: "secondary",
+      goals: ["learn", "build", "audit"]
+    }
+  ];
+
+  return routes.filter((route) => route.goals.includes(identity.goal));
+}
+
+export function deriveInitialRouteFromIdentity(identity: SetupIdentity): string {
+  if (identity.department === "audit") {
+    return "/audit-flow";
+  }
+  if (identity.department === "build") {
+    return "/dev";
+  }
+  return "/overview";
+}
+
+export function createDefaultProjectMemory(
+  identity: SetupIdentity,
+  now: string = new Date().toISOString()
+): ProjectMemory {
+  return {
+    projectId: "default-project",
+    name: "SRP Company Workspace",
+    status: "active",
+    identity,
+    createdAt: now,
+    updatedAt: now,
+    runIds: [],
+    artifactIds: []
+  };
+}
+
 export function createInitialSetupState(
-  overrides: Partial<Pick<SetupState, "role" | "providers" | "workspace">> = {}
+  overrides: Partial<Pick<SetupState, "identity" | "role" | "providers" | "workspace">> = {}
 ): SetupState {
+  const identity = overrides.identity ?? defaultSetupDefaults.identity;
   return {
     currentStep: "welcome",
     completedSteps: [],
-    role: overrides.role ?? defaultSetupDefaults.role,
+    identity,
+    role: overrides.role ?? deriveRuntimeModeFromIdentity(identity),
     providers: overrides.providers ?? defaultSetupDefaults.providers,
     workspace: overrides.workspace ?? defaultSetupDefaults.workspace
   };
@@ -136,9 +245,43 @@ export function markSetupStepCompleted(state: SetupState, step: SetupStep): Setu
 }
 
 export function updateSetupRole(state: SetupState, role: RuntimeMode): SetupState {
+  const identity = mapRoleToIdentity(role, state.identity);
   return {
     ...state,
-    role
+    role,
+    identity
+  };
+}
+
+export function updateSetupIdentity(state: SetupState, identity: SetupIdentity): SetupState {
+  return {
+    ...state,
+    identity,
+    role: deriveRuntimeModeFromIdentity(identity)
+  };
+}
+
+export function mapRoleToIdentity(role: RuntimeMode, identity?: SetupIdentity): SetupIdentity {
+  if (role === "auditor") {
+    return {
+      userProfile: identity?.userProfile ?? "auditor",
+      goal: "audit",
+      department: "audit"
+    };
+  }
+
+  if (role === "developer") {
+    return {
+      userProfile: identity?.userProfile ?? "builder",
+      goal: "build",
+      department: "build"
+    };
+  }
+
+  return {
+    userProfile: identity?.userProfile ?? "founder",
+    goal: identity?.goal ?? "build",
+    department: identity?.department ?? "teaching"
   };
 }
 
@@ -250,8 +393,11 @@ export function createSetupChecklist(manifest: SetupManifest): readonly SetupChe
     },
     {
       step: "role-selection",
-      complete: manifest.state.role.length > 0,
-      reason: `Role set to ${manifest.state.role}`
+      complete:
+        manifest.state.identity.userProfile.length > 0 &&
+        manifest.state.identity.goal.length > 0 &&
+        manifest.state.identity.department.length > 0,
+      reason: `Journey set to ${manifest.state.identity.userProfile} / ${manifest.state.identity.goal} / ${manifest.state.identity.department}`
     },
     {
       step: "providers",
@@ -297,7 +443,7 @@ export function getNextSetupStep(manifest: SetupManifest): SetupStep {
 }
 
 export function createWelcomeMessage(manifest: SetupManifest): string {
-  return `SRP setup is in ${manifest.state.currentStep}. Role: ${manifest.state.role}.`;
+  return `SRP setup is in ${manifest.state.currentStep}. Journey: ${manifest.state.identity.userProfile} / ${manifest.state.identity.goal} / ${manifest.state.identity.department}.`;
 }
 
 export function completeWelcomeStep(state: SetupState): SetupState {

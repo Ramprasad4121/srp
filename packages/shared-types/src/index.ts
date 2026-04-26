@@ -1,4 +1,8 @@
 export type RuntimeMode = "auditor" | "developer" | "hybrid";
+export type UserProfile = "founder" | "builder" | "auditor" | "learner";
+export type UserGoal = "learn" | "build" | "audit";
+export type Department = "teaching" | "build" | "audit";
+export type RouteVisibility = "primary" | "secondary" | "hidden";
 
 export type SetupStep =
   | "welcome"
@@ -509,6 +513,9 @@ export interface RuntimeSessionState {
   readonly isRunning: boolean;
   readonly sessionId: string | null;
   readonly runId: string | null;
+  readonly projectId: string | null;
+  readonly identity?: SetupIdentity;
+  readonly projectMemory?: ProjectMemory;
   readonly currentPhase: MethodologyPhase | null;
   readonly phases: readonly PhaseState[];
   readonly discoveryRegistry?: DiscoveryRegistry;
@@ -607,6 +614,34 @@ export interface ApprovedDomainRule {
   readonly reason: string;
 }
 
+export interface SetupIdentity {
+  readonly userProfile: UserProfile;
+  readonly goal: UserGoal;
+  readonly department: Department;
+}
+
+export interface RouteDefinition {
+  readonly id: string;
+  readonly path: string;
+  readonly label: string;
+  readonly department: Department | "system";
+  readonly visibility: RouteVisibility;
+  readonly goals: readonly UserGoal[];
+}
+
+export interface ProjectMemory {
+  readonly projectId: string;
+  readonly name: string;
+  readonly status: "active" | "paused" | "archived";
+  readonly identity: SetupIdentity;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly activeRunId?: string;
+  readonly latestRunId?: string;
+  readonly runIds: readonly string[];
+  readonly artifactIds: readonly string[];
+}
+
 export interface ProviderCredentialProfile {
   readonly envVar: string;
   readonly required: boolean;
@@ -626,6 +661,7 @@ export interface ProviderDefinition {
 export interface SetupState {
   readonly currentStep: SetupStep;
   readonly completedSteps: readonly SetupStep[];
+  readonly identity: SetupIdentity;
   readonly role: RuntimeMode;
   readonly providers: readonly ProviderSelection[];
   readonly workspace: WorkspaceSelection;
@@ -681,6 +717,10 @@ export interface AppBootstrapResult {
   readonly manifestUpdatedAt: string;
   /** The role the user configured (or the default). */
   readonly role: RuntimeMode;
+  /** Explicit company identity used for routing and handoffs. */
+  readonly identity: SetupIdentity;
+  /** Durable project memory for the current workspace. */
+  readonly projectMemory: ProjectMemory;
   /** Onboarding readiness derived from the manifest. */
   readonly onboarding: OnboardingReadiness;
   /** Provider health evaluated against the current environment. */
@@ -689,6 +729,8 @@ export interface AppBootstrapResult {
   readonly decision: BootstrapDecision;
   /** The initial route/page the app shell should navigate to. */
   readonly initialRoute: string;
+  /** Canonical route registry for the active identity. */
+  readonly routes: readonly RouteDefinition[];
   /** Absolute path to the setup manifest on disk. */
   readonly configPath: string;
 }

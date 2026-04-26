@@ -1,9 +1,17 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import type { SetupManifest, ProviderSelection, WorkspaceSelection, RuntimeMode } from "@srp/shared-types";
+import type {
+  SetupIdentity,
+  SetupManifest,
+  ProviderSelection,
+  WorkspaceSelection,
+  RuntimeMode
+} from "@srp/shared-types";
 import { 
   createSetupManifest, 
+  mapRoleToIdentity,
   updateSetupRole, 
+  updateSetupIdentity,
   replaceProviderSelections, 
   updateWorkspaceSelection, 
   completeWelcomeStep, 
@@ -17,12 +25,24 @@ export function getSetupConfigPath(rootDirectory: string): string {
   return join(rootDirectory, ".srp", defaultSetupConfigRelativePath);
 }
 
+function normalizeSetupManifest(manifest: SetupManifest): SetupManifest {
+  const role = manifest.state.role ?? "hybrid";
+  return {
+    ...manifest,
+    state: {
+      ...manifest.state,
+      role,
+      identity: manifest.state.identity ?? mapRoleToIdentity(role)
+    }
+  };
+}
+
 export async function loadSetupManifest(rootDirectory: string): Promise<SetupManifest | null> {
   const path = getSetupConfigPath(rootDirectory);
 
   try {
     const raw = await readFile(path, "utf8");
-    return JSON.parse(raw) as SetupManifest;
+    return normalizeSetupManifest(JSON.parse(raw) as SetupManifest);
   } catch (error) {
     const maybeNodeError = error as NodeJS.ErrnoException;
     if (maybeNodeError.code === "ENOENT") {
@@ -38,7 +58,7 @@ export async function saveSetupManifest(
 ): Promise<string> {
   const path = getSetupConfigPath(rootDirectory);
   await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  await writeFile(path, `${JSON.stringify(normalizeSetupManifest(manifest), null, 2)}\n`, "utf8");
   return path;
 }
 
@@ -73,6 +93,16 @@ export async function persistSetupRole(
   return updateSetupManifest(rootDirectory, (manifest) => ({
     ...manifest,
     state: updateSetupRole(manifest.state, role)
+  }));
+}
+
+export async function persistSetupIdentity(
+  rootDirectory: string,
+  identity: SetupIdentity
+): Promise<SetupManifest> {
+  return updateSetupManifest(rootDirectory, (manifest) => ({
+    ...manifest,
+    state: updateSetupIdentity(manifest.state, identity)
   }));
 }
 
