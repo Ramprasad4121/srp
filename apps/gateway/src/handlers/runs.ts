@@ -4,6 +4,7 @@ import { sendJson, sendError } from "../http-utils.js";
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 import { PersistenceManager } from "../runtime/persistence-manager.js";
+import { ProjectStore } from "@srp/project-memory";
 import { rebuildAuditRoomProjection } from "../runtime/room-projection.js";
 import { rebuildBuildRoomProjection } from "../runtime/build-room-projection.js";
 
@@ -114,8 +115,17 @@ async function getPersistenceOrFallback(rootDirectory: string): Promise<Persiste
       const config = JSON.parse(configContent);
       outputDir = config.state?.workspace?.outputDirectory || ".srp";
     } catch (e2) {}
-    
-    const pm = new PersistenceManager(rootDirectory, outputDir);
+
+    // Resolve the active project from the registry so the fallback reads
+    // (and writes) under the correct project-scoped runs directory rather
+    // than a phantom default.
+    const store = new ProjectStore(rootDirectory);
+    await store.init();
+    const active = await store.getActive();
+    if (!active) {
+      throw new Error("getPersistenceOrFallback: no active project in the registry.");
+    }
+    const pm = new PersistenceManager(rootDirectory, active.id, outputDir);
     await pm.init();
     return pm;
   }

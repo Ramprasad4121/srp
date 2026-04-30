@@ -60,6 +60,9 @@
       ],
       "@srp/tools": [
         "packages/tools/src/index.ts"
+      ],
+      "@srp/project-memory": [
+        "packages/project-memory/src/index.ts"
       ]
     },
     "declaration": true,

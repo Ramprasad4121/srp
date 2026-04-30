@@ -8,12 +8,48 @@ import type {
   SessionStatus,
   RunEventLogEntry
 } from "@srp/shared-types";
+import { projectRunsDir } from "@srp/project-memory";
 
+/**
+ * Project-scoped run persistence.
+ *
+ * On disk, all runs land under
+ * `<rootDirectory>/<outputDirectory>/projects/<projectId>/runs/<runId>/...`.
+ * The `projectId` is required so the gateway can keep multiple projects'
+ * runs cleanly separated; it is wired through every constructor call.
+ *
+ * For the legacy `<outputDirectory>/runs/<runId>` shape, callers must run
+ * `migrateLegacyLayout` (from `@srp/project-memory`) before instantiating
+ * this class — `ProjectStore.init` does so automatically.
+ */
 export class PersistenceManager {
   private readonly runsDir: string;
+  readonly projectId: string;
 
-  constructor(rootDirectory: string, outputDirectory: string = ".srp") {
-    this.runsDir = join(rootDirectory, outputDirectory, "runs");
+  constructor(
+    rootDirectory: string,
+    projectId: string,
+    outputDirectory: string = ".srp"
+  ) {
+    if (!projectId || projectId.trim().length === 0) {
+      throw new Error("PersistenceManager requires a non-empty projectId.");
+    }
+    this.projectId = projectId;
+    // We use the path helper from @srp/project-memory when the caller is
+    // happy with the standard `.srp` location, and fall back to a manual
+    // join when they pass a custom outputDirectory (e.g. tests using
+    // `.srp-test`). Both shapes share the same `<root>/<output>/projects/<id>/runs`.
+    if (outputDirectory === ".srp") {
+      this.runsDir = projectRunsDir(rootDirectory, projectId);
+    } else {
+      this.runsDir = join(
+        rootDirectory,
+        outputDirectory,
+        "projects",
+        projectId,
+        "runs"
+      );
+    }
   }
 
   async init(): Promise<void> {

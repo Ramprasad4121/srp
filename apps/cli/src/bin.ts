@@ -120,7 +120,7 @@ async function runAudit(rootDir: string, bootstrap: any) {
   console.log(`Role:    ${manifest.state.role}`);
   console.log(`---------------------------------------------------------------------------`);
 
-  startSession(rootDir, manifest.state.providers);
+  await startSession(rootDir, manifest.state.providers);
 
   let lastPhase = "";
   while (true) {

@@ -28,6 +28,15 @@
     },
     {
       "path": "../../packages/shared-types"
+    },
+    {
+      "path": "../../packages/cache"
+    },
+    {
+      "path": "../../packages/skills"
+    },
+    {
+      "path": "../../packages/project-memory"
     }
   ],
   "include": [

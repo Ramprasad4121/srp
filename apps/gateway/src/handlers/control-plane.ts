@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { sendError, sendJson } from "../http-utils.js";
 import { getPersistence } from "../runtime/session-manager.js";
 import { PersistenceManager } from "../runtime/persistence-manager.js";
+import { ProjectStore } from "@srp/project-memory";
 import { listSkills } from "../runtime/skills-catalog.js";
 import { deriveControlPlaneProjection } from "../runtime/control-plane.js";
 
@@ -11,7 +12,13 @@ async function getPersistenceOrFallback(rootDirectory: string): Promise<Persiste
   try {
     return await getPersistence();
   } catch {
-    const pm = new PersistenceManager(rootDirectory, ".srp");
+    const store = new ProjectStore(rootDirectory);
+    await store.init();
+    const active = await store.getActive();
+    if (!active) {
+      throw new Error("getPersistenceOrFallback: no active project in the registry.");
+    }
+    const pm = new PersistenceManager(rootDirectory, active.id, ".srp");
     await pm.init();
     return pm;
   }

@@ -17,6 +17,7 @@
     "@srp/sessions": "file:../../packages/sessions",
     "@srp/shared-types": "file:../../packages/shared-types",
     "@srp/skills": "file:../../packages/skills",
-    "@srp/cache": "file:../../packages/cache"
+    "@srp/cache": "file:../../packages/cache",
+    "@srp/project-memory": "file:../../packages/project-memory"
   }
 }

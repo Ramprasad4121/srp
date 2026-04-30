@@ -13,11 +13,11 @@ async function makeFreshRoot() {
 
 test("PersistenceManager stores and retrieves runs and artifacts", async () => {
   const root = await makeFreshRoot();
-  const pm = new PersistenceManager(root, ".srp");
+  const projectId = "proj_abc";
+  const pm = new PersistenceManager(root, projectId, ".srp");
   await pm.init();
 
   const runId = "run_123";
-  const projectId = "proj_abc";
   const sessionId = "sess_456";
 
   await pm.createRun(runId, projectId, sessionId);

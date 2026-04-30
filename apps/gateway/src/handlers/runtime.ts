@@ -20,7 +20,7 @@ export async function handlePostRuntimeStart(req: IncomingMessage, res: ServerRe
   const manifest = await loadOrCreateSetupManifest(config.rootDirectory);
   const providers = manifest.state.providers;
 
-  startSession(config.rootDirectory, providers);
+  await startSession(config.rootDirectory, providers);
   const state = getSessionState();
   sendJson(res, 200, state);
 }

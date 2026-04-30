@@ -1,7 +1,7 @@
 lockfileVersion: '9.0'
 
 settings:
-  autoInstallPeers: true
+  autoInstallPeers: false
   excludeLinksFromLockfile: false
 
 importers:
@@ -63,6 +63,12 @@ importers:
       '@srp/events':
         specifier: file:../../packages/events
         version: link:../../packages/events
+      '@srp/methodology':
+        specifier: file:../../packages/methodology
+        version: link:../../packages/methodology
+      '@srp/project-memory':
+        specifier: file:../../packages/project-memory
+        version: link:../../packages/project-memory
       '@srp/providers':
         specifier: file:../../packages/providers
         version: link:../../packages/providers
@@ -93,6 +99,9 @@ importers:
       '@srp/events':
         specifier: file:../../packages/events
         version: link:../../packages/events
+      '@srp/methodology':
+        specifier: file:../../packages/methodology
+        version: link:../../packages/methodology
       '@srp/providers':
         specifier: file:../../packages/providers
         version: link:../../packages/providers
@@ -206,6 +215,12 @@ importers:
         version: link:../shared-types
 
   packages/project-graph:
+    dependencies:
+      '@srp/shared-types':
+        specifier: file:../shared-types
+        version: link:../shared-types
+
+  packages/project-memory:
     dependencies:
       '@srp/shared-types':
         specifier: file:../shared-types

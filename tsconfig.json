@@ -14,6 +14,7 @@
     { "path": "./packages/agents" },
     { "path": "./packages/diagram-engine" },
     { "path": "./packages/benchmark" },
+    { "path": "./packages/project-memory" },
     { "path": "./apps/gateway" },
     { "path": "./apps/worker" },
     { "path": "./apps/cli" },
