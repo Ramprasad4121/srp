@@ -10,6 +10,7 @@
   "types": "dist/index.d.ts",
   "dependencies": {
     "@srp/config": "file:../../packages/config",
+    "@srp/project-memory": "file:../../packages/project-memory",
     "@srp/events": "file:../../packages/events",
     "@srp/gateway": "file:../gateway",
     "@srp/providers": "file:../../packages/providers",

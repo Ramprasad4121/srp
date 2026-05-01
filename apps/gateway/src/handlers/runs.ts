@@ -14,7 +14,9 @@ export async function handleGetRuns(
   config: { rootDirectory: string }
 ): Promise<void> {
   try {
-    const pm = await getPersistenceOrFallback(config.rootDirectory);
+    const url = new URL(req.url || "/", "http://localhost");
+    const projectId = url.searchParams.get("projectId") ?? undefined;
+    const pm = await getPersistenceOrFallback(config.rootDirectory, projectId);
     const runs = await pm.listRuns();
     sendJson(res, 200, runs);
   } catch (e: any) {
@@ -37,7 +39,7 @@ export async function handleGetRunDetail(
       return sendError(res, 400, "bad_request", "Missing runId");
     }
 
-    const pm = await getPersistenceOrFallback(config.rootDirectory);
+    const pm = await getPersistenceOrFallback(config.rootDirectory, url.searchParams.get("projectId") ?? undefined);
 
     if (!sub) {
       const run = await pm.getRun(runId);
@@ -104,9 +106,9 @@ export async function handleGetRunDetail(
   }
 }
 
-async function getPersistenceOrFallback(rootDirectory: string): Promise<PersistenceManager> {
+async function getPersistenceOrFallback(rootDirectory: string, projectId?: string): Promise<PersistenceManager> {
   try {
-    return await getPersistence();
+    return await getPersistence(projectId);
   } catch (e) {
     // try to read config to find output dir
     let outputDir = ".srp";
@@ -116,16 +118,19 @@ async function getPersistenceOrFallback(rootDirectory: string): Promise<Persiste
       outputDir = config.state?.workspace?.outputDirectory || ".srp";
     } catch (e2) {}
 
-    // Resolve the active project from the registry so the fallback reads
-    // (and writes) under the correct project-scoped runs directory rather
-    // than a phantom default.
-    const store = new ProjectStore(rootDirectory);
-    await store.init();
-    const active = await store.getActive();
-    if (!active) {
-      throw new Error("getPersistenceOrFallback: no active project in the registry.");
+    // If an explicit projectId was given, use it directly.
+    // Otherwise resolve from the on-disk registry.
+    let resolvedId = projectId;
+    if (!resolvedId) {
+      const store = new ProjectStore(rootDirectory);
+      await store.init();
+      const active = await store.getActive();
+      if (!active) {
+        throw new Error("getPersistenceOrFallback: no active project in the registry.");
+      }
+      resolvedId = active.id;
     }
-    const pm = new PersistenceManager(rootDirectory, active.id, outputDir);
+    const pm = new PersistenceManager(rootDirectory, resolvedId, outputDir);
     await pm.init();
     return pm;
   }

@@ -6,8 +6,10 @@ import { getSessionState, startSession, stopSession } from "../runtime/session-m
 // GET /api/runtime
 // ---------------------------------------------------------------------------
 
-export async function handleGetRuntime(_req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const state = getSessionState();
+export async function handleGetRuntime(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const url = new URL(req.url || "/", "http://localhost");
+  const projectId = url.searchParams.get("projectId") ?? undefined;
+  const state = getSessionState(projectId);
   sendJson(res, 200, state);
 }
 
@@ -16,11 +18,14 @@ export async function handleGetRuntime(_req: IncomingMessage, res: ServerRespons
 import { loadOrCreateSetupManifest } from "@srp/config";
 
 export async function handlePostRuntimeStart(req: IncomingMessage, res: ServerResponse, config: { rootDirectory: string }): Promise<void> {
-  await stopSession();
+  const url = new URL(req.url || "/", "http://localhost");
+  const projectId = url.searchParams.get("projectId") ?? undefined;
+
+  await stopSession(projectId);
   const manifest = await loadOrCreateSetupManifest(config.rootDirectory);
   const providers = manifest.state.providers;
 
-  await startSession(config.rootDirectory, providers);
-  const state = getSessionState();
+  await startSession(config.rootDirectory, providers, projectId);
+  const state = getSessionState(projectId);
   sendJson(res, 200, state);
 }

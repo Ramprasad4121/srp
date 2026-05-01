@@ -24,7 +24,7 @@ export async function handleCreateConversation(
     return;
   }
 
-  const sessionState = getSessionState();
+  const sessionState = getSessionState(body.projectId);
   const conversation = chatManager.create(
     body.title,
     body.runId ?? sessionState.runId ?? undefined,
@@ -66,7 +66,7 @@ export async function handleStreamingChat(
   }
 
   const conversation = chatManager.get(params.id)!;
-  const sessionState = getSessionState();
+  const sessionState = getSessionState(conversation.projectId ?? undefined);
   const manifest = await loadOrCreateSetupManifest(config.rootDirectory);
   const activeProvider = manifest.state.providers.find(p => p.enabled);
 
@@ -78,7 +78,7 @@ export async function handleStreamingChat(
   });
 
   try {
-    const grounding = await buildChatGroundingContext(conversation, sessionState, body.content);
+    const grounding = await buildChatGroundingContext(conversation, sessionState, body.content, conversation.projectId ?? undefined);
     const stream = streamChatResponse(
       conversation,
       sessionState,
@@ -129,14 +129,14 @@ export async function handleAddMessage(
 
   // Generate response
   const conversation = chatManager.get(params.id)!;
-  const sessionState = getSessionState();
+  const sessionState = getSessionState(conversation.projectId ?? undefined);
   const manifest = await loadOrCreateSetupManifest(config.rootDirectory);
-  
+
   // Choose first enabled provider
   const activeProvider = manifest.state.providers.find(p => p.enabled);
 
   try {
-    const grounding = await buildChatGroundingContext(conversation, sessionState, body.content);
+    const grounding = await buildChatGroundingContext(conversation, sessionState, body.content, conversation.projectId ?? undefined);
     const assistantResponse = await generateChatResponse(
       conversation,
       sessionState,

@@ -33,6 +33,9 @@ importers:
       '@srp/gateway':
         specifier: file:../gateway
         version: link:../gateway
+      '@srp/project-memory':
+        specifier: file:../../packages/project-memory
+        version: link:../../packages/project-memory
       '@srp/providers':
         specifier: file:../../packages/providers
         version: link:../../packages/providers

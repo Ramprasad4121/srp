@@ -9,6 +9,7 @@ import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { spawn } from "node:child_process";
 import { runSetupWizard } from "./onboarding/wizard.js";
+import { runProjectCommand } from "./commands/project.js";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -31,6 +32,8 @@ async function main() {
       await runDev(rootDir, bootstrap);
     } else if (command === "setup" || command === "configure" || command === "config" || command === "onboard") {
       await runSetupWizard(rootDir);
+    } else if (command === "project") {
+      await runProjectCommand(args.slice(1), rootDir);
     } else if (command === "gateway") {
       const subCommand = args[1];
       if (subCommand === "restart" || subCommand === "start") {
@@ -58,14 +61,18 @@ Usage:
   srp <command> [options]
 
 Commands:
-  audit             Start a methodology-faithful security audit of the current workspace
-  dev               Open the developer workbench for smart contract engineering
-  setup             Run the interactive onboarding and provider configuration
-  configure         Alias for setup
-  config            Alias for setup
-  onboard           Alias for setup (OpenClaw style)
-  gateway restart   Start or restart the SRP local host web UI
-  --help            Show this help message
+  audit                      Start a methodology-faithful security audit of the current workspace
+  dev                        Open the developer workbench for smart contract engineering
+  setup                      Run the interactive onboarding and provider configuration
+  configure                  Alias for setup
+  config                     Alias for setup
+  onboard                    Alias for setup (OpenClaw style)
+  gateway restart            Start or restart the SRP local host web UI
+  project list               List all projects
+  project current            Show the active project
+  project use <projectId>    Switch to an existing project
+  project create <name>      Create a new project
+  --help                     Show this help message
   `);
 }
 

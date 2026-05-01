@@ -106,14 +106,15 @@ function derivePreferredKinds(queryTokens: readonly string[]): ReadonlySet<Artif
 export async function buildChatGroundingContext(
   conversation: Conversation,
   sessionState: RuntimeSessionState,
-  userQuestion: string
+  userQuestion: string,
+  projectId?: string
 ): Promise<ChatGroundingContext> {
   const runId = conversation.runId ?? sessionState.runId ?? null;
   if (!runId) {
     return { runId: null, snippets: [], citations: [] };
   }
 
-  const persistence = await getPersistence();
+  const persistence = await getPersistence(projectId);
   const run = await persistence.getRun(runId);
   if (!run || run.artifacts.length === 0) {
     return { runId, snippets: [], citations: [] };
