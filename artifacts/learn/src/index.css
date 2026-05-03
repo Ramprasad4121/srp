@@ -68,82 +68,77 @@
 }
 
 :root {
-  --button-outline: rgba(255,255,255,.08);
-  --badge-outline: rgba(255,255,255,.04);
-  --opaque-button-border-intensity: 6;
-  --elevate-1: rgba(255,255,255,.03);
-  --elevate-2: rgba(255,255,255,.06);
+  --button-outline: rgba(0,0,0,.08);
+  --badge-outline: rgba(0,0,0,.04);
+  --opaque-button-border-intensity: -4;
+  --elevate-1: rgba(0,0,0,.02);
+  --elevate-2: rgba(0,0,0,.04);
 
-  --background: 0 0% 3%;
-  --foreground: 0 0% 91%;
-  --border: 0 0% 11%;
-  --input: 0 0% 12%;
-  --ring: 0 0% 60%;
+  --background: 0 0% 100%;
+  --foreground: 0 0% 4%;
+  --border: 0 0% 87%;
+  --input: 0 0% 93%;
+  --ring: 0 0% 40%;
 
-  --card: 0 0% 5%;
-  --card-foreground: 0 0% 91%;
-  --card-border: 0 0% 13%;
+  --card: 0 0% 99%;
+  --card-foreground: 0 0% 4%;
+  --card-border: 0 0% 87%;
 
-  --sidebar: 0 0% 4%;
-  --sidebar-foreground: 0 0% 91%;
-  --sidebar-border: 0 0% 11%;
-  --sidebar-primary: 0 0% 88%;
-  --sidebar-primary-foreground: 0 0% 5%;
-  --sidebar-accent: 0 0% 8%;
-  --sidebar-accent-foreground: 0 0% 91%;
-  --sidebar-ring: 0 0% 60%;
+  --sidebar: 0 0% 98%;
+  --sidebar-foreground: 0 0% 4%;
+  --sidebar-border: 0 0% 87%;
+  --sidebar-primary: 0 0% 4%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-primary-border: hsl(0 0% 4%);
+  --sidebar-accent: 0 0% 94%;
+  --sidebar-accent-foreground: 0 0% 4%;
+  --sidebar-accent-border: hsl(0 0% 94%);
+  --sidebar-ring: 0 0% 40%;
 
-  --popover: 0 0% 5%;
-  --popover-foreground: 0 0% 91%;
-  --popover-border: 0 0% 13%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 4%;
+  --popover-border: 0 0% 87%;
 
-  --primary: 0 0% 91%;
-  --primary-foreground: 0 0% 5%;
+  --primary: 0 0% 4%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 0 0% 8%;
-  --secondary-foreground: 0 0% 91%;
+  --secondary: 0 0% 94%;
+  --secondary-foreground: 0 0% 4%;
 
-  --muted: 0 0% 7%;
-  --muted-foreground: 0 0% 33%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 44%;
 
-  --accent: 142 70% 45%;
-  --accent-foreground: 0 0% 5%;
+  --accent: 142 60% 40%;
+  --accent-foreground: 0 0% 100%;
 
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
 
-  --chart-1: 0 0% 91%;
-  --chart-2: 142 70% 45%;
-  --chart-3: 38 92% 55%;
-  --chart-4: 213 80% 55%;
-  --chart-5: 280 70% 60%;
+  --chart-1: 0 0% 4%;
+  --chart-2: 142 60% 40%;
+  --chart-3: 38 92% 48%;
+  --chart-4: 213 80% 50%;
+  --chart-5: 280 70% 55%;
 
   --app-font-sans: 'Inter', system-ui, sans-serif;
   --app-font-serif: 'Inter', system-ui, sans-serif;
   --app-font-mono: 'JetBrains Mono', monospace;
   --radius: 2px;
 
-  --shadow-2xs: 0px 1px 2px 0px rgba(0,0,0,.6);
-  --shadow-xs: 0px 2px 4px 0px rgba(0,0,0,.6);
-  --shadow-sm: 0px 2px 8px 0px rgba(0,0,0,.6);
-  --shadow: 0px 4px 16px 0px rgba(0,0,0,.6);
-  --shadow-md: 0px 8px 24px 0px rgba(0,0,0,.7);
-  --shadow-lg: 0px 16px 48px 0px rgba(0,0,0,.7);
-  --shadow-xl: 0px 24px 64px 0px rgba(0,0,0,.8);
-  --shadow-2xl: 0px 32px 80px 0px rgba(0,0,0,.8);
+  --shadow-2xs: 0px 1px 2px 0px rgba(0,0,0,.06);
+  --shadow-xs: 0px 2px 4px 0px rgba(0,0,0,.06);
+  --shadow-sm: 0px 2px 8px 0px rgba(0,0,0,.07);
+  --shadow: 0px 4px 16px 0px rgba(0,0,0,.07);
+  --shadow-md: 0px 8px 24px 0px rgba(0,0,0,.08);
+  --shadow-lg: 0px 16px 48px 0px rgba(0,0,0,.09);
+  --shadow-xl: 0px 24px 64px 0px rgba(0,0,0,.10);
+  --shadow-2xl: 0px 32px 80px 0px rgba(0,0,0,.12);
 
-  --primary-border: hsl(var(--primary));
-  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --secondary-border: hsl(var(--secondary));
-  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --muted-border: hsl(var(--muted));
-  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --accent-border: hsl(var(--accent));
-  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --destructive-border: hsl(var(--destructive));
-  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --sidebar-primary-border: hsl(var(--sidebar-primary));
-  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --primary-border: hsl(0 0% 4%);
+  --secondary-border: hsl(0 0% 88%);
+  --muted-border: hsl(0 0% 90%);
+  --accent-border: hsl(142 60% 40%);
+  --destructive-border: hsl(0 72% 51%);
 }
 
 @layer base {
@@ -162,12 +157,12 @@
 
 /* ─── Dot grid background ─────────────────────────────── */
 .dot-grid {
-  background-image: radial-gradient(circle, hsl(0 0% 20%) 1px, transparent 1px);
+  background-image: radial-gradient(circle, hsl(0 0% 76%) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
 .dot-grid-sm {
-  background-image: radial-gradient(circle, hsl(0 0% 15%) 1px, transparent 1px);
+  background-image: radial-gradient(circle, hsl(0 0% 82%) 1px, transparent 1px);
   background-size: 16px 16px;
 }
 
@@ -215,7 +210,7 @@
 }
 .count-up { animation: count-up 0.5s ease-out forwards; }
 
-/* ─── Avatar glow (minimal, only for avatar orb) ─────── */
+/* ─── Avatar ring ─────────────────────────────────────── */
 .avatar-ring {
   box-shadow: 0 0 0 1px hsl(var(--border)), 0 0 0 3px hsl(var(--background));
 }
@@ -267,7 +262,7 @@
   gap: 0.5rem;
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
-  border: 1px solid hsl(var(--border));
+  border: 1px solid hsl(var(--primary));
   font-family: var(--app-font-mono);
   font-size: 0.8rem;
   font-weight: 500;
@@ -275,7 +270,7 @@
   cursor: pointer;
   transition: opacity 0.15s;
 }
-.btn-arrow:hover { opacity: 0.85; }
+.btn-arrow:hover { opacity: 0.82; }
 .btn-arrow:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* ─── Bordered card ───────────────────────────────────── */
@@ -299,10 +294,6 @@
   .hover-elevate:hover:not(.no-default-hover-elevate)::after,
   .active-elevate:active:not(.no-default-active-elevate)::after {
     background-color: var(--elevate-1);
-  }
-  .toggle-elevate::before, .toggle-elevate-2::before {
-    content: ""; pointer-events: none; position: absolute;
-    inset: 0px; border-radius: inherit; z-index: -1;
   }
   .hover-elevate-2:not(.no-default-hover-elevate)::after,
   .active-elevate-2:not(.no-default-active-elevate)::after {
