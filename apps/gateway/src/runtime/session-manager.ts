@@ -1,13 +1,12 @@
 import type {
   ArtifactKind,
-  MethodologyPhase, 
-  PhaseStatus, 
-  PhaseState, 
-  ProjectMemory,
-  SetupIdentity,
-  RuntimeSessionState, 
+  MethodologyPhase,
+  PhaseStatus,
+  PhaseState,
+  RuntimeSessionState,
   ProviderSelection,
-  RunManifest
+  RunManifest,
+  SetupIdentity
 } from "@srp/shared-types";
 import { randomUUID } from "node:crypto";
 import { ProjectStore, DEFAULT_PROJECT_ID } from "@srp/project-memory";
@@ -50,46 +49,10 @@ const TARGET_PHASES: readonly MethodologyPhase[] = [
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-let activeSessionId: string | null = null;
-let activeRunId: string | null = null;
-let isRunning = false;
-let phaseStates: PhaseState[] = [];
-let activeAbortController: AbortController | null = null;
-let activePipelineTask: Promise<void> | null = null;
-let liveRunCreatedAt: string | null = null;
-
-let persistence: PersistenceManager | null = null;
-let artifactWriter: RuntimeArtifactWriter | null = null;
-let liveArtifacts: ArtifactMetadata[] = [];
-let liveRunStatus: SessionStatus = "idle";
-let liveFailureDetail: string | undefined;
-let activeProjectId: string | null = null;
-let activeIdentity: SetupIdentity | undefined;
-let activeProjectMemory: ProjectMemory | undefined;
-const runtimeMemory: SessionRuntimeMemory = {
-  currentPhaseIndex: -1,
-  pendingDiscoveryRegistry: undefined,
-  pendingWorkspaceAnalysis: undefined,
-  pendingCodebaseContext: undefined,
-  pendingIntentSummary: undefined,
-  pendingArchitectureSummary: undefined,
-  pendingProtocolDiagram: undefined,
-  pendingFunctionMap: undefined,
-  pendingEntryExitMatrix: undefined,
-  pendingInvariantRegistry: undefined,
-  pendingHypothesisRegistry: undefined,
-  pendingVerificationPlan: undefined,
-  pendingToolchainExecution: undefined,
-  pendingEconomicAnalysis: undefined,
-  pendingCrossContractAnalysis: undefined,
-  pendingFindingRegistry: undefined,
-  pendingRemediationPlan: undefined,
-  pendingFormalReport: undefined
-};
-
-function getCurrentPhase(): MethodologyPhase | null {
-  return runtimeMemory.currentPhaseIndex >= 0 && runtimeMemory.currentPhaseIndex < TARGET_PHASES.length
-    ? (TARGET_PHASES[runtimeMemory.currentPhaseIndex] ?? null)
+function getCurrentPhase(entry: RuntimeEntry): MethodologyPhase | null {
+  const idx = entry.runtimeMemory.currentPhaseIndex;
+  return idx >= 0 && idx < TARGET_PHASES.length
+    ? (TARGET_PHASES[idx] ?? null)
     : null;
 }
 
@@ -103,6 +66,7 @@ function emptySessionState(): RuntimeSessionState {
     isRunning: false,
     sessionId: null,
     runId: null,
+    projectId: null,
     currentPhase: null,
     phases: [],
     agentRegistry: { agents: [] } as any,
@@ -128,33 +92,33 @@ export function getSessionState(projectId?: string): RuntimeSessionState {
   }
 
   const liveManifest: RunManifest | null =
-    activeRunId && activeSessionId && activeProjectId
+    entry.activeRunId && entry.activeSessionId
       ? {
-          runId: activeRunId,
-          projectId: activeProjectId,
-          sessionId: activeSessionId,
-          status: liveRunStatus,
-          createdAt: liveRunCreatedAt ?? new Date().toISOString(),
-          ...(getCurrentPhase() ? { currentPhase: getCurrentPhase()! } : {}),
-          artifacts: [...liveArtifacts]
+          runId: entry.activeRunId,
+          projectId: entry.projectId,
+          sessionId: entry.activeSessionId,
+          status: entry.liveRunStatus,
+          createdAt: entry.liveRunCreatedAt ?? new Date().toISOString(),
+          ...(getCurrentPhase(entry) ? { currentPhase: getCurrentPhase(entry)! } : {}),
+          artifacts: [...entry.liveArtifacts]
         }
       : null;
 
   const state: any = {
-    hasSession: activeSessionId !== null,
-    isRunning,
-    sessionId: activeSessionId,
-    runId: activeRunId,
-    projectId: activeProjectId,
-    ...(activeIdentity ? { identity: activeIdentity } : {}),
-    ...(activeProjectMemory ? { projectMemory: activeProjectMemory } : {}),
-    currentPhase: getCurrentPhase(),
-    phases: [...phaseStates],
-    agentRegistry: agentRegistry.getState(),
-    knowledgeBus: knowledgeBus.getState(),
-    auditRoom: auditRoomProjector.snapshot(
-      phaseStates,
-      getCurrentPhase()
+    hasSession: entry.activeSessionId !== null,
+    isRunning: entry.isRunning,
+    sessionId: entry.activeSessionId,
+    runId: entry.activeRunId,
+    projectId: entry.projectId,
+    ...(entry.activeIdentity ? { identity: entry.activeIdentity } : {}),
+    ...(entry.activeProjectMemory ? { projectMemory: entry.activeProjectMemory } : {}),
+    currentPhase: getCurrentPhase(entry),
+    phases: [...entry.phaseStates],
+    agentRegistry: entry.agentRegistry.getState(),
+    knowledgeBus: entry.knowledgeBus.getState(),
+    auditRoom: entry.auditRoomProjector.snapshot(
+      entry.phaseStates,
+      getCurrentPhase(entry)
     ),
     ...(liveManifest
       ? {
@@ -214,33 +178,23 @@ export async function startSession(
   rootDirectory: string,
   providers?: readonly ProviderSelection[],
   options?: {
-    readonly projectId?: string;
-    readonly identity?: SetupIdentity;
-    readonly outputDirectory?: string;
+    readonly projectId?: string | undefined;
+    readonly identity?: SetupIdentity | undefined;
+    readonly outputDirectory?: string | undefined;
   }
-): void {
-  if (isRunning) return; // Prevent double start
+): Promise<void> {
+  const resolvedProjectId = await resolveProjectId(rootDirectory, options?.projectId);
+  const entry = runtimeRegistry.getOrCreate(resolvedProjectId);
 
-  // Initialize persistence
+  if (entry.isRunning) return; // Prevent double start within this project.
+
+  // Initialize project-scoped persistence.
   const outputDirectory = options?.outputDirectory ?? ".srp";
-  persistence = new PersistenceManager(rootDirectory, outputDirectory);
-  artifactWriter = new RuntimeArtifactWriter(persistence, auditRoomProjector);
-
-  // Initialize new session
-  activeSessionId = `session_${randomUUID()}`;
-  activeRunId = `run_${randomUUID()}`;
-  activeProjectId = options?.projectId ?? "default-project";
-  activeIdentity = options?.identity;
-  isRunning = true;
-  liveRunCreatedAt = new Date().toISOString();
-  activeAbortController = new AbortController();
-  resetRuntimeMemory();
-  liveArtifacts = [];
-  liveRunStatus = "running";
-  liveFailureDetail = undefined;
-  activeProjectMemory = undefined;
+  entry.persistence = new PersistenceManager(rootDirectory, resolvedProjectId, outputDirectory);
+  entry.artifactWriter = new RuntimeArtifactWriter(entry.persistence, entry.auditRoomProjector);
 
   // Initialize a new session for this project.
+  entry.activeIdentity = options?.identity;
   entry.activeSessionId = `session_${randomUUID()}`;
   entry.activeRunId = `run_${randomUUID()}`;
   entry.isRunning = true;
@@ -250,6 +204,7 @@ export async function startSession(
   entry.liveArtifacts = [];
   entry.liveRunStatus = "running";
   entry.liveFailureDetail = undefined;
+  entry.activeProjectMemory = undefined;
 
   entry.agentRegistry.clear();
   entry.knowledgeBus.clear();
@@ -260,46 +215,51 @@ export async function startSession(
     status: "pending" as PhaseStatus
   }));
 
-  // Kick off background execution loop
-  const activeProvider = providers?.find(p => p.enabled) || undefined;
-  activePipelineTask = (async () => {
-    await persistence!.init();
-    activeProjectMemory = await persistence!.loadOrCreateProjectMemory(
-      activeIdentity ?? {
+  // Kick off background execution loop. Closures bind to *this* entry
+  // so the workflow callbacks never read or write another project's state.
+  const activeProvider = providers?.find((p) => p.enabled) || undefined;
+  entry.activePipelineTask = (async () => {
+    await entry.persistence!.init();
+    entry.activeProjectMemory = await entry.persistence!.loadOrCreateProjectMemory(
+      entry.activeIdentity ?? {
         userProfile: "builder",
         goal: "build",
         department: "build"
       }
     );
-    activeProjectId = activeProjectMemory.projectId;
+    // Overwrite the resolved ID if the active project memory gives us something else
+    // But honestly, the identity is what creates the project memory.
 
     await runAuditWorkflow({
-      projectId: activeProjectId,
-      runId: activeRunId!,
-      sessionId: activeSessionId!,
+      projectId: resolvedProjectId,
+      runId: entry.activeRunId!,
+      sessionId: entry.activeSessionId!,
       rootDirectory,
       activeProvider,
-      signal: activeAbortController!.signal,
-      phases: phaseStates,
-      persistence: persistence!,
-      artifactWriter: artifactWriter!,
-      agentRegistry,
-      knowledgeBus,
-      runtimeMemory,
-      updatePhaseStatus,
-      persistArtifact: persistArtifactAndEmit
+      signal: entry.activeAbortController!.signal,
+      phases: entry.phaseStates,
+      persistence: entry.persistence!,
+      artifactWriter: entry.artifactWriter!,
+      agentRegistry: entry.agentRegistry,
+      knowledgeBus: entry.knowledgeBus,
+      runtimeMemory: entry.runtimeMemory,
+      updatePhaseStatus: (index, status, _projectId, runId) =>
+        updatePhaseStatusFor(entry, index, status, runId),
+      persistArtifact: (runId, projectIdArg, phase, kind, title, payload) =>
+        persistArtifactAndEmitFor(entry, runId, projectIdArg, phase, kind, title, payload)
     });
   })().catch((err) => {
-    if (!activeAbortController?.signal.aborted) {
-      liveRunStatus = "failed";
-      liveFailureDetail = err instanceof Error ? err.message : String(err);
-      console.error("Pipeline failed:", err);
-    }
-  }).finally(() => {
-    isRunning = false;
-    activeAbortController = null;
-  });
-  void activePipelineTask;
+      if (!entry.activeAbortController?.signal.aborted) {
+        entry.liveRunStatus = "failed";
+        entry.liveFailureDetail = err instanceof Error ? err.message : String(err);
+        console.error(`Pipeline failed for project ${resolvedProjectId}:`, err);
+      }
+    })
+    .finally(() => {
+      entry.isRunning = false;
+      entry.activeAbortController = null;
+    });
+  void entry.activePipelineTask;
 }
 
 /**
@@ -387,12 +347,17 @@ async function persistArtifactAndEmitFor(
   title: string,
   payload: unknown
 ): Promise<void> {
-  if (!artifactWriter) {
-    return;
-  }
-  const metadata = await artifactWriter.persistArtifact(runId, projectId, phase, kind, title, payload);
-  liveArtifacts = [...liveArtifacts, metadata];
-  if (persistence) {
-    activeProjectMemory = await persistence.getProjectMemory() ?? activeProjectMemory;
+  if (!entry.artifactWriter) return;
+  const metadata = await entry.artifactWriter.persistArtifact(
+    runId,
+    projectId,
+    phase,
+    kind,
+    title,
+    payload
+  );
+  entry.liveArtifacts = [...entry.liveArtifacts, metadata];
+  if (entry.persistence) {
+    entry.activeProjectMemory = await entry.persistence.getProjectMemory() ?? entry.activeProjectMemory;
   }
 }
