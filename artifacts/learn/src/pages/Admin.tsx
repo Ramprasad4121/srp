@@ -13,6 +13,7 @@ interface CustomTopic {
 
 const ADMIN_KEY = "srp_admin_auth";
 const TOPICS_KEY = "srp_custom_topics";
+// Demo-only local PIN — not server-side auth. Change this to your own value.
 const PASSWORD = "srp2024";
 
 interface Props {
@@ -178,7 +179,7 @@ function AdminPanel({ onBack }: { onBack: () => void }) {
         <div>
           <h1 className="text-3xl font-bold text-foreground tracking-tight">Manage Topics</h1>
           <p className="text-sm text-muted-foreground mt-1.5 font-mono">
-            Add new learning topics — they appear instantly in the app for all users.
+            Add custom learning topics — they appear in the Dashboard on this device.
           </p>
         </div>
 
