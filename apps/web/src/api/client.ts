@@ -3,6 +3,7 @@ import type {
   RuntimeSessionState, 
   SetupManifest, 
   RuntimeMode,
+  SetupIdentity,
   MethodologyPhase,
   RunManifest,
   AuditRoomProjection,
@@ -62,10 +63,10 @@ export class GatewayClient {
     return this.request<FactoryControlPlaneProjection>("/control-plane");
   }
 
-  async startRuntime(mode: RuntimeMode): Promise<void> {
+  async startRuntime(_mode?: RuntimeMode): Promise<void> {
     await this.request("/runtime/start", {
       method: "POST",
-      body: JSON.stringify({ mode }),
+      body: JSON.stringify({}),
       headers: { "Content-Type": "application/json" }
     });
   }
@@ -88,6 +89,19 @@ export class GatewayClient {
       const data = await this.request<any>("/setup/role", {
         method: "POST",
         body: JSON.stringify({ role }),
+        headers: { "Content-Type": "application/json" }
+      });
+      return { ok: true, data };
+    } catch (e: any) {
+      return { ok: false, data: null, error: e.message };
+    }
+  }
+
+  async setIdentity(identity: SetupIdentity): Promise<{ok: boolean, data: any, error?: string}> {
+    try {
+      const data = await this.request<any>("/setup/identity", {
+        method: "POST",
+        body: JSON.stringify({ identity }),
         headers: { "Content-Type": "application/json" }
       });
       return { ok: true, data };

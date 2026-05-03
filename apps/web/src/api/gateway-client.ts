@@ -3,6 +3,7 @@ import type {
   InternetMode,
   ProviderSelection,
   RuntimeMode,
+  SetupIdentity,
   SetupManifest
 } from "@srp/shared-types";
 
@@ -88,6 +89,14 @@ export function createGatewayClient(baseUrl: string) {
       return apiRequest<SetupResponse>(baseUrl, "/api/setup/role", {
         method: "POST",
         body: JSON.stringify({ role })
+      });
+    },
+
+    /** POST /api/setup/identity */
+    async setIdentity(identity: SetupIdentity): Promise<ApiResult<SetupResponse>> {
+      return apiRequest<SetupResponse>(baseUrl, "/api/setup/identity", {
+        method: "POST",
+        body: JSON.stringify({ identity })
       });
     },
 

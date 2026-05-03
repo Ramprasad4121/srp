@@ -5,10 +5,11 @@ import type {
   ArtifactMetadata, 
   ArtifactKind, 
   MethodologyPhase,
+  ProjectMemory,
   SessionStatus,
   RunEventLogEntry
 } from "@srp/shared-types";
-import { projectRunsDir } from "@srp/project-memory";
+import { createDefaultProjectMemory } from "@srp/config";
 
 /**
  * Project-scoped run persistence.
@@ -24,36 +25,54 @@ import { projectRunsDir } from "@srp/project-memory";
  */
 export class PersistenceManager {
   private readonly runsDir: string;
-  readonly projectId: string;
+  private readonly projectMemoryPath: string;
 
-  constructor(
-    rootDirectory: string,
-    projectId: string,
-    outputDirectory: string = ".srp"
-  ) {
-    if (!projectId || projectId.trim().length === 0) {
-      throw new Error("PersistenceManager requires a non-empty projectId.");
-    }
-    this.projectId = projectId;
-    // We use the path helper from @srp/project-memory when the caller is
-    // happy with the standard `.srp` location, and fall back to a manual
-    // join when they pass a custom outputDirectory (e.g. tests using
-    // `.srp-test`). Both shapes share the same `<root>/<output>/projects/<id>/runs`.
-    if (outputDirectory === ".srp") {
-      this.runsDir = projectRunsDir(rootDirectory, projectId);
-    } else {
-      this.runsDir = join(
-        rootDirectory,
-        outputDirectory,
-        "projects",
-        projectId,
-        "runs"
-      );
-    }
+  constructor(rootDirectory: string, outputDirectory: string = ".srp") {
+    this.runsDir = join(rootDirectory, outputDirectory, "runs");
+    this.projectMemoryPath = join(rootDirectory, outputDirectory, "project-memory.json");
   }
 
   async init(): Promise<void> {
     await mkdir(this.runsDir, { recursive: true });
+  }
+
+  async loadOrCreateProjectMemory(identity: ProjectMemory["identity"]): Promise<ProjectMemory> {
+    const existing = await this.getProjectMemory();
+    if (existing) {
+      if (
+        existing.identity.userProfile === identity.userProfile &&
+        existing.identity.goal === identity.goal &&
+        existing.identity.department === identity.department
+      ) {
+        return existing;
+      }
+
+      const updated: ProjectMemory = {
+        ...existing,
+        identity,
+        updatedAt: new Date().toISOString()
+      };
+      await this.saveProjectMemory(updated);
+      return updated;
+    }
+
+    const created = createDefaultProjectMemory(identity);
+    await this.saveProjectMemory(created);
+    return created;
+  }
+
+  async getProjectMemory(): Promise<ProjectMemory | null> {
+    try {
+      const content = await readFile(this.projectMemoryPath, "utf8");
+      return JSON.parse(content) as ProjectMemory;
+    } catch {
+      return null;
+    }
+  }
+
+  async saveProjectMemory(projectMemory: ProjectMemory): Promise<void> {
+    const data = JSON.parse(JSON.stringify(projectMemory));
+    await writeFile(this.projectMemoryPath, JSON.stringify(data, null, 2), "utf8");
   }
 
   async createRun(runId: string, projectId: string, sessionId: string): Promise<RunManifest> {
@@ -71,6 +90,16 @@ export class PersistenceManager {
     };
 
     await this.saveManifest(manifest);
+    const projectMemory = await this.getProjectMemory();
+    if (projectMemory) {
+      await this.saveProjectMemory({
+        ...projectMemory,
+        activeRunId: runId,
+        latestRunId: runId,
+        updatedAt: new Date().toISOString(),
+        runIds: [...new Set([...projectMemory.runIds, runId])]
+      });
+    }
     return manifest;
   }
 
@@ -128,6 +157,16 @@ export class PersistenceManager {
         artifacts: [...manifest.artifacts, metadata]
       };
       await this.saveManifest(updated);
+    }
+
+    const projectMemory = await this.getProjectMemory();
+    if (projectMemory) {
+      await this.saveProjectMemory({
+        ...projectMemory,
+        latestRunId: runId,
+        updatedAt: new Date().toISOString(),
+        artifactIds: [...new Set([...projectMemory.artifactIds, artifactId])]
+      });
     }
 
     return metadata;
