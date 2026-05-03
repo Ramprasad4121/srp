@@ -1,6 +1,5 @@
 import type { AppState } from "@/lib/store";
 import { LEARNING_PATHS } from "@/lib/curriculum";
-import { ChevronRight, Lock } from "lucide-react";
 
 interface Props {
   state: AppState;
@@ -16,31 +15,51 @@ export default function Paths({ state, onNavigate }: Props) {
     return { done, total: path.lessons.length, pct: Math.round((done / path.lessons.length) * 100) };
   };
 
-  const isPathAccessible = (path: typeof LEARNING_PATHS[0]) => {
+  const isAccessible = (path: typeof LEARNING_PATHS[0]) => {
     if (path.level === "beginner") return true;
     if (path.level === "intermediate") return profile.xp >= 500;
     return profile.xp >= 1500;
   };
 
-  const chainFilter = profile.chain;
-
   const filtered = LEARNING_PATHS.filter(p =>
-    chainFilter === "both" ? true : p.chain === chainFilter || p.chain === "both"
+    profile.chain === "both" ? true : p.chain === profile.chain || p.chain === "both"
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-4">
       <div>
-        <h2 className="text-2xl font-serif font-bold text-foreground">Learning Paths</h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Structured journeys from zero to web3 builder. Complete lessons to unlock the next path.
+        <h2 className="text-xl font-bold text-foreground">Learning Paths</h2>
+        <p className="font-mono text-xs text-muted-foreground mt-1">
+          Structured journeys from zero to web3 builder.
         </p>
       </div>
 
-      <div className="space-y-4">
+      {/* Stats strip */}
+      <div className="border border-border divide-x divide-border flex">
+        <div className="flex-1 p-3">
+          <div className="font-mono text-lg font-bold text-foreground">{filtered.length}</div>
+          <div className="label-mono mt-1">Paths</div>
+        </div>
+        <div className="flex-1 p-3">
+          <div className="font-mono text-lg font-bold text-foreground">
+            {filtered.reduce((acc, p) => acc + p.lessons.length, 0)}
+          </div>
+          <div className="label-mono mt-1">Lessons</div>
+        </div>
+        <div className="flex-1 p-3">
+          <div className="font-mono text-lg font-bold text-foreground">
+            {filtered.reduce((acc, p) => acc + p.totalXP, 0).toLocaleString()}
+          </div>
+          <div className="label-mono mt-1">Total XP</div>
+        </div>
+      </div>
+
+      {/* Path list */}
+      <div className="border border-border divide-y divide-border">
         {filtered.map(path => {
           const { done, total, pct } = getPathProgress(path.id);
-          const accessible = isPathAccessible(path);
+          const accessible = isAccessible(path);
+          const xpNeeded = path.level === "intermediate" ? 500 : 1500;
 
           return (
             <button
@@ -48,60 +67,53 @@ export default function Paths({ state, onNavigate }: Props) {
               data-testid={`path-${path.id}`}
               onClick={() => accessible && onNavigate(`path/${path.id}`)}
               disabled={!accessible}
-              className={`w-full rounded-2xl border p-5 text-left transition-all duration-200 group ${
-                accessible
-                  ? "bg-card border-border hover:border-primary/60 hover:shadow-sm cursor-pointer"
-                  : "bg-card/50 border-border/50 cursor-not-allowed opacity-60"
+              className={`w-full bg-card p-5 text-left transition-colors duration-150 ${
+                accessible ? "hover:bg-muted cursor-pointer group" : "opacity-40 cursor-not-allowed"
               }`}
             >
               <div className="flex items-start gap-4">
-                <div className={`w-14 h-14 shrink-0 rounded-xl bg-gradient-to-br ${path.color} flex items-center justify-center text-2xl font-bold text-white`}>
-                  {path.icon}
-                </div>
+                {/* Icon */}
+                <span className="font-mono text-2xl shrink-0 mt-0.5">{path.icon}</span>
+
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className={`font-bold text-foreground group-hover:text-primary transition-colors ${accessible ? "" : "opacity-60"}`}>
-                        {path.title}
-                      </h3>
+                      <h3 className="font-semibold text-foreground text-sm">{path.title}</h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          path.level === "beginner" ? "bg-green-500/20 text-green-400" :
-                          path.level === "intermediate" ? "bg-yellow-500/20 text-yellow-400" :
-                          "bg-red-500/20 text-red-400"
+                        <span className={`font-mono text-[10px] tracking-widest uppercase px-1.5 py-0.5 border ${
+                          path.level === "beginner"     ? "border-accent/40 text-accent" :
+                          path.level === "intermediate" ? "border-amber-500/40 text-amber-400" :
+                                                          "border-destructive/40 text-destructive"
                         }`}>
                           {path.level}
                         </span>
-                        <span className="text-xs text-muted-foreground">{path.totalXP} XP · {total} lessons</span>
+                        <span className="font-mono text-[10px] text-muted-foreground">{path.totalXP} XP · {total} lessons</span>
                       </div>
                     </div>
-                    {!accessible ? (
-                      <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-                    )}
+                    {accessible
+                      ? <span className="font-mono text-sm text-muted-foreground group-hover:text-foreground transition-colors shrink-0">→</span>
+                      : <span className="font-mono text-[10px] text-muted-foreground shrink-0">[ LOCKED ]</span>
+                    }
                   </div>
 
-                  <p className="text-sm text-muted-foreground mt-2">{path.description}</p>
+                  <p className="font-mono text-xs text-muted-foreground mt-2 leading-relaxed">{path.description}</p>
 
-                  {accessible && (
+                  {accessible ? (
                     <div className="mt-3 space-y-1">
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{done}/{total} lessons complete</span>
-                        <span>{pct}%</span>
+                      <div className="flex justify-between">
+                        <span className="font-mono text-[10px] text-muted-foreground">{done}/{total} complete</span>
+                        <span className="font-mono text-[10px] text-muted-foreground">{pct}%</span>
                       </div>
-                      <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                      <div className="h-px bg-border overflow-hidden">
                         <div
-                          className={`h-full bg-gradient-to-r ${path.color} rounded-full transition-all duration-700`}
+                          className="h-full bg-foreground/60 transition-all duration-700"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
                     </div>
-                  )}
-
-                  {!accessible && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Requires {path.level === "intermediate" ? "500" : "1,500"} XP to unlock
+                  ) : (
+                    <p className="font-mono text-[10px] text-muted-foreground mt-2">
+                      Requires {xpNeeded.toLocaleString()} XP — you have {profile.xp.toLocaleString()}
                     </p>
                   )}
                 </div>

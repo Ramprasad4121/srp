@@ -1,58 +1,54 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { UserProfile, Avatar } from "@/lib/store";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 interface Props {
   onComplete: (profile: UserProfile) => void;
 }
 
-const AVATAR_APPEARANCES: { id: Avatar["appearance"]; label: string; colors: string; symbol: string }[] = [
-  { id: "nebula", label: "Nebula", colors: "from-violet-500 to-indigo-600", symbol: "✦" },
-  { id: "flame", label: "Flame", colors: "from-orange-500 to-red-600", symbol: "◈" },
-  { id: "crystal", label: "Crystal", colors: "from-cyan-400 to-blue-600", symbol: "◆" },
-  { id: "aurora", label: "Aurora", colors: "from-green-400 to-teal-500", symbol: "◉" },
+const AVATAR_OPTIONS: { id: Avatar["appearance"]; label: string; color: string; symbol: string }[] = [
+  { id: "nebula",  label: "Nebula",  color: "#7c3aed", symbol: "✦" },
+  { id: "flame",   label: "Flame",   color: "#ea580c", symbol: "◈" },
+  { id: "crystal", label: "Crystal", color: "#0ea5e9", symbol: "◆" },
+  { id: "aurora",  label: "Aurora",  color: "#16a34a", symbol: "◉" },
 ];
 
-const AVATAR_PERSONALITIES: { id: Avatar["personality"]; label: string; desc: string }[] = [
-  { id: "patient", label: "Patient Guide", desc: "Gentle, step-by-step. Never rushes." },
-  { id: "energetic", label: "Energy Boost", desc: "High-octane. Pushes you to the limit." },
-  { id: "socratic", label: "Thought Provoker", desc: "Teaches through questions and discovery." },
-  { id: "mentor", label: "Seasoned Mentor", desc: "Real-world war stories and hard-won wisdom." },
+const PERSONALITIES: { id: Avatar["personality"]; label: string; desc: string }[] = [
+  { id: "patient",   label: "Patient Guide",      desc: "Step-by-step. Never rushes you." },
+  { id: "energetic", label: "Energy Boost",        desc: "High-octane. Pushes you forward." },
+  { id: "socratic",  label: "Thought Provoker",    desc: "Teaches through questions." },
+  { id: "mentor",    label: "Seasoned Mentor",     desc: "Real-world war stories." },
 ];
 
 const CHAINS = [
-  { id: "both" as const, label: "Both", desc: "ETH + Solana", icon: "⟠◎" },
-  { id: "ethereum" as const, label: "Ethereum", desc: "Solidity + EVM", icon: "⟠" },
-  { id: "solana" as const, label: "Solana", desc: "Rust + Anchor", icon: "◎" },
+  { id: "both"     as const, label: "Both",     desc: "ETH + Solana",   tag: "⟠ + ◎" },
+  { id: "ethereum" as const, label: "Ethereum", desc: "Solidity + EVM", tag: "⟠" },
+  { id: "solana"   as const, label: "Solana",   desc: "Rust + Anchor",  tag: "◎" },
 ];
 
 const LEVELS = [
-  { id: "beginner" as const, label: "Fresh Start", desc: "Never written a contract. Start from zero." },
-  { id: "intermediate" as const, label: "I Know Basics", desc: "Can write simple contracts, want to go deeper." },
-  { id: "advanced" as const, label: "Going Deep", desc: "I want security, architecture, and advanced patterns." },
+  { id: "beginner"     as const, label: "Start from zero",     desc: "Never written a contract." },
+  { id: "intermediate" as const, label: "Know the basics",     desc: "Ready to go deeper." },
+  { id: "advanced"     as const, label: "Going deep",          desc: "Security & architecture." },
 ];
 
 const HOURS = [0.5, 1, 2, 3, 5];
 
+const TOTAL_STEPS = 5;
+
 export default function Onboarding({ onComplete }: Props) {
-  const [step, setStep] = useState(0);
-  const [name, setName] = useState("");
-  const [chain, setChain] = useState<UserProfile["chain"]>("both");
-  const [level, setLevel] = useState<UserProfile["level"]>("beginner");
-  const [hours, setHours] = useState(1);
-  const [avatarName, setAvatarName] = useState("Sage");
-  const [appearance, setAppearance] = useState<Avatar["appearance"]>("nebula");
+  const [step, setStep]               = useState(0);
+  const [name, setName]               = useState("");
+  const [chain, setChain]             = useState<UserProfile["chain"]>("both");
+  const [level, setLevel]             = useState<UserProfile["level"]>("beginner");
+  const [hours, setHours]             = useState(1);
+  const [avatarName, setAvatarName]   = useState("Sage");
+  const [appearance, setAppearance]   = useState<Avatar["appearance"]>("nebula");
   const [personality, setPersonality] = useState<Avatar["personality"]>("patient");
 
-  const steps = [
-    { title: "Welcome to SRP Learn", subtitle: "Your personal web3 mentor, available 24/7" },
-    { title: "Who are you?", subtitle: "Let's personalize your journey" },
-    { title: "What are you learning?", subtitle: "Pick your path" },
-    { title: "How much time do you have?", subtitle: "We'll plan around your schedule" },
-    { title: "Meet your Avatar", subtitle: "Your AI tutor — give them a name and personality" },
-  ];
+  const canAdvance = step === 1 ? name.trim().length >= 2 : true;
+
+  const selectedAvatar = AVATAR_OPTIONS.find(a => a.id === appearance)!;
 
   const handleComplete = () => {
     const profile: UserProfile = {
@@ -74,30 +70,32 @@ export default function Onboarding({ onComplete }: Props) {
     onComplete(profile);
   };
 
-  const canAdvance = () => {
-    if (step === 1) return name.trim().length >= 2;
-    return true;
-  };
-
-  const selectedAppearance = AVATAR_APPEARANCES.find(a => a.id === appearance)!;
-
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 stars-bg">
-      {/* Ambient glows */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-accent/10 blur-3xl" />
-      </div>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Dot grid bg */}
+      <div className="fixed inset-0 dot-grid opacity-40 pointer-events-none" />
 
-      <div className="w-full max-w-lg relative z-10">
-        {/* Progress dots */}
-        <div className="flex justify-center gap-2 mb-8">
-          {steps.map((_, i) => (
+      {/* Faint right-side dot cluster (x402 style) */}
+      <div className="fixed right-0 top-0 w-1/3 h-full dot-grid-sm opacity-20 pointer-events-none" />
+
+      <div className="w-full max-w-md relative z-10">
+        {/* Step counter — x402 style */}
+        <div className="flex items-center justify-between mb-8">
+          <span className="font-mono text-xs text-muted-foreground tracking-widest uppercase">
+            SRP Learn
+          </span>
+          <span className="font-mono text-xs text-muted-foreground">
+            {String(step + 1).padStart(2, "0")} / {String(TOTAL_STEPS).padStart(2, "0")}
+          </span>
+        </div>
+
+        {/* Step bar */}
+        <div className="flex gap-1 mb-10">
+          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <div
               key={i}
-              className={`transition-all duration-500 rounded-full ${
-                i === step ? "w-8 h-2 bg-primary" : i < step ? "w-2 h-2 bg-primary/60" : "w-2 h-2 bg-border"
-              }`}
+              className="h-px flex-1 transition-all duration-500"
+              style={{ background: i <= step ? "hsl(var(--foreground))" : "hsl(var(--border))" }}
             />
           ))}
         </div>
@@ -105,71 +103,90 @@ export default function Onboarding({ onComplete }: Props) {
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
           >
-            {/* Step 0: Welcome */}
+
+            {/* ── Step 0: Welcome ── */}
             {step === 0 && (
-              <div className="text-center space-y-8">
-                <div className="relative mx-auto w-32 h-32">
-                  <div className={`w-full h-full rounded-full bg-gradient-to-br ${selectedAppearance.colors} flex items-center justify-center text-5xl glow-primary avatar-pulse`}>
-                    {selectedAppearance.symbol}
+              <div className="space-y-8">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div
+                      className="w-10 h-10 flex items-center justify-center text-xl font-bold"
+                      style={{ background: selectedAvatar.color, color: "#fff" }}
+                    >
+                      {selectedAvatar.symbol}
+                    </div>
                   </div>
+                  <h1 className="text-4xl font-bold text-foreground leading-none tracking-tight">
+                    SRP Learn
+                  </h1>
+                  <p className="font-mono text-xs text-muted-foreground tracking-widest uppercase">
+                    — Web3 Personal Mentor
+                  </p>
                 </div>
-                <div>
-                  <h1 className="text-4xl font-serif font-bold gradient-text mb-3">SRP Learn</h1>
-                  <p className="text-muted-foreground text-lg">The world&apos;s most personal web3 education.</p>
-                  <p className="text-muted-foreground mt-2">No tutorial hell. No boring videos. Just you and your AI mentor — building real skills that stick.</p>
-                </div>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  {[["⟠◎", "ETH + Solana", "Both ecosystems"], ["★", "Gamified", "XP, streaks, ranks"], ["◈", "AI Avatar", "Your 24/7 mentor"]].map(([icon, title, desc]) => (
-                    <div key={title} className="bg-card border border-border rounded-xl p-4">
-                      <div className="text-2xl mb-1">{icon}</div>
-                      <div className="text-sm font-semibold text-foreground">{title}</div>
-                      <div className="text-xs text-muted-foreground mt-1">{desc}</div>
+
+                <p className="text-muted-foreground leading-relaxed text-sm max-w-sm">
+                  No tutorial hell. No boring videos. Just you and your AI avatar — learning Ethereum and Solana, building real skills that stick.
+                </p>
+
+                {/* Stats strip — x402 style */}
+                <div className="border border-border divide-x divide-border flex">
+                  {[
+                    { value: "19",    label: "Lessons" },
+                    { value: "4",     label: "Paths" },
+                    { value: "24/7",  label: "AI Mentor" },
+                  ].map(s => (
+                    <div key={s.label} className="flex-1 p-4">
+                      <div className="font-mono text-2xl font-bold text-foreground leading-none">{s.value}</div>
+                      <div className="label-mono mt-1">{s.label}</div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Step 1: Name */}
+            {/* ── Step 1: Name + Level ── */}
             {step === 1 && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <h2 className="text-3xl font-serif font-bold text-foreground">{steps[step].title}</h2>
-                  <p className="text-muted-foreground mt-2">{steps[step].subtitle}</p>
+              <div className="space-y-7">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Who are you?</h2>
+                  <p className="font-mono text-xs text-muted-foreground mt-1 tracking-widest uppercase">Personalize your journey</p>
                 </div>
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-foreground">Your name</label>
-                  <Input
+                <div className="space-y-2">
+                  <label className="label-mono">Your name</label>
+                  <input
                     data-testid="input-name"
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder="Enter your name..."
-                    className="bg-card border-border text-foreground text-lg h-12"
                     autoFocus
-                    onKeyDown={e => e.key === "Enter" && canAdvance() && setStep(s => s + 1)}
+                    onKeyDown={e => e.key === "Enter" && canAdvance && setStep(s => s + 1)}
+                    className="w-full bg-card border border-border text-foreground font-mono text-sm px-4 py-3 outline-none focus:border-foreground/40 transition-colors placeholder:text-muted-foreground"
                   />
                 </div>
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-foreground">Your background</label>
-                  <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-2">
+                  <label className="label-mono">Your background</label>
+                  <div className="space-y-1.5">
                     {LEVELS.map(l => (
                       <button
                         key={l.id}
                         data-testid={`level-${l.id}`}
                         onClick={() => setLevel(l.id)}
-                        className={`p-4 rounded-xl border text-left transition-all duration-200 ${
+                        className={`w-full border p-4 text-left transition-all duration-150 flex items-center justify-between group ${
                           level === l.id
-                            ? "border-primary bg-primary/10 shadow-sm"
-                            : "border-border bg-card hover:border-primary/50"
+                            ? "border-foreground/40 bg-card"
+                            : "border-border bg-card hover:border-foreground/20"
                         }`}
                       >
-                        <div className="font-semibold text-foreground">{l.label}</div>
-                        <div className="text-sm text-muted-foreground mt-1">{l.desc}</div>
+                        <div>
+                          <div className="font-medium text-sm text-foreground">{l.label}</div>
+                          <div className="font-mono text-xs text-muted-foreground mt-0.5">{l.desc}</div>
+                        </div>
+                        {level === l.id && <span className="font-mono text-sm text-foreground">→</span>}
                       </button>
                     ))}
                   </div>
@@ -177,140 +194,156 @@ export default function Onboarding({ onComplete }: Props) {
               </div>
             )}
 
-            {/* Step 2: Chain */}
+            {/* ── Step 2: Chain ── */}
             {step === 2 && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <h2 className="text-3xl font-serif font-bold text-foreground">{steps[step].title}</h2>
-                  <p className="text-muted-foreground mt-2">{steps[step].subtitle}</p>
+              <div className="space-y-7">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">What are you learning?</h2>
+                  <p className="font-mono text-xs text-muted-foreground mt-1 tracking-widest uppercase">Pick your path</p>
                 </div>
-                <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-1.5">
                   {CHAINS.map(c => (
                     <button
                       key={c.id}
                       data-testid={`chain-${c.id}`}
                       onClick={() => setChain(c.id)}
-                      className={`p-5 rounded-xl border text-left transition-all duration-200 flex items-center gap-4 ${
+                      className={`w-full border p-5 text-left transition-all duration-150 flex items-center justify-between ${
                         chain === c.id
-                          ? "border-primary bg-primary/10 shadow-sm"
-                          : "border-border bg-card hover:border-primary/50"
+                          ? "border-foreground/40 bg-card"
+                          : "border-border bg-card hover:border-foreground/20"
                       }`}
                     >
-                      <span className="text-3xl">{c.icon}</span>
-                      <div>
-                        <div className="font-bold text-foreground text-lg">{c.label}</div>
-                        <div className="text-sm text-muted-foreground">{c.desc}</div>
-                      </div>
-                      {chain === c.id && (
-                        <div className="ml-auto w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                          <svg className="w-3 h-3 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
+                      <div className="flex items-center gap-4">
+                        <span className="font-mono text-lg text-foreground">{c.tag}</span>
+                        <div>
+                          <div className="font-semibold text-foreground">{c.label}</div>
+                          <div className="font-mono text-xs text-muted-foreground mt-0.5">{c.desc}</div>
                         </div>
-                      )}
+                      </div>
+                      {chain === c.id && <span className="font-mono text-sm text-foreground">→</span>}
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Step 3: Hours */}
+            {/* ── Step 3: Hours ── */}
             {step === 3 && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <h2 className="text-3xl font-serif font-bold text-foreground">{steps[step].title}</h2>
-                  <p className="text-muted-foreground mt-2">{steps[step].subtitle}</p>
+              <div className="space-y-7">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">How much time?</h2>
+                  <p className="font-mono text-xs text-muted-foreground mt-1 tracking-widest uppercase">Hours per day — we plan around you</p>
                 </div>
-                <div className="grid grid-cols-5 gap-3">
+                <div className="flex gap-2">
                   {HOURS.map(h => (
                     <button
                       key={h}
                       data-testid={`hours-${h}`}
                       onClick={() => setHours(h)}
-                      className={`py-4 rounded-xl border font-bold text-lg transition-all duration-200 ${
+                      className={`flex-1 py-4 border font-mono text-lg font-bold transition-all duration-150 ${
                         hours === h
-                          ? "border-primary bg-primary/10 text-primary shadow-sm"
-                          : "border-border bg-card text-foreground hover:border-primary/50"
+                          ? "border-foreground/40 bg-foreground text-background"
+                          : "border-border bg-card text-foreground hover:border-foreground/30"
                       }`}
                     >
                       {h}
                     </button>
                   ))}
                 </div>
-                <p className="text-center text-muted-foreground text-sm">hours per day</p>
-                <div className="bg-card border border-border rounded-xl p-4 text-sm text-muted-foreground">
-                  <p className="font-medium text-foreground mb-1">Based on your schedule, your avatar will:</p>
-                  <ul className="space-y-1 list-disc list-inside">
-                    <li>Plan {Math.ceil(hours * 2)} lessons per day</li>
-                    <li>Set daily XP goals of ~{hours * 100} XP</li>
-                    <li>Remind you when it&apos;s time to learn</li>
-                  </ul>
+                <p className="font-mono text-xs text-muted-foreground text-center">hours / day</p>
+
+                <div className="border border-border p-4 space-y-2">
+                  <div className="label-mono mb-3">Your avatar will</div>
+                  {[
+                    `Plan ${Math.ceil(hours * 2)} lessons / day`,
+                    `Target ${hours * 100} XP daily`,
+                    `Adapt pace to your schedule`,
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-3 font-mono text-xs text-muted-foreground">
+                      <span className="text-foreground/40">→</span> {item}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* Step 4: Avatar */}
+            {/* ── Step 4: Avatar ── */}
             {step === 4 && (
               <div className="space-y-6">
-                <div className="text-center">
-                  <h2 className="text-3xl font-serif font-bold text-foreground">{steps[step].title}</h2>
-                  <p className="text-muted-foreground mt-2">{steps[step].subtitle}</p>
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Meet your avatar</h2>
+                  <p className="font-mono text-xs text-muted-foreground mt-1 tracking-widest uppercase">Name & customize your AI tutor</p>
                 </div>
 
                 {/* Avatar preview */}
-                <div className="flex justify-center">
-                  <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${selectedAppearance.colors} flex items-center justify-center text-4xl glow-primary float-anim`}>
-                    {selectedAppearance.symbol}
+                <div className="flex items-center gap-4 border border-border p-4">
+                  <div
+                    className="w-12 h-12 flex items-center justify-center text-2xl font-bold shrink-0"
+                    style={{ background: selectedAvatar.color, color: "#fff" }}
+                  >
+                    {selectedAvatar.symbol}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-foreground">{avatarName || "—"}</div>
+                    <div className="font-mono text-xs text-muted-foreground capitalize">{personality} style · {appearance}</div>
                   </div>
                 </div>
 
-                {/* Avatar name */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Name your tutor</label>
-                  <Input
+                {/* Name */}
+                <div className="space-y-1.5">
+                  <label className="label-mono">Name your tutor</label>
+                  <input
                     data-testid="input-avatar-name"
                     value={avatarName}
                     onChange={e => setAvatarName(e.target.value)}
-                    placeholder="Give your avatar a name..."
-                    className="bg-card border-border text-foreground"
+                    placeholder="e.g. Sage, Rex, Nova..."
+                    className="w-full bg-card border border-border text-foreground font-mono text-sm px-4 py-3 outline-none focus:border-foreground/40 transition-colors placeholder:text-muted-foreground"
                   />
                 </div>
 
                 {/* Appearance */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Appearance</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {AVATAR_APPEARANCES.map(a => (
+                <div className="space-y-1.5">
+                  <label className="label-mono">Appearance</label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {AVATAR_OPTIONS.map(a => (
                       <button
                         key={a.id}
                         data-testid={`appearance-${a.id}`}
                         onClick={() => setAppearance(a.id)}
-                        className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all ${
-                          appearance === a.id ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/50"
+                        className={`border p-3 flex flex-col items-center gap-1.5 transition-all duration-150 ${
+                          appearance === a.id ? "border-foreground/40" : "border-border hover:border-foreground/20"
                         }`}
                       >
-                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${a.colors} flex items-center justify-center text-lg`}>{a.symbol}</div>
-                        <span className="text-xs text-muted-foreground">{a.label}</span>
+                        <div
+                          className="w-8 h-8 flex items-center justify-center text-base font-bold"
+                          style={{ background: a.color, color: "#fff" }}
+                        >
+                          {a.symbol}
+                        </div>
+                        <span className="font-mono text-[10px] text-muted-foreground">{a.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Personality */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Teaching style</label>
-                  <div className="grid grid-cols-1 gap-2">
-                    {AVATAR_PERSONALITIES.map(p => (
+                <div className="space-y-1.5">
+                  <label className="label-mono">Teaching style</label>
+                  <div className="space-y-1">
+                    {PERSONALITIES.map(p => (
                       <button
                         key={p.id}
                         data-testid={`personality-${p.id}`}
                         onClick={() => setPersonality(p.id)}
-                        className={`p-3 rounded-xl border text-left transition-all ${
-                          personality === p.id ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/50"
+                        className={`w-full border p-3 text-left transition-all duration-150 flex items-center justify-between ${
+                          personality === p.id ? "border-foreground/40 bg-card" : "border-border bg-card hover:border-foreground/20"
                         }`}
                       >
-                        <div className="font-semibold text-sm text-foreground">{p.label}</div>
-                        <div className="text-xs text-muted-foreground">{p.desc}</div>
+                        <div>
+                          <div className="font-medium text-xs text-foreground">{p.label}</div>
+                          <div className="font-mono text-xs text-muted-foreground mt-0.5">{p.desc}</div>
+                        </div>
+                        {personality === p.id && <span className="font-mono text-xs text-foreground">→</span>}
                       </button>
                     ))}
                   </div>
@@ -321,35 +354,34 @@ export default function Onboarding({ onComplete }: Props) {
         </AnimatePresence>
 
         {/* Navigation */}
-        <div className="mt-8 flex gap-3">
+        <div className="mt-10 flex gap-2">
           {step > 0 && (
-            <Button
+            <button
               data-testid="button-back"
-              variant="ghost"
               onClick={() => setStep(s => s - 1)}
-              className="flex-1 border border-border"
+              className="border border-border bg-card text-foreground font-mono text-sm px-6 py-3 hover:border-foreground/30 transition-colors"
             >
-              Back
-            </Button>
+              ← Back
+            </button>
           )}
-          {step < steps.length - 1 ? (
-            <Button
+          {step < TOTAL_STEPS - 1 ? (
+            <button
               data-testid="button-next"
               onClick={() => setStep(s => s + 1)}
-              disabled={!canAdvance()}
-              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-12 glow-primary"
+              disabled={!canAdvance}
+              className="flex-1 bg-foreground text-background font-mono text-sm font-semibold py-3 disabled:opacity-30 hover:opacity-85 transition-opacity flex items-center justify-center gap-2"
             >
-              Continue
-            </Button>
+              Continue →
+            </button>
           ) : (
-            <Button
+            <button
               data-testid="button-start"
               onClick={handleComplete}
               disabled={!avatarName.trim()}
-              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-12 glow-primary"
+              className="flex-1 bg-foreground text-background font-mono text-sm font-semibold py-3 disabled:opacity-30 hover:opacity-85 transition-opacity flex items-center justify-center gap-2"
             >
-              Start Learning with {avatarName || "my Avatar"}
-            </Button>
+              Start Learning →
+            </button>
           )}
         </div>
       </div>

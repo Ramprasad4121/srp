@@ -1,8 +1,6 @@
-import { useLink } from "wouter";
 import type { AppState } from "@/lib/store";
 import { xpToLevel } from "@/lib/store";
 import { LEARNING_PATHS } from "@/lib/curriculum";
-import { Flame, Star, Zap, ChevronRight, Trophy, BookOpen } from "lucide-react";
 
 interface Props {
   state: AppState;
@@ -10,13 +8,20 @@ interface Props {
 }
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const AVATAR_COLORS: Record<string, string> = {
+  nebula: "#7c3aed", flame: "#ea580c", crystal: "#0ea5e9", aurora: "#16a34a",
+};
+const AVATAR_SYMBOLS: Record<string, string> = {
+  nebula: "✦", flame: "◈", crystal: "◆", aurora: "◉",
+};
 
 export default function Dashboard({ state, onNavigate }: Props) {
   const profile = state.profile!;
   const { level, levelName, progress, toNext } = xpToLevel(profile.xp);
   const today = new Date().getDay();
   const maxWeekly = Math.max(...state.weeklyXp, 1);
-  const selectedApp = AVATAR_APPEARANCES.find(a => a.id === profile.avatar.appearance)!;
+  const avatarColor = AVATAR_COLORS[profile.avatar.appearance] ?? "#7c3aed";
+  const avatarSymbol = AVATAR_SYMBOLS[profile.avatar.appearance] ?? "✦";
   const totalCompleted = profile.completedLessons.length;
   const totalLessons = LEARNING_PATHS.reduce((acc, p) => acc + p.lessons.length, 0);
 
@@ -30,71 +35,35 @@ export default function Dashboard({ state, onNavigate }: Props) {
     return { done, total: path.lessons.length, pct: Math.round((done / path.lessons.length) * 100) };
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Hero stat strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          {
-            icon: <Star className="w-4 h-4 text-primary" />,
-            value: profile.xp.toLocaleString(),
-            label: "Total XP",
-            sub: `${levelName}`,
-          },
-          {
-            icon: <Flame className="w-4 h-4 text-orange-400 flame-icon" />,
-            value: profile.streak,
-            label: "Day Streak",
-            sub: profile.streak > 0 ? "Keep it going!" : "Start today",
-          },
-          {
-            icon: <Zap className="w-4 h-4 text-accent" />,
-            value: state.todaysXpEarned,
-            label: "Today's XP",
-            sub: `Goal: ${profile.hoursPerDay * 100} XP`,
-          },
-          {
-            icon: <BookOpen className="w-4 h-4 text-green-400" />,
-            value: totalCompleted,
-            label: "Lessons Done",
-            sub: `of ${totalLessons} total`,
-          },
-        ].map((stat, i) => (
-          <div key={i} className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              {stat.icon}
-              <span className="text-xs text-muted-foreground">{stat.label}</span>
-            </div>
-            <div className="text-2xl font-bold text-foreground font-serif">{stat.value}</div>
-            <div className="text-xs text-muted-foreground mt-1">{stat.sub}</div>
-          </div>
-        ))}
-      </div>
+  const greeting = profile.streak > 0
+    ? `${profile.streak}-day streak. Keep it going.`
+    : `Welcome back, ${profile.name}.`;
 
-      {/* Avatar greeting + XP bar */}
-      <div className="bg-card border border-border rounded-2xl p-5 flex gap-4 items-start">
-        <div className={`w-14 h-14 shrink-0 rounded-full bg-gradient-to-br ${selectedApp.colors} flex items-center justify-center text-2xl glow-primary`}>
-          {selectedApp.symbol}
+  return (
+    <div className="space-y-6 pt-4">
+      {/* Avatar greeting strip */}
+      <div className="border border-border p-5 flex items-start gap-4 bg-card">
+        <div
+          className="w-11 h-11 flex items-center justify-center text-xl font-bold shrink-0"
+          style={{ background: avatarColor, color: "#fff" }}
+        >
+          {avatarSymbol}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1">
-            <span className="font-semibold text-foreground">{profile.avatar.name}</span>
-            <span className="text-xs text-muted-foreground">Lv.{level} — {levelName}</span>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="font-semibold text-foreground text-sm">{profile.avatar.name}</span>
+            <span className="font-mono text-xs text-muted-foreground">Lv.{level} — {levelName}</span>
           </div>
-          <p className="text-sm text-muted-foreground mb-3">
-            {profile.streak > 0
-              ? `Great momentum, ${profile.name}! ${profile.streak} days strong. Let's make today count.`
-              : `Welcome back, ${profile.name}! Ready to continue your web3 journey?`}
-          </p>
-          {/* XP bar */}
-          <div className="space-y-1">
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{profile.xp} XP</span>
-              <span>{toNext} XP to Lv.{level + 1}</span>
+          <p className="font-mono text-xs text-muted-foreground leading-relaxed">{greeting}</p>
+          {/* XP progress */}
+          <div className="mt-3 space-y-1">
+            <div className="flex justify-between">
+              <span className="font-mono text-[10px] text-muted-foreground">{profile.xp.toLocaleString()} XP</span>
+              <span className="font-mono text-[10px] text-muted-foreground">{toNext.toLocaleString()} to Lv.{level + 1}</span>
             </div>
-            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+            <div className="h-px bg-border overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-1000 ease-out xp-bar-fill"
+                className="h-full bg-foreground xp-bar-fill"
                 style={{ "--xp-pct": `${progress}%` } as React.CSSProperties}
               />
             </div>
@@ -102,22 +71,36 @@ export default function Dashboard({ state, onNavigate }: Props) {
         </div>
       </div>
 
+      {/* Big stats — x402 style */}
+      <div className="border border-border divide-x divide-border flex">
+        {[
+          { value: profile.xp.toLocaleString(),     label: "Total XP" },
+          { value: profile.streak,                   label: "Day Streak" },
+          { value: state.todaysXpEarned,             label: "Today XP" },
+          { value: `${totalCompleted}/${totalLessons}`, label: "Lessons" },
+        ].map((stat, i) => (
+          <div key={i} className="flex-1 p-4">
+            <div className="font-mono text-xl font-bold text-foreground leading-none">{stat.value}</div>
+            <div className="label-mono mt-1.5">{stat.label}</div>
+          </div>
+        ))}
+      </div>
+
       {/* Weekly activity */}
-      <div className="bg-card border border-border rounded-2xl p-5">
-        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-          <Trophy className="w-4 h-4 text-primary" /> Weekly Activity
-        </h3>
-        <div className="flex items-end gap-2 h-20">
+      <div className="border border-border p-4 bg-card">
+        <div className="label-mono mb-4">Weekly Activity</div>
+        <div className="flex items-end gap-1.5 h-16">
           {state.weeklyXp.map((xp, i) => (
             <div key={i} className="flex-1 flex flex-col items-center gap-1">
               <div
-                className={`w-full rounded-sm transition-all duration-700 ${
-                  i === today ? "bg-primary glow-primary" : "bg-secondary"
-                }`}
-                style={{ height: `${Math.max(4, (xp / maxWeekly) * 60)}px` }}
+                className="w-full transition-all duration-700"
+                style={{
+                  height: `${Math.max(2, (xp / maxWeekly) * 48)}px`,
+                  background: i === today ? "hsl(var(--foreground))" : "hsl(var(--border))",
+                }}
               />
-              <span className={`text-xs ${i === today ? "text-primary font-semibold" : "text-muted-foreground"}`}>
-                {DAYS[i]}
+              <span className={`font-mono text-[9px] ${i === today ? "text-foreground" : "text-muted-foreground"}`}>
+                {DAYS[i].slice(0, 2).toUpperCase()}
               </span>
             </div>
           ))}
@@ -125,18 +108,18 @@ export default function Dashboard({ state, onNavigate }: Props) {
       </div>
 
       {/* Learning paths */}
-      <div>
+      <div className="space-y-0">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-foreground">Your Learning Paths</h3>
+          <div className="label-mono">Learning Paths</div>
           <button
             data-testid="link-all-paths"
             onClick={() => onNavigate("paths")}
-            className="text-xs text-primary hover:underline"
+            className="font-mono text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
-            View all
+            View all →
           </button>
         </div>
-        <div className="space-y-3">
+        <div className="border border-border divide-y divide-border">
           {relevantPaths.slice(0, 3).map(path => {
             const { done, total, pct } = getPathProgress(path.id);
             return (
@@ -144,31 +127,27 @@ export default function Dashboard({ state, onNavigate }: Props) {
                 key={path.id}
                 data-testid={`path-card-${path.id}`}
                 onClick={() => onNavigate(`path/${path.id}`)}
-                className="w-full bg-card border border-border rounded-xl p-4 text-left hover:border-primary/50 transition-all duration-200 group"
+                className="w-full bg-card p-4 text-left hover:bg-muted transition-colors duration-150 group"
               >
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className={`w-10 h-10 rounded-lg bg-gradient-to-br ${path.color} flex items-center justify-center text-lg font-bold text-white`}>
-                      {path.icon}
-                    </span>
+                    <span className="font-mono text-lg">{path.icon}</span>
                     <div>
-                      <div className="font-semibold text-foreground group-hover:text-primary transition-colors">{path.title}</div>
-                      <div className="text-xs text-muted-foreground">{path.level} · {total} lessons</div>
+                      <div className="text-sm font-medium text-foreground group-hover:text-foreground/80">{path.title}</div>
+                      <div className="font-mono text-xs text-muted-foreground mt-0.5">{done}/{total} lessons</div>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <div className="text-right">
+                    <div className="font-mono text-xs text-muted-foreground">{pct}%</div>
+                    <div className="font-mono text-xs text-muted-foreground group-hover:text-foreground transition-colors">→</div>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{done}/{total} lessons</span>
-                    <span>{pct}%</span>
-                  </div>
-                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className={`h-full bg-gradient-to-r ${path.color} rounded-full transition-all duration-700`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
+                {/* thin progress bar */}
+                <div className="mt-3 h-px bg-border overflow-hidden">
+                  <div
+                    className="h-full bg-foreground/60 transition-all duration-700"
+                    style={{ width: `${pct}%` }}
+                  />
                 </div>
               </button>
             );
@@ -176,21 +155,14 @@ export default function Dashboard({ state, onNavigate }: Props) {
         </div>
       </div>
 
-      {/* Quick start button */}
+      {/* CTA */}
       <button
         data-testid="button-start-learning"
         onClick={() => onNavigate("chat")}
-        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-4 rounded-xl transition-all duration-200 glow-primary text-lg"
+        className="w-full bg-foreground text-background font-mono text-sm font-semibold py-4 hover:opacity-85 transition-opacity flex items-center justify-center gap-2"
       >
-        Talk to {profile.avatar.name}
+        → Talk to {profile.avatar.name}
       </button>
     </div>
   );
 }
-
-const AVATAR_APPEARANCES = [
-  { id: "nebula" as const, colors: "from-violet-500 to-indigo-600", symbol: "✦" },
-  { id: "flame" as const, colors: "from-orange-500 to-red-600", symbol: "◈" },
-  { id: "crystal" as const, colors: "from-cyan-400 to-blue-600", symbol: "◆" },
-  { id: "aurora" as const, colors: "from-green-400 to-teal-500", symbol: "◉" },
-];
