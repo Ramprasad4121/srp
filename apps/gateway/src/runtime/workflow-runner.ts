@@ -406,7 +406,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           architecture: runtimeMemory.pendingArchitectureSummary!,
           knowledgeBus: knowledgeBus.getState()
         }, activeProvider);
-        await persistArtifact(runId, projectId, phaseName, "note", "Economic Analysis", runtimeMemory.pendingEconomicAnalysis);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Economic Analysis", runtimeMemory.pendingEconomicAnalysis);
         agentRegistry.updateInstanceStatus(agentId, "finished", `Identified ${runtimeMemory.pendingHypothesisRegistry?.hypotheses.length || 0} potential hotspots.`);
       } else if (phaseName === "audit-attack") {
         const agentId = agentRegistry.spawnInstance("exploit-agent");
@@ -473,7 +473,7 @@ export async function runAuditWorkflow(deps: WorkflowDeps): Promise<void> {
           findingRegistry: runtimeMemory.pendingFindingRegistry!,
           knowledgeBus: knowledgeBus.getState()
         }, activeProvider);
-        await persistArtifact(runId, projectId, phaseName, "note", "Remediation Plan", runtimeMemory.pendingRemediationPlan);
+        await persistPlaybookArtifact(persistArtifact, runId, projectId, phaseName, "note", "Remediation Plan", runtimeMemory.pendingRemediationPlan);
 
         runtimeMemory.pendingFormalReport = await generateFormalReport({
           workspace: runtimeMemory.pendingWorkspaceAnalysis!,

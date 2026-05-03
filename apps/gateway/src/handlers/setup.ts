@@ -302,6 +302,7 @@ export async function handlePostCompleteWelcome(
   try {
     const manifest = await persistWelcomeCompleted(config.rootDirectory);
     sharedEventBus.emit(createSetupUpdatedEvent());
+    sharedEventBus.emit(createBootstrapUpdatedEvent());
     sendJson(res, 200, makeSetupResponse(manifest));
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
@@ -317,6 +318,7 @@ export async function handlePostCompleteProviders(
   try {
     const manifest = await persistProviderSetupCompleted(config.rootDirectory);
     sharedEventBus.emit(createSetupUpdatedEvent());
+    sharedEventBus.emit(createBootstrapUpdatedEvent());
     sendJson(res, 200, makeSetupResponse(manifest));
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
