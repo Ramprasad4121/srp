@@ -12,6 +12,7 @@ import Lesson from "@/pages/Lesson";
 import Profile from "@/pages/Profile";
 import Challenge from "@/pages/Challenge";
 import Admin from "@/pages/Admin";
+import Simulator from "@/pages/Simulator";
 import AvatarViz from "@/components/AvatarViz";
 import type { ChallengeMode } from "@/lib/challenges";
 import type { Avatar } from "@/lib/store";
@@ -26,7 +27,8 @@ type Route =
   | "profile"
   | "challenge"
   | `challenge/${ChallengeMode}`
-  | "admin";
+  | "admin"
+  | "simulator";
 
 function App() {
   const [appState, setAppState] = useState<AppState>(loadState);
@@ -77,6 +79,7 @@ function App() {
 
   const isChallengePage = route === "challenge" || route.startsWith("challenge/");
   const isAdminPage = route === "admin";
+  const isSimulatorPage = route === "simulator";
 
   const renderContent = () => {
     if (route === "dashboard") return <Dashboard state={appState} onNavigate={navigate} />;
@@ -128,10 +131,11 @@ function App() {
       );
     }
     if (route === "admin") return <Admin onBack={() => navigate("dashboard")} />;
+    if (route === "simulator") return <Simulator onBack={() => navigate("dashboard")} />;
     return <Dashboard state={appState} onNavigate={navigate} />;
   };
 
-  if (isAdminPage) {
+  if (isAdminPage || isSimulatorPage) {
     return (
       <TooltipProvider>
         {renderContent()}

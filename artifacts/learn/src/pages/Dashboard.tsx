@@ -168,6 +168,101 @@ export default function Dashboard({ state, onNavigate }: Props) {
         </div>
       </div>
 
+      {/* ── 3D NEURAL VOID SIMULATOR ── */}
+      <div
+        className="mt-6 border border-border relative overflow-hidden"
+        style={{ background: "#03020a" }}
+      >
+        {/* Animated grid bg */}
+        <div
+          className="absolute inset-0 opacity-20 pointer-events-none"
+          style={{
+            backgroundImage:
+              "linear-gradient(#2d1b6922 1px, transparent 1px), linear-gradient(90deg, #2d1b6922 1px, transparent 1px)",
+            backgroundSize: "20px 20px",
+          }}
+        />
+        <div className="relative px-5 pt-5 pb-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <div
+                className="font-mono text-[10px] font-bold tracking-widest uppercase mb-1"
+                style={{ color: "#7c3aed" }}
+              >
+                3D Immersive · Neural Void Simulator
+              </div>
+              <h3
+                className="text-lg font-bold tracking-tight leading-tight"
+                style={{ color: "#e9d5ff" }}
+              >
+                Watch Code Execute in 3D
+              </h3>
+              <p
+                className="font-mono text-xs mt-1.5 leading-relaxed"
+                style={{ color: "#6b7280" }}
+              >
+                Paste Solidity or Rust — see EVM sequential flow vs Solana
+                parallel lanes in a live cyberpunk simulation.
+              </p>
+              <div className="flex gap-3 mt-3">
+                {[
+                  { label: "EVM Vault", color: "#7c3aed" },
+                  { label: "Logic Gates", color: "#ef4444" },
+                  { label: "Sealevel", color: "#10b981" },
+                  { label: "Reentrancy", color: "#f59e0b" },
+                ].map((tag) => (
+                  <div key={tag.label} className="flex items-center gap-1">
+                    <div
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{
+                        background: tag.color,
+                        boxShadow: `0 0 4px ${tag.color}`,
+                      }}
+                    />
+                    <span
+                      className="font-mono text-[9px] uppercase tracking-wide"
+                      style={{ color: "#374151" }}
+                    >
+                      {tag.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Glowing orb decoration */}
+            <div
+              className="shrink-0 w-14 h-14 rounded-sm flex items-center justify-center text-2xl"
+              style={{
+                background: "#1a0a3e",
+                boxShadow: "0 0 20px #7c3aed44, inset 0 0 12px #7c3aed22",
+                border: "1px solid #2d1b69",
+              }}
+            >
+              ⬡
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigate("simulator")}
+            className="mt-4 w-full font-mono text-sm font-bold py-2.5 border transition-all"
+            style={{
+              borderColor: "#7c3aed",
+              background: "#7c3aed",
+              color: "#fff",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background =
+                "#6d28d9";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background =
+                "#7c3aed";
+            }}
+          >
+            ▶ Launch Neural Void Simulator
+          </button>
+        </div>
+      </div>
+
       {/* ── LEARNING PATHS ── */}
       <div className="mt-6 space-y-0">
         <div className="flex items-center justify-between mb-3 px-0">
