@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, CheckCircle2, X, Zap, MessageSquare } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Zap, MessageSquare } from "lucide-react";
 import type { AppState } from "@/lib/store";
 import { addXP } from "@/lib/store";
 import { getLessonById } from "@/lib/curriculum";

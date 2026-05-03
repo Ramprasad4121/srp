@@ -117,8 +117,7 @@ You are not a chatbot. You are their personal web3 mentor who will help them mas
 
 export function buildLessonPrompt(
   lessonContent: string,
-  lessonTitle: string,
-  profile: UserProfile
+  lessonTitle: string
 ): string {
   return `Start teaching me this lesson: "${lessonTitle}". 
 

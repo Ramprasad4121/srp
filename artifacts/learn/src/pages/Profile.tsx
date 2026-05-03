@@ -33,7 +33,6 @@ export default function Profile({ state, onReset }: Props) {
   const completedCount = profile.completedLessons.length;
 
   const currentBadge = RANK_BADGES.slice().reverse().find(b => profile.xp >= b.minXP)!;
-  const nextBadge = RANK_BADGES.find(b => b.minXP > profile.xp);
 
   const chainLabel = profile.chain === "both" ? "Ethereum + Solana" : profile.chain.charAt(0).toUpperCase() + profile.chain.slice(1);
 

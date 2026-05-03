@@ -1,4 +1,3 @@
-import { useLink } from "wouter";
 import type { AppState } from "@/lib/store";
 import { xpToLevel } from "@/lib/store";
 import { LEARNING_PATHS } from "@/lib/curriculum";
