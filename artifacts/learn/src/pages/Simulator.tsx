@@ -1,4 +1,4 @@
-import { Suspense, useRef, useState, useCallback } from "react";
+import { Suspense, useRef, useState, useCallback, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Stars, Grid, Text, OrbitControls, Float } from "@react-three/drei";
 import * as THREE from "three";
@@ -34,6 +34,32 @@ const DEFAULT_SCENE: SceneState = {
   emitting: false,
   avatarMessage: 'Paste a smart contract and hit ▶ RUN to simulate execution in 3D.',
   avatarPointAt: "none",
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Security Scanner Types + EVM Opcode Map
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface VulnReport {
+  id: string;
+  severity: "critical" | "high" | "medium" | "info";
+  title: string;
+  description: string;
+  line?: number;
+}
+
+const EVENT_TO_OPCODE: Record<
+  VisualEvent["type"],
+  { opcode: string; gas: number; detail: string }
+> = {
+  vault_change: { opcode: "SSTORE",    gas: 20000, detail: "Write persistent storage slot" },
+  logic_gate:   { opcode: "JUMPI",     gas: 10,    detail: "Conditional branch" },
+  emit_event:   { opcode: "LOG2",      gas: 1125,  detail: "Emit indexed event log" },
+  call:         { opcode: "CALL",      gas: 2600,  detail: "External contract call" },
+  reentrancy:   { opcode: "CALL ⚠",   gas: 2600,  detail: "Reentrancy attack vector!" },
+  loop:         { opcode: "JUMPDEST",  gas: 1,     detail: "Loop back-edge (×N iterations)" },
+  store:        { opcode: "SSTORE",    gas: 20000, detail: "Storage initialization" },
+  success:      { opcode: "STOP",      gas: 0,     detail: "Execution halted cleanly" },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -215,6 +241,155 @@ function highlightCode(code: string): string {
     .replace(keywords, '<span style="color:#c084fc">$1</span>')
     .replace(types, '<span style="color:#67e8f9">$1</span>')
     .replace(numbers, '<span style="color:#fbbf24">$1</span>');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Security Immune System — real-time vulnerability scanner
+// ─────────────────────────────────────────────────────────────────────────────
+
+function runSecurityScan(code: string): VulnReport[] {
+  const reports: VulnReport[] = [];
+  const lines = code.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Reentrancy: external call before state update
+    if (/\.call\s*[\({]/.test(line)) {
+      const after = lines.slice(i + 1, i + 15).join("\n");
+      if (/balances\s*\[.*\]\s*[-]?=|amount\s*[-]?=|total\s*[-]?=/.test(after)) {
+        if (!reports.some((r) => r.id === "reentrancy")) {
+          reports.push({
+            id: "reentrancy",
+            severity: "critical",
+            title: "Reentrancy Vulnerability",
+            description:
+              "External .call() fires before state is updated. An attacker re-enters the function and drains the vault. Fix: Checks → Effects → Interactions (CEI) or use ReentrancyGuard.",
+            line: i + 1,
+          });
+        }
+      }
+    }
+
+    // tx.origin authentication
+    if (/tx\.origin/.test(line)) {
+      if (!reports.some((r) => r.id === "txorigin")) {
+        reports.push({
+          id: "txorigin",
+          severity: "high",
+          title: "tx.origin Authentication",
+          description:
+            "tx.origin returns the original transaction sender, not the immediate caller. A phishing contract can impersonate the owner. Replace with msg.sender.",
+          line: i + 1,
+        });
+      }
+    }
+
+    // Unprotected selfdestruct
+    if (/selfdestruct\s*\(/.test(line)) {
+      const ctx = lines.slice(Math.max(0, i - 6), i).join("\n");
+      if (!/onlyOwner|require\s*\(.*owner|modifier/.test(ctx)) {
+        reports.push({
+          id: "selfdestruct-" + i,
+          severity: "critical",
+          title: "Unprotected selfdestruct",
+          description:
+            "selfdestruct() reachable without access control. Any caller can permanently destroy this contract and drain its ETH balance.",
+          line: i + 1,
+        });
+      }
+    }
+
+    // Integer overflow (pre-0.8 Solidity)
+    if (/pragma solidity\s*[\^~]?0\.[0-7]/.test(line)) {
+      if (
+        /\+=|-=|\*=/.test(code) &&
+        !reports.some((r) => r.id === "overflow")
+      ) {
+        reports.push({
+          id: "overflow",
+          severity: "high",
+          title: "Integer Overflow/Underflow Risk",
+          description:
+            "Solidity <0.8 has no built-in overflow protection. Arithmetic can wrap silently. Upgrade to 0.8+ or use SafeMath for all critical operations.",
+        });
+      }
+    }
+
+    // Unbounded loop over dynamic storage
+    if (/for\s*\(/.test(line)) {
+      const body = lines.slice(i, i + 6).join("\n");
+      if (/\.length|\.push|storage/.test(body)) {
+        if (!reports.some((r) => r.id === "loop")) {
+          reports.push({
+            id: "loop",
+            severity: "medium",
+            title: "Unbounded Loop (DoS Risk)",
+            description:
+              "Iterating over a dynamic array can exceed the block gas limit as the array grows. Unbounded loops enable Denial-of-Service attacks. Cap iterations or use pagination.",
+            line: i + 1,
+          });
+        }
+      }
+    }
+
+    // Block.timestamp manipulation
+    if (/block\.timestamp/.test(line)) {
+      if (!reports.some((r) => r.id === "timestamp")) {
+        reports.push({
+          id: "timestamp",
+          severity: "medium",
+          title: "Timestamp Manipulation",
+          description:
+            "block.timestamp can be manipulated by validators within ~12 seconds. Avoid using it as a source of randomness or for precise deadlines in critical logic.",
+          line: i + 1,
+        });
+      }
+    }
+
+    // Missing emit on balance change
+    if (
+      /balances\s*\[.*\]\s*[-+]?=/.test(line) &&
+      !reports.some((r) => r.id === "noEvent")
+    ) {
+      const surrounding = lines.slice(Math.max(0, i - 2), i + 4).join("\n");
+      if (!/emit\s/.test(surrounding)) {
+        reports.push({
+          id: "noEvent",
+          severity: "info",
+          title: "Missing Event Emission",
+          description:
+            "Balance state changes should emit events so off-chain indexers (The Graph, etc.) can track them. Missing events break DApp UIs and audit trails.",
+        });
+      }
+    }
+  }
+
+  return reports;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NLP Goal Parser — neural intent → template
+// ─────────────────────────────────────────────────────────────────────────────
+
+function goalToTemplate(goal: string, mode: SimMode): string | null {
+  const g = goal.toLowerCase().trim();
+  if (!g) return null;
+
+  if (mode === "evm") {
+    if (/reentr|attack|hack|exploit|bug|drain|vuln/.test(g))
+      return CODE_TEMPLATES.evm[1].code;
+    if (/erc.?20|token|transfer|approv|mint/.test(g))
+      return CODE_TEMPLATES.evm[2].code;
+    if (/safe|bank|deposit|withdraw|cei|secure/.test(g))
+      return CODE_TEMPLATES.evm[0].code;
+  } else {
+    if (/stake|staking|pool|lock|apy|reward/.test(g))
+      return CODE_TEMPLATES.solana[1].code;
+    if (/transfer|spl|token|send|move/.test(g))
+      return CODE_TEMPLATES.solana[0].code;
+  }
+  return null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -858,6 +1033,71 @@ function GlitchCamera({ active }: { active: boolean }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 3D: Aura Rings — "Aura of Data" pulsing energy field around the vault
+// ─────────────────────────────────────────────────────────────────────────────
+
+function AuraRings({ active, glitching }: { active: boolean; glitching: boolean }) {
+  const r1 = useRef<THREE.Mesh>(null);
+  const r2 = useRef<THREE.Mesh>(null);
+  const r3 = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    const baseColor = glitching ? "#ff2244" : "#a855f7";
+    const targetIntensity = active ? 0.55 + Math.sin(t * 3.2) * 0.28 : 0.08;
+
+    [r1, r2, r3].forEach((ref, i) => {
+      if (!ref.current) return;
+      ref.current.rotation.x = t * (0.28 + i * 0.09);
+      ref.current.rotation.y = t * (0.18 + i * 0.13);
+      const mat = ref.current.material as THREE.MeshStandardMaterial;
+      mat.emissiveIntensity += (targetIntensity - mat.emissiveIntensity) * 0.08;
+      mat.emissive.set(baseColor);
+      mat.color.set(baseColor);
+      const targetScale = active ? 1 + Math.sin(t * 2.1 + i * 1.3) * 0.045 : 0.75;
+      ref.current.scale.setScalar(
+        ref.current.scale.x + (targetScale - ref.current.scale.x) * 0.06
+      );
+    });
+  });
+
+  return (
+    <group position={[0, 1.6, -2.5]}>
+      <mesh ref={r1}>
+        <torusGeometry args={[1.65, 0.022, 8, 52]} />
+        <meshStandardMaterial
+          color="#a855f7"
+          emissive="#a855f7"
+          emissiveIntensity={0.08}
+          transparent
+          opacity={0.65}
+        />
+      </mesh>
+      <mesh ref={r2} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[1.92, 0.016, 8, 52]} />
+        <meshStandardMaterial
+          color="#7c3aed"
+          emissive="#7c3aed"
+          emissiveIntensity={0.08}
+          transparent
+          opacity={0.5}
+        />
+      </mesh>
+      <mesh ref={r3} rotation={[0, 0, Math.PI / 3]}>
+        <torusGeometry args={[2.18, 0.011, 8, 52]} />
+        <meshStandardMaterial
+          color="#6d28d9"
+          emissive="#6d28d9"
+          emissiveIntensity={0.08}
+          transparent
+          opacity={0.4}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 3D: Scene Composition
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -911,6 +1151,7 @@ function SimulatorScene({
         />
       ))}
 
+      <AuraRings active={sceneState.particleActive} glitching={sceneState.glitching} />
       <ShadowAttacker active={sceneState.shadowActive} />
       <AvatarMentor pointAt={sceneState.avatarPointAt} />
 
@@ -941,7 +1182,24 @@ export default function Simulator({ onBack }: Props) {
   const [events, setEvents] = useState<VisualEvent[]>([]);
   const [currentEventIdx, setCurrentEventIdx] = useState(-1);
   const [showCode, setShowCode] = useState(true);
+  const [leftTab, setLeftTab] = useState<"code" | "security" | "opcodes">("code");
+  const [goalText, setGoalText] = useState("");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const vulns = useMemo(() => runSecurityScan(code), [code]);
+
+  const opcodeLog = useMemo(
+    () =>
+      events.map((ev, i) => ({
+        opcode: EVENT_TO_OPCODE[ev.type].opcode,
+        gas: EVENT_TO_OPCODE[ev.type].gas,
+        detail: ev.label ?? EVENT_TO_OPCODE[ev.type].detail,
+        isRisk: ev.type === "reentrancy",
+        active: i === currentEventIdx,
+        done: i < currentEventIdx,
+      })),
+    [events, currentEventIdx]
+  );
 
   const clearTimers = () => {
     timers.current.forEach(clearTimeout);
@@ -1085,6 +1343,7 @@ export default function Simulator({ onBack }: Props) {
   const switchMode = (m: SimMode) => {
     setMode(m);
     setCode(CODE_TEMPLATES[m][0].code);
+    setLeftTab("code");
     handleReset();
   };
 
@@ -1211,55 +1470,385 @@ export default function Simulator({ onBack }: Props) {
               className="shrink-0 flex flex-col overflow-hidden border-r"
               style={{ borderColor: "#1a1a3e", background: "#06060f" }}
             >
-              {/* Template selector */}
+              {/* NLP Goal Input */}
               <div
-                className="shrink-0 px-3 py-2 flex gap-1.5 overflow-x-auto border-b"
+                className="shrink-0 border-b px-3 py-2"
                 style={{ borderColor: "#111827" }}
               >
-                {templates.map((tpl) => (
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="font-mono text-[9px] shrink-0"
+                    style={{ color: "#2d1b69" }}
+                  >
+                    ✦
+                  </span>
+                  <input
+                    value={goalText}
+                    onChange={(e) => setGoalText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const matched = goalToTemplate(goalText, mode);
+                        if (matched) {
+                          setCode(matched);
+                          handleReset();
+                          setGoalText("");
+                          setLeftTab("code");
+                        }
+                      }
+                    }}
+                    placeholder="Goal: 'show reentrancy', 'safe bank', 'erc20 token'…"
+                    className="flex-1 bg-transparent font-mono text-[10px] outline-none"
+                    style={{ color: "#a78bfa", caretColor: "#c084fc" }}
+                  />
                   <button
-                    key={tpl.label}
                     onClick={() => {
-                      setCode(tpl.code);
-                      handleReset();
+                      const matched = goalToTemplate(goalText, mode);
+                      if (matched) {
+                        setCode(matched);
+                        handleReset();
+                        setGoalText("");
+                        setLeftTab("code");
+                      }
                     }}
-                    className="font-mono text-[10px] border px-2 py-1 whitespace-nowrap transition-colors"
+                    className="font-mono text-[10px] px-2 py-0.5 border shrink-0 transition-colors"
+                    style={{ borderColor: "#2d1b69", color: "#6d28d9" }}
+                    onMouseEnter={(e) =>
+                      ((e.target as HTMLElement).style.color = "#a78bfa")
+                    }
+                    onMouseLeave={(e) =>
+                      ((e.target as HTMLElement).style.color = "#6d28d9")
+                    }
+                  >
+                    →
+                  </button>
+                </div>
+              </div>
+
+              {/* Tab bar: Code / Security / Opcodes */}
+              <div
+                className="shrink-0 flex border-b"
+                style={{ borderColor: "#111827" }}
+              >
+                {(
+                  [
+                    {
+                      id: "code",
+                      label: "Code",
+                      badge: null,
+                    },
+                    {
+                      id: "security",
+                      label: "Security",
+                      badge:
+                        vulns.filter((v) => v.severity === "critical").length >
+                        0
+                          ? `⚠${vulns.filter((v) => v.severity === "critical").length}`
+                          : vulns.length > 0
+                          ? `${vulns.length}`
+                          : null,
+                      badgeColor:
+                        vulns.some((v) => v.severity === "critical")
+                          ? "#ff2244"
+                          : "#f97316",
+                    },
+                    {
+                      id: "opcodes",
+                      label: "Opcodes",
+                      badge:
+                        opcodeLog.length > 0 ? `${opcodeLog.length}` : null,
+                      badgeColor: "#60a5fa",
+                    },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setLeftTab(tab.id)}
+                    className="flex-1 font-mono text-[9px] uppercase tracking-widest py-1.5 flex items-center justify-center gap-1 transition-colors"
                     style={{
-                      borderColor: "#1f2937",
-                      color: "#4b5563",
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.target as HTMLElement).style.color = "#c084fc";
-                      (e.target as HTMLElement).style.borderColor = "#4c1d95";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.target as HTMLElement).style.color = "#4b5563";
-                      (e.target as HTMLElement).style.borderColor = "#1f2937";
+                      background:
+                        leftTab === tab.id ? "#0d0a1a" : "transparent",
+                      color: leftTab === tab.id ? "#a78bfa" : "#374151",
+                      borderBottom:
+                        leftTab === tab.id
+                          ? "1px solid #7c3aed"
+                          : "1px solid transparent",
                     }}
                   >
-                    {tpl.label}
+                    {tab.label}
+                    {"badge" in tab && tab.badge && (
+                      <span
+                        className="font-mono text-[8px] px-1"
+                        style={{
+                          color: "badgeColor" in tab ? tab.badgeColor : "#fff",
+                          background:
+                            "badgeColor" in tab
+                              ? (tab.badgeColor as string) + "22"
+                              : "#ffffff22",
+                        }}
+                      >
+                        {tab.badge}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
 
-              {/* Code editor */}
-              <div className="flex-1 relative overflow-hidden">
-                <div
-                  className="absolute inset-0 font-mono text-xs p-3 pointer-events-none overflow-auto whitespace-pre leading-relaxed"
-                  style={{ color: "transparent" }}
-                  dangerouslySetInnerHTML={{ __html: highlightCode(code) }}
-                />
-                <textarea
-                  value={code}
-                  onChange={(e) => {
-                    setCode(e.target.value);
-                    handleReset();
-                  }}
-                  className="absolute inset-0 w-full h-full font-mono text-xs p-3 bg-transparent text-transparent resize-none outline-none leading-relaxed"
-                  style={{ caretColor: "#c084fc" }}
-                  spellCheck={false}
-                />
-              </div>
+              {/* Tab Content */}
+              {leftTab === "code" ? (
+                <>
+                  {/* Template selector */}
+                  <div
+                    className="shrink-0 px-3 py-2 flex gap-1.5 overflow-x-auto border-b"
+                    style={{ borderColor: "#111827" }}
+                  >
+                    {templates.map((tpl) => (
+                      <button
+                        key={tpl.label}
+                        onClick={() => {
+                          setCode(tpl.code);
+                          handleReset();
+                        }}
+                        className="font-mono text-[10px] border px-2 py-1 whitespace-nowrap transition-colors"
+                        style={{ borderColor: "#1f2937", color: "#4b5563" }}
+                        onMouseEnter={(e) => {
+                          (e.target as HTMLElement).style.color = "#c084fc";
+                          (e.target as HTMLElement).style.borderColor =
+                            "#4c1d95";
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.target as HTMLElement).style.color = "#4b5563";
+                          (e.target as HTMLElement).style.borderColor =
+                            "#1f2937";
+                        }}
+                      >
+                        {tpl.label}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Code editor */}
+                  <div className="flex-1 relative overflow-hidden">
+                    <div
+                      className="absolute inset-0 font-mono text-xs p-3 pointer-events-none overflow-auto whitespace-pre leading-relaxed"
+                      style={{ color: "transparent" }}
+                      dangerouslySetInnerHTML={{ __html: highlightCode(code) }}
+                    />
+                    <textarea
+                      value={code}
+                      onChange={(e) => {
+                        setCode(e.target.value);
+                        handleReset();
+                      }}
+                      className="absolute inset-0 w-full h-full font-mono text-xs p-3 bg-transparent text-transparent resize-none outline-none leading-relaxed"
+                      style={{ caretColor: "#c084fc" }}
+                      spellCheck={false}
+                    />
+                  </div>
+                </>
+              ) : leftTab === "security" ? (
+                /* Security Immune System Panel */
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {vulns.length === 0 ? (
+                    <div className="flex flex-col items-center pt-10 gap-2">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-sm"
+                        style={{
+                          background: "#052e16",
+                          boxShadow: "0 0 18px #22c55e44",
+                        }}
+                      >
+                        ✓
+                      </div>
+                      <div
+                        className="font-mono text-[10px] font-bold"
+                        style={{ color: "#22c55e" }}
+                      >
+                        IMMUNE SYSTEM: CLEAN
+                      </div>
+                      <div
+                        className="font-mono text-[9px] text-center leading-relaxed"
+                        style={{ color: "#374151" }}
+                      >
+                        0 vulnerabilities detected.
+                        <br />
+                        Run the simulation to verify execution.
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        className="font-mono text-[9px] pb-1"
+                        style={{ color: "#374151" }}
+                      >
+                        {vulns.length} issue
+                        {vulns.length !== 1 ? "s" : ""} detected — immune
+                        system active
+                      </div>
+                      {vulns.map((v) => {
+                        const SWATCH: Record<VulnReport["severity"], string> =
+                          {
+                            critical: "#ff2244",
+                            high: "#f97316",
+                            medium: "#fbbf24",
+                            info: "#60a5fa",
+                          };
+                        const c = SWATCH[v.severity];
+                        return (
+                          <div
+                            key={v.id}
+                            className="border p-2.5 space-y-1.5"
+                            style={{
+                              borderColor: c + "44",
+                              background: c + "09",
+                            }}
+                          >
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span
+                                className="font-mono text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5"
+                                style={{
+                                  background: c + "22",
+                                  color: c,
+                                }}
+                              >
+                                {v.severity}
+                              </span>
+                              {v.line && (
+                                <span
+                                  className="font-mono text-[8px]"
+                                  style={{ color: "#4b5563" }}
+                                >
+                                  line {v.line}
+                                </span>
+                              )}
+                            </div>
+                            <div
+                              className="font-mono text-[10px] font-bold"
+                              style={{ color: c }}
+                            >
+                              {v.title}
+                            </div>
+                            <div
+                              className="font-mono text-[9px] leading-relaxed"
+                              style={{ color: "#6b7280" }}
+                            >
+                              {v.description}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
+                </div>
+              ) : (
+                /* EVM Opcode Log Panel */
+                <div className="flex-1 overflow-y-auto">
+                  {opcodeLog.length === 0 ? (
+                    <div className="flex flex-col items-center pt-10 gap-2">
+                      <div
+                        className="font-mono text-[10px]"
+                        style={{ color: "#1f2937" }}
+                      >
+                        EVM OPCODE LOG
+                      </div>
+                      <div
+                        className="font-mono text-[9px] text-center leading-relaxed"
+                        style={{ color: "#1f2937" }}
+                      >
+                        Hit ▶ RUN to stream opcodes
+                        <br />
+                        in real time as the VM executes.
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        className="sticky top-0 flex gap-0 border-b px-3 py-1"
+                        style={{
+                          borderColor: "#0d0d1a",
+                          background: "#03030c",
+                        }}
+                      >
+                        {["OPCODE", "GAS", "DETAIL"].map((h) => (
+                          <div
+                            key={h}
+                            className="font-mono text-[8px] uppercase tracking-widest"
+                            style={{
+                              color: "#1f2937",
+                              width:
+                                h === "OPCODE"
+                                  ? "4.5rem"
+                                  : h === "GAS"
+                                  ? "4rem"
+                                  : "auto",
+                              flex: h === "DETAIL" ? 1 : "none",
+                            }}
+                          >
+                            {h}
+                          </div>
+                        ))}
+                      </div>
+                      {opcodeLog.map((entry, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center gap-0 px-3 py-1.5 border-b transition-all"
+                          style={{
+                            borderColor: "#0a0a14",
+                            background: entry.active
+                              ? "#2d1b6930"
+                              : entry.isRisk
+                              ? "#3b000a18"
+                              : "transparent",
+                          }}
+                        >
+                          <span
+                            className="font-mono text-[9px] font-bold shrink-0"
+                            style={{
+                              width: "4.5rem",
+                              color: entry.isRisk
+                                ? "#ff2244"
+                                : entry.active
+                                ? "#c084fc"
+                                : entry.done
+                                ? "#4b5563"
+                                : "#1f2937",
+                            }}
+                          >
+                            {entry.opcode}
+                          </span>
+                          <span
+                            className="font-mono text-[9px] shrink-0"
+                            style={{
+                              width: "4rem",
+                              color: entry.active ? "#fbbf24" : "#374151",
+                            }}
+                          >
+                            {entry.gas > 0
+                              ? entry.gas.toLocaleString()
+                              : "—"}
+                          </span>
+                          <span
+                            className="font-mono text-[9px] truncate flex-1"
+                            style={{
+                              color: entry.active ? "#6b7280" : "#1f2937",
+                            }}
+                          >
+                            {entry.detail.slice(0, 38)}
+                          </span>
+                        </div>
+                      ))}
+                      <div
+                        className="px-3 py-2 font-mono text-[9px]"
+                        style={{ color: "#1f2937" }}
+                      >
+                        total gas:{" "}
+                        {opcodeLog
+                          .filter((_, i) => i <= currentEventIdx)
+                          .reduce((s, e) => s + e.gas, 0)
+                          .toLocaleString()}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Controls */}
               <div
