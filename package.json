@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "pnpm --filter @workspace/learn run dev",
     "build": "pnpm --filter @workspace/learn run build",
-    "typecheck": "pnpm --filter @workspace/learn run typecheck"
+    "typecheck": "pnpm --filter @workspace/learn run typecheck",
+    "push": "git push https://$GITHUB_PAT@$(git remote get-url origin | sed 's|https://||')"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
