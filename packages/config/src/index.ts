@@ -182,11 +182,12 @@ export function deriveInitialRouteFromIdentity(identity: SetupIdentity): string 
 }
 
 export function createDefaultProjectMemory(
+  projectId: string,
   identity: SetupIdentity,
   now: string = new Date().toISOString()
 ): ProjectMemory {
   return {
-    projectId: "default-project",
+    projectId,
     name: "SRP Company Workspace",
     status: "active",
     identity,

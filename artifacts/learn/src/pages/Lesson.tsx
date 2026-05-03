@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+<<<<<<< HEAD
 import { ArrowLeft, MessageSquare } from "lucide-react";
+=======
+import { ArrowLeft, CheckCircle2, Zap, MessageSquare } from "lucide-react";
+>>>>>>> 5b30ea217fbf44279a12ee58f333dba99cc658e7
 import type { AppState } from "@/lib/store";
 import { addXP } from "@/lib/store";
 import { getLessonById } from "@/lib/curriculum";

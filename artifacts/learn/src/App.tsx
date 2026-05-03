@@ -50,11 +50,6 @@ function App() {
     setRoute(to as Route);
   }, []);
 
-  const openChat = useCallback((context?: string) => {
-    setChatContext(context);
-    setRoute("chat");
-  }, []);
-
   const handleReset = useCallback(() => {
     const fresh: AppState = {
       profile: null,

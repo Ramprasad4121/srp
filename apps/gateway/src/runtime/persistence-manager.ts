@@ -26,10 +26,13 @@ import { createDefaultProjectMemory } from "@srp/config";
 export class PersistenceManager {
   private readonly runsDir: string;
   private readonly projectMemoryPath: string;
+  private readonly projectId: string;
 
-  constructor(rootDirectory: string, outputDirectory: string = ".srp") {
-    this.runsDir = join(rootDirectory, outputDirectory, "runs");
-    this.projectMemoryPath = join(rootDirectory, outputDirectory, "project-memory.json");
+  constructor(rootDirectory: string, projectId: string, outputDirectory: string = ".srp") {
+    this.projectId = projectId;
+    const projectBase = join(rootDirectory, outputDirectory, "projects", projectId);
+    this.runsDir = join(projectBase, "runs");
+    this.projectMemoryPath = join(projectBase, "project.json");
   }
 
   async init(): Promise<void> {
@@ -56,7 +59,7 @@ export class PersistenceManager {
       return updated;
     }
 
-    const created = createDefaultProjectMemory(identity);
+    const created = createDefaultProjectMemory(this.projectId, identity);
     await this.saveProjectMemory(created);
     return created;
   }

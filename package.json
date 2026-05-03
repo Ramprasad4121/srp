@@ -11,11 +11,11 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "node scripts/clean.mjs",
-    "test": "npm run build && node --test \"tests/**/*.test.mjs\"",
+    "test": "npm run build && NODE_ENV=test node --test \"tests/**/*.test.mjs\"",
     "typecheck": "tsc -b --pretty false"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^20.0.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {
