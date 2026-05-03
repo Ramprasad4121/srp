@@ -17,14 +17,30 @@ packages/
   methodology/    Audit phase definitions and playbook
   config/         Setup manifest loading
   cache/          Key/value cache
-  skills/         Skills catalog (agent knowledge)
+  skills/         Skills catalog (agent knowledge) + BM25 retrieval
   providers/      AI provider clients
   sessions/       Session types
   security/       Security utilities
+skills/           Runtime security knowledge base (populated by ingest-skills.mjs)
+  security-auditor/   Archethect/sc-auditor: Map-Hunt-Attack orchestrator + prompt assets
+  solidity-auditor/   pashov/skills: 8-agent parallel audit methodology
+  av-approval-abuse/  Attack vector: ERC-20 approval abuse
+  av-callback-grief/  Attack vector: reentrancy/callback grief
+  av-rounding-entitlement/  Attack vector: integer rounding / ERC-4626 share inflation
+  av-semantic-drift/  Attack vector: spec vs implementation drift
+  av-entitlement-drift/  Attack vector: access control decay
+  hunt-adversarial-deep/   Hunt pattern: adversarial deep
+  hunt-accounting-entitlement/ Hunt pattern: accounting/entitlement
+  hunt-callback-liveness/  Hunt pattern: callback liveness/DoS
+  hunt-semantic-consistency/ Hunt pattern: semantic consistency
+  hunt-token-oracle-statefulness/ Hunt pattern: oracle/token statefulness
+  hunt-economic-differential/ Hunt pattern: economic differential/MEV
 tests/
   smoke/          Integration/smoke tests (per-file, node --test)
   project-memory/ Unit tests for @srp/project-memory
   gateway/        Unit tests for gateway internals (runtime-registry)
+scripts/
+  ingest-skills.mjs  Fetch + seed skills/ from pashov/ai-web3-security hub
 ```
 
 ---
@@ -55,9 +71,29 @@ tests/
 **CLI `srp project` commands:**
 - `srp project list`, `current`, `use <id>`, `create <name>`.
 
-**Invariants verified:**
-- Zero `let activeSessionId` in TypeScript source.
-- Zero `"default-project"` string literal outside `migrate.ts` and `types.ts`.
+### Phase 2 — DONE (pashov/ai-web3-security knowledge base)
+
+**Skills knowledge base (`skills/`):**
+- 13 security skills seeded from the pashov/ai-web3-security hub.
+- Sources: Archethect/sc-auditor (Map-Hunt-Attack methodology + all prompt assets), pashov/skills (8-agent parallel approach), 5 attack-vector docs, 6 hunt-pattern prompts.
+- `skills/security-auditor/assets/prompts/` contains the full sc-auditor prompt assets used directly by `executeAuditPhase`.
+- Re-seed any time with: `node scripts/ingest-skills.mjs`
+
+**BM25 retrieval (`@srp/skills`):**
+- `packages/skills/src/bm25-index.ts` — pure-TypeScript Okapi BM25 (k₁=1.5, b=0.75), no external deps.
+- `packages/skills/src/skill-retriever.ts` — `searchSkills(query, topK, skills[])` and `formatSkillsForPrompt(skills, maxChars)`.
+- 25 unit tests covering tokenizer, index build, query scoring, and formatting.
+
+**Skill catalog with search:**
+- `apps/gateway/src/runtime/skills-catalog.ts` exports `searchSkills(query, topK)` and `retrieveSkillContext(query, topK, maxChars)`.
+- Root detection uses `pnpm-workspace.yaml` as a marker — works in any working directory.
+- Module-level cache: skills loaded once per process, invalidatable via `invalidateSkillsCache()`.
+
+**RAG injection into audit pipeline (`inference-bridge.ts`):**
+- `executeAuditPhase` — maps each phase to a BM25 query (`PHASE_SKILL_QUERIES`), retrieves top-4 skills (1200 chars each), injects between the prompt template and context JSON.
+- `generateInvariants` — retrieves top-3 invariant/economic/access-control skills, injects into prompt.
+- `streamChatResponse` — retrieves top-3 skills for the user's message, injects into system prompt (replaces "1074 skills" placeholder).
+- `generateChatResponse` — same per-message RAG, injected into CONTEXT section.
 
 ---
 
@@ -68,12 +104,21 @@ pnpm install          # install all deps (requires Node 24, pnpm 10.x)
 pnpm build            # tsc -b (composite libs + leaf packages)
 pnpm typecheck        # full check including leaf packages
 
-# Tests (individual files — no single pnpm test command, some tests require live API keys)
+# Re-ingest security skills from GitHub
+node scripts/ingest-skills.mjs
+node scripts/ingest-skills.mjs --dry-run   # preview without writing
+
+# BM25 unit tests
+node --test packages/skills/dist/__tests__/bm25-index.test.js
+
+# Smoke tests (no API key required)
+node --test tests/gateway/runtime-registry.test.mjs
 node --test tests/project-memory/store.test.mjs
 node --test tests/project-memory/migrate.test.mjs
-node --test tests/gateway/runtime-registry.test.mjs
 node --test tests/smoke/persistence.test.mjs
-node --test tests/smoke/gateway-http.test.mjs
+node --test tests/smoke/skills-catalog.test.mjs
+node --test tests/smoke/monorepo-foundation.test.mjs
+node --test tests/smoke/runtime-stores.test.mjs
 ```
 
 ### .npmrc note
@@ -81,10 +126,9 @@ node --test tests/smoke/gateway-http.test.mjs
 
 ---
 
-## Roadmap (what comes after Phase 1)
+## Roadmap
 
-1. **Ingest pashov/ai-web3-security** as the audit agents' knowledge base — skills indexing, retrieval-augmented audit phases.
-2. **Learning platform** — personalized AI-driven education on ETH/Solana, adapted to each learner's pace.
-3. **DeFi builder agents** — agentic team helping developers write and deploy contracts on-chain.
-4. **Phase 2** — canonical graph + projection refactor.
-5. **Phase 3** — route registry + handoff contracts.
+1. **Phase 3 — Learning platform** — personalized AI-driven education on ETH/Solana.
+2. **Phase 4 — DeFi builder agents** — agentic team helping developers write and deploy contracts on-chain.
+3. **Phase 5 — Canonical graph + projection refactor** — deterministic audit state machine.
+4. **Phase 6 — Route registry + handoff contracts** — formalize agent-to-agent handoffs.

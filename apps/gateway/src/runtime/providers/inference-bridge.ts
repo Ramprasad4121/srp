@@ -28,7 +28,7 @@ import type {
 import type { ChatGroundingContext } from "../chat-grounding.js";
 import { callProvider, streamProvider } from "./provider-client.js";
 import { getInferenceCache } from "@srp/cache";
-import { listSkills } from "../skills-catalog.js";
+import { listSkills, retrieveSkillContext } from "../skills-catalog.js";
 import { detectIntent } from "../chat-intent.js";
 import * as fs from "node:fs";
 import { join, basename } from "node:path";
@@ -675,8 +675,14 @@ export async function generateInvariants(
     };
   }
 
+  const skillContext = await retrieveSkillContext(
+    "smart contract invariants economic security access control math precision rounding",
+    3,
+    1000
+  );
   const prompt = `Extract a complete list of Global, Function, and Economic invariants.
 Based on research and code analysis.
+${skillContext ? `\n${skillContext}\n` : ""}
 Output JSON with summary and invariants array (id, title, description, category: "Global"|"Function"|"Economic", priority: "High"|"Medium"|"Low", suggestedVerification).`;
 
   try {
@@ -811,6 +817,9 @@ export async function* streamChatResponse(
     webContext = `\nREAL-TIME WEB SEARCH RESULTS for "${query}":\n${results}\n`;
   }
 
+  // Retrieve relevant security knowledge for the user's query
+  const skillContext = await retrieveSkillContext(lastUserMessage, 3, 1000);
+
   const systemPrompt = `You are an expert smart contract security researcher.
 You are helping audit the project located at: ${projectRoot}
 Project name: ${basename(projectRoot)}
@@ -819,7 +828,7 @@ You have access to:
 - The project's Solidity source files
 - Previous audit findings and analysis
 - Web search results (when provided)
-- 1074 security skills from Trail of Bits, Cyfrin, Pashov, and others
+- Curated security knowledge base (pashov/ai-web3-security: attack vectors, hunt patterns, audit methodology)
 
 When answering:
 - If REAL-TIME WEB SEARCH RESULTS are provided, use them to fulfill the user's request FIRST. 
@@ -832,6 +841,7 @@ When answering:
 CONTEXT:
 ${context}
 ${webContext}
+${skillContext ? `\n${skillContext}\n` : ""}
 `;
 
   const messages: any[] = [
@@ -859,6 +869,12 @@ export async function generateChatResponse(
     };
   }
 
+  const chatSkillContext = await retrieveSkillContext(
+    conversation.messages[conversation.messages.length - 1]?.content || "smart contract security audit",
+    3,
+    900
+  );
+
   const systemPrompt = `You are SRP Senior Security Intelligence Engine. Current Mode: ${role}.
 Current Date: Sunday, April 5, 2026.
 
@@ -882,6 +898,7 @@ Project Root: ${sessionState.workspaceAnalysis?.rootDirectory}
 Files Detected: ${sessionState.workspaceAnalysis?.solidityFileCount} CORE, ${sessionState.workspaceAnalysis?.externalFileCount} EXT
 Architecture: ${sessionState.architectureSummary?.markdownSummary}
 Grounded Research: ${grounding.snippets.map(s => `[${s.title}] ${s.preview}`).join("\n")}
+${chatSkillContext ? `\n${chatSkillContext}` : ""}
 
 Respond as a human expert auditor. 
 CRITICAL: You MUST use [TOOL: SEARCH] whenever the user asks for real-time data, internet-wide context, or information about external protocols not fully documented in the local repo. Do NOT guess or use old internal knowledge for real-time facts. Always favor fresh internet data.`;
@@ -1074,9 +1091,15 @@ export async function generateFormalReport(
   return generateFinalAuditReport(context.findingRegistry, context.architecture, {}, activeProvider);
 }
 
-/**
- * Executes a specialized technical audit phase using agents and tools.
- */
+/** Maps each audit phase to a BM25 search query for skill retrieval. */
+const PHASE_SKILL_QUERIES: Record<string, string> = {
+  "audit-setup": "smart contract security audit setup scope checklist slither aderyn static analysis",
+  "audit-map": "smart contract architecture mapping attack surface external calls state variables access control",
+  "audit-hunt": "smart contract vulnerability hunt adversarial external calls invariants worst-case attack vectors",
+  "audit-attack": "attack vectors exploit approval-abuse callback-grief reentrancy rounding share-inflation oracle manipulation",
+  "audit-verify": "verification skeptic judge false positive validation evidence exploit proof",
+};
+
 export async function executeAuditPhase(
   phase: string,
   context: InferenceContext,
@@ -1103,11 +1126,16 @@ export async function executeAuditPhase(
     ? fs.readFileSync(promptPath, "utf-8")
     : `Follow technical security auditing best practices for the ${phase} phase.`;
 
+  // 2. Retrieve relevant skills for this audit phase (RAG)
+  const phaseQuery = PHASE_SKILL_QUERIES[phase] ??
+    `smart contract security audit ${phase}`;
+  const phaseSkillContext = await retrieveSkillContext(phaseQuery, 4, 1200);
+
   const finalPrompt = `You are a Senior Smart Contract Auditor.
 PHASE: ${phase}
 INSTRUCTIONS:
 ${promptTemplate}
-
+${phaseSkillContext ? `\n${phaseSkillContext}\n` : ""}
 CONTEXT:
 ${JSON.stringify({
   intent: context.intent.draftSummary,
