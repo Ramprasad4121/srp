@@ -22,10 +22,10 @@ function highlightSolidity(code: string): string {
   return code
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(comments, '<span style="color:#6b7280">$1</span>')
-    .replace(strings, '<span style="color:#86efac">$1</span>')
-    .replace(keywords, '<span style="color:#c084fc">$1</span>')
-    .replace(types, '<span style="color:#67e8f9">$1</span>')
-    .replace(numbers, '<span style="color:#fbbf24">$1</span>');
+    .replace(strings, '<span style="color:#16a34a">$1</span>')
+    .replace(keywords, '<span style="color:#7c3aed">$1</span>')
+    .replace(types, '<span style="color:#0369a1">$1</span>')
+    .replace(numbers, '<span style="color:#b45309">$1</span>');
 }
 
 // ─── Storage Grid ───
@@ -46,15 +46,15 @@ function StorageGrid({ slots }: { slots: Record<number, StorageState> }) {
             key={i}
             animate={{
               backgroundColor: slot?.dirty
-                ? "rgba(250,204,21,0.15)"
+                ? "rgba(250,204,21,0.12)"
                 : slot?.active
-                ? "rgba(96,165,250,0.12)"
-                : "rgba(255,255,255,0.03)",
+                ? "rgba(96,165,250,0.10)"
+                : "rgba(0,0,0,0.03)",
               borderColor: slot?.dirty
                 ? "rgba(250,204,21,0.5)"
                 : slot?.active
                 ? "rgba(96,165,250,0.4)"
-                : "rgba(255,255,255,0.08)",
+                : "rgba(0,0,0,0.10)",
             }}
             transition={{ duration: 0.3 }}
             className="border p-1.5 min-h-[52px] flex flex-col justify-between"
@@ -115,11 +115,11 @@ function CallTreeNode({
       <div
         className={`flex items-start gap-1.5 py-0.5 text-[10px] leading-tight ${
           isReentry
-            ? "text-amber-400"
+            ? "text-amber-700"
             : node.success === false
-            ? "text-red-400"
+            ? "text-red-600"
             : node.success === true
-            ? "text-green-400"
+            ? "text-green-700"
             : "text-foreground"
         }`}
       >
@@ -130,13 +130,13 @@ function CallTreeNode({
           <span className="text-[10px] opacity-60">{node.contract}.</span>
           <span className="font-semibold">{node.fn}</span>
           {node.value !== "0 ETH" && (
-            <span className="ml-1 text-amber-400 text-[9px]">[{node.value}]</span>
+            <span className="ml-1 text-amber-700 text-[9px]">[{node.value}]</span>
           )}
           {node.success === false && (
-            <span className="ml-1 text-red-400 text-[9px]">✗ REVERT</span>
+            <span className="ml-1 text-red-600 text-[9px]">✗ REVERT</span>
           )}
           {node.success === true && !isReentry && (
-            <span className="ml-1 text-green-400/60 text-[9px]">✓</span>
+            <span className="ml-1 text-green-700/70 text-[9px]">✓</span>
           )}
         </div>
       </div>
@@ -177,7 +177,7 @@ function GasMeter({ gas }: { gas: number }) {
         <motion.span
           key={gas}
           initial={{ scale: 1.2, color: "#fbbf24" }}
-          animate={{ scale: 1, color: "#e8e8e8" }}
+          animate={{ scale: 1, color: "hsl(var(--foreground))" }}
           transition={{ duration: 0.3 }}
           className="font-mono text-lg font-bold"
         >
@@ -230,13 +230,13 @@ function EventLog({ lines }: { lines: LogLine[] }) {
           animate={{ opacity: 1, x: 0 }}
           className={
             line.type === "revert"
-              ? "text-red-400"
+              ? "text-red-600"
               : line.type === "success"
-              ? "text-green-400"
+              ? "text-green-700"
               : line.type === "emit"
-              ? "text-violet-400"
+              ? "text-violet-700"
               : line.type === "sstore"
-              ? "text-amber-400"
+              ? "text-amber-700"
               : "text-muted-foreground"
           }
         >
@@ -463,7 +463,7 @@ export default function Challenge({ state, onStateChange, onBack, initialMode }:
         ))}
         <div className="flex-1" />
         {state.profile?.streak ? (
-          <span className="font-mono text-[10px] text-amber-400 shrink-0">{state.profile.streak}d 🔥</span>
+          <span className="font-mono text-[10px] text-amber-700 shrink-0">{state.profile.streak}d 🔥</span>
         ) : null}
       </div>
 
@@ -478,7 +478,7 @@ export default function Challenge({ state, onStateChange, onBack, initialMode }:
                 idx === challengeIdx
                   ? "border-foreground bg-foreground text-background"
                   : solvedSet.has(c.id)
-                  ? "border-green-500/60 text-green-400"
+                  ? "border-green-600/60 text-green-700"
                   : "border-border text-muted-foreground hover:border-foreground/40"
               }`}
             >
@@ -534,7 +534,7 @@ export default function Challenge({ state, onStateChange, onBack, initialMode }:
               {socialProof.toLocaleString()} builders solved this
             </span>
             {alreadySolved && (
-              <span className="font-mono text-[9px] text-green-400 border border-green-500/30 px-1.5 py-0.5">
+              <span className="font-mono text-[9px] text-green-700 border border-green-600/30 px-1.5 py-0.5">
                 ✓ SOLVED
               </span>
             )}
@@ -552,13 +552,13 @@ export default function Challenge({ state, onStateChange, onBack, initialMode }:
                 disabled={runState === "running"}
                 className={`font-mono text-[10px] font-bold px-3 py-1 border transition-all flex items-center gap-1.5 ${
                   runState === "running"
-                    ? "border-amber-500/40 text-amber-400"
+                    ? "border-amber-600/40 text-amber-700"
                     : "bg-foreground text-background border-foreground hover:opacity-80"
                 }`}
               >
                 {runState === "running" ? (
                   <>
-                    <span className="inline-block w-2 h-2 border border-amber-400 border-t-transparent animate-spin" />
+                    <span className="inline-block w-2 h-2 border border-amber-700 border-t-transparent animate-spin" />
                     RUNNING
                   </>
                 ) : "▶ RUN"}
@@ -577,7 +577,7 @@ export default function Challenge({ state, onStateChange, onBack, initialMode }:
               value={code}
               onChange={e => setCode(e.target.value)}
               className="absolute inset-0 w-full h-full font-mono text-xs p-4 bg-transparent text-transparent caret-foreground resize-none outline-none leading-relaxed"
-              style={{ caretColor: "#e8e8e8" }}
+              style={{ caretColor: "hsl(var(--foreground))" }}
               spellCheck={false}
             />
           </div>
@@ -634,7 +634,7 @@ export default function Challenge({ state, onStateChange, onBack, initialMode }:
                   {/* XP earned */}
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="font-mono text-xs text-green-400 mb-1 tracking-widest">CHALLENGE SOLVED</div>
+                      <div className="font-mono text-xs text-green-700 mb-1 tracking-widest">CHALLENGE SOLVED</div>
                       <h3 className="text-2xl font-bold text-foreground">{challenge.title}</h3>
                       <p className="font-mono text-xs text-muted-foreground mt-0.5">{challenge.subtitle}</p>
                     </div>
@@ -657,7 +657,7 @@ export default function Challenge({ state, onStateChange, onBack, initialMode }:
                       transition={{ delay: 0.3, type: "spring" }}
                       className="border border-amber-500/40 bg-amber-500/10 px-4 py-3"
                     >
-                      <span className="font-mono text-xs text-amber-400 font-bold tracking-wide">
+                      <span className="font-mono text-xs text-amber-700 font-bold tracking-wide">
                         ⚡ {bonusMsg}
                       </span>
                     </motion.div>
@@ -666,7 +666,7 @@ export default function Challenge({ state, onStateChange, onBack, initialMode }:
                   {/* Consecutive solve streak hook */}
                   {consecutiveSolves >= 2 && (
                     <div className="border border-violet-500/30 bg-violet-500/10 px-3 py-2">
-                      <span className="font-mono text-xs text-violet-400">
+                      <span className="font-mono text-xs text-violet-700">
                         🔥 On a {consecutiveSolves}-challenge streak! Keep going →
                       </span>
                     </div>
@@ -691,7 +691,7 @@ export default function Challenge({ state, onStateChange, onBack, initialMode }:
                     </div>
                   ) : (
                     <div className="border border-green-500/30 bg-green-500/10 p-3">
-                      <div className="font-mono text-xs text-green-400 font-bold">
+                      <div className="font-mono text-xs text-green-700 font-bold">
                         ✓ {MODE_META[mode].label} MODE COMPLETE
                       </div>
                       <div className="font-mono text-xs text-muted-foreground mt-1">
@@ -718,10 +718,10 @@ export default function Challenge({ state, onStateChange, onBack, initialMode }:
               ) : (
                 <>
                   <div>
-                    <div className="font-mono text-xs text-red-400 mb-1 tracking-widest">EXECUTION FAILED</div>
+                    <div className="font-mono text-xs text-red-600 mb-1 tracking-widest">EXECUTION FAILED</div>
                     <h3 className="text-xl font-bold text-foreground">{challenge.title}</h3>
                     <div className="mt-3 border border-red-500/30 bg-red-500/10 p-3">
-                      <p className="font-mono text-xs text-red-300 leading-relaxed">
+                      <p className="font-mono text-xs text-red-600 leading-relaxed">
                         {logLines.find(l => l.type === "revert")?.text ?? "Test failed. Review the objective and try again."}
                       </p>
                     </div>
