@@ -1,6 +1,7 @@
 import type { AppState } from "@/lib/store";
 import { xpToLevel } from "@/lib/store";
 import { LEARNING_PATHS } from "@/lib/curriculum";
+import { CHALLENGES_BY_MODE } from "@/lib/challenges";
 
 interface Props {
   state: AppState;
@@ -39,8 +40,93 @@ export default function Dashboard({ state, onNavigate }: Props) {
     ? `${profile.streak}-day streak. Keep it going.`
     : `Welcome back, ${profile.name}.`;
 
+  const totalChallenges = Object.values(CHALLENGES_BY_MODE).reduce((a, c) => a + c.length, 0);
+
+  const CHALLENGE_MODES = [
+    {
+      id: "beginner" as const,
+      label: "BEGINNER",
+      desc: "Fill blanks, watch contracts run",
+      color: "#22c55e",
+      xp: "100–150 XP",
+      count: CHALLENGES_BY_MODE.beginner.length,
+      solvers: "2,847",
+    },
+    {
+      id: "builder" as const,
+      label: "BUILDER",
+      desc: "Implement DeFi primitives live",
+      color: "#3b82f6",
+      xp: "300–400 XP",
+      count: CHALLENGES_BY_MODE.builder.length,
+      solvers: "521",
+    },
+    {
+      id: "auditor" as const,
+      label: "AUDITOR",
+      desc: "Find bugs, exploit contracts",
+      color: "#ef4444",
+      xp: "500–600 XP",
+      count: CHALLENGES_BY_MODE.auditor.length,
+      solvers: "189",
+    },
+  ];
+
   return (
     <div className="space-y-6 pt-4">
+      {/* ── Challenge Entry — hero section ── */}
+      <div className="border border-border bg-card">
+        <div className="flex items-center justify-between px-4 pt-4 pb-2">
+          <div>
+            <div className="label-mono mb-1">Interactive Sandbox</div>
+            <h2 className="text-lg font-bold text-foreground leading-tight">
+              Run → See → Change → Repeat
+            </h2>
+            <p className="font-mono text-xs text-muted-foreground mt-1">
+              Real smart contracts. Visual execution. {totalChallenges} challenges.
+            </p>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="font-mono text-2xl font-bold">{totalChallenges}</div>
+            <div className="label-mono">challenges</div>
+          </div>
+        </div>
+        <div className="divide-y divide-border border-t border-border mt-1">
+          {CHALLENGE_MODES.map(m => (
+            <button
+              key={m.id}
+              onClick={() => onNavigate(`challenge/${m.id}`)}
+              className="w-full px-4 py-3 text-left flex items-center justify-between group hover:bg-muted transition-colors duration-150"
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-2 h-2 shrink-0"
+                  style={{ background: m.color }}
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] font-bold tracking-widest" style={{ color: m.color }}>
+                      {m.label}
+                    </span>
+                    <span className="font-mono text-[9px] text-muted-foreground">
+                      {m.count} challenges
+                    </span>
+                  </div>
+                  <div className="font-mono text-xs text-muted-foreground mt-0.5">{m.desc}</div>
+                </div>
+              </div>
+              <div className="text-right flex items-center gap-3">
+                <div>
+                  <div className="font-mono text-xs font-bold text-foreground">{m.xp}</div>
+                  <div className="font-mono text-[9px] text-muted-foreground">{m.solvers} solved</div>
+                </div>
+                <span className="font-mono text-sm text-muted-foreground group-hover:text-foreground transition-colors">→</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Avatar greeting strip */}
       <div className="border border-border p-5 flex items-start gap-4 bg-card">
         <div

@@ -126,9 +126,57 @@ node --test tests/smoke/runtime-stores.test.mjs
 
 ---
 
+## SRP Learn — Artifact (`artifacts/learn`)
+
+**Stack:** React 19 + Vite + Tailwind v4 + framer-motion + wouter + lucide-react. No backend — localStorage only.
+
+**Design system:** Near-black bg (`#080808`), JetBrains Mono, dot-grid, sharp borders, `→` motif.
+
+### Architecture
+
+```
+artifacts/learn/src/
+├── lib/
+│   ├── challenges.ts     9 challenges (3×beginner, 3×builder, 3×auditor) with pre-computed TraceEvent[] traces
+│   ├── curriculum.ts     13 text-based lessons across 4 learning paths
+│   ├── store.ts          XP/streak/level logic (addXP, xpToLevel)
+│   └── avatar-ai.ts      OpenAI streaming (VITE_AI_BASE_URL / VITE_AI_API_KEY via env)
+├── pages/
+│   ├── Challenge.tsx     Run→See→Change→Repeat sandbox (split pane: editor + visual execution)
+│   ├── Dashboard.tsx     Home with challenge entry cards + weekly heatmap
+│   ├── Lesson.tsx        Text lesson + quiz reader
+│   ├── Paths.tsx         Learning path browser
+│   ├── PathDetail.tsx    Path lesson list
+│   ├── Chat.tsx          AI tutor chat
+│   ├── Profile.tsx       XP / rank / streak profile
+│   └── Onboarding.tsx    5-step avatar setup
+└── App.tsx               Route shell + bottom nav (Home/Sandbox/Learn/Tutor/Profile)
+```
+
+### Challenge System (`challenges.ts` + `Challenge.tsx`)
+
+The **Run → See → Change → Repeat** engine:
+- Code editor: styled textarea with CSS-based Solidity syntax highlighting (zero new deps)
+- Execution: deterministic `TraceEvent[]` playback engine (no real EVM — offline, instant)
+- Visual panel (tabbed): **Call Tree** (animated SVG-ish div tree) | **Storage Grid** (8×4 animated slots) | **Gas Meter** | **Event Log**
+- 9 addiction hooks baked in: variable reward (random bonus badge), Zeigarnik cliffhanger (show next challenge before completing), near-completion progress bar, social proof counts, loss-aversion streak display, consecutive-solve streak messages, endowed progress, flow-state difficulty calibration, infinite session design
+
+**Challenge modes:**
+- `beginner`: fill-in-blanks (value=42, deposit(), require(owner))
+- `builder`: implement DeFi primitives (flash loan, AMM x*y=k, multisig 2-of-3)
+- `auditor`: find & exploit vulnerabilities (reentrancy, oracle manipulation, tx.origin bypass)
+
+**Routing:** `challenge` → default beginner, `challenge/builder` → builder mode, `challenge/auditor` → auditor mode
+
+### Gamification
+- XP levels: Genesis → Explorer → Builder → Hacker → Architect → Auditor → Legend → Ascended
+- Daily streak tracked in localStorage, displayed in top bar
+- Weekly XP heatmap on Dashboard
+- Challenges award 100–600 XP (20% bonus possible via variable reward)
+
 ## Roadmap
 
-1. **Phase 3 — Learning platform** — personalized AI-driven education on ETH/Solana.
+1. **Real EVM execution** — add solc-js + @ethereumjs/vm for actual in-browser compilation and execution
 2. **Phase 4 — DeFi builder agents** — agentic team helping developers write and deploy contracts on-chain.
 3. **Phase 5 — Canonical graph + projection refactor** — deterministic audit state machine.
 4. **Phase 6 — Route registry + handoff contracts** — formalize agent-to-agent handoffs.

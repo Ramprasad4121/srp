@@ -10,7 +10,9 @@ import Paths from "@/pages/Paths";
 import PathDetail from "@/pages/PathDetail";
 import Lesson from "@/pages/Lesson";
 import Profile from "@/pages/Profile";
-import { LayoutDashboard, BookOpen, User, MessageCircle } from "lucide-react";
+import Challenge from "@/pages/Challenge";
+import type { ChallengeMode } from "@/lib/challenges";
+import { LayoutDashboard, BookOpen, User, MessageCircle, Terminal } from "lucide-react";
 
 type Route =
   | "dashboard"
@@ -18,7 +20,9 @@ type Route =
   | "paths"
   | `path/${string}`
   | `lesson/${string}`
-  | "profile";
+  | "profile"
+  | "challenge"
+  | `challenge/${ChallengeMode}`;
 
 const AVATAR_COLORS: Record<string, string> = {
   nebula: "#7c3aed",
@@ -83,6 +87,7 @@ function App() {
 
   const NAV_ITEMS = [
     { id: "dashboard", icon: <LayoutDashboard className="w-4 h-4" />, label: "Home" },
+    { id: "challenge", icon: <Terminal className="w-4 h-4" />, label: "Sandbox" },
     { id: "paths", icon: <BookOpen className="w-4 h-4" />, label: "Learn" },
     { id: "chat", icon: <MessageCircle className="w-4 h-4" />, label: "Tutor" },
     { id: "profile", icon: <User className="w-4 h-4" />, label: "Profile" },
@@ -92,6 +97,7 @@ function App() {
     ? "paths"
     : route === "chat" ? "chat"
     : route === "profile" ? "profile"
+    : route === "challenge" || route.startsWith("challenge/") ? "challenge"
     : "dashboard";
 
   const renderContent = () => {
@@ -105,10 +111,9 @@ function App() {
     );
     if (route === "paths") return <Paths state={appState} onNavigate={navigate} />;
     if (route.startsWith("path/")) {
-      const pathId = route.slice(5);
       return (
         <PathDetail
-          pathId={pathId}
+          pathId={route.slice(5)}
           state={appState}
           onBack={() => navigate("paths")}
           onLesson={id => navigate(`lesson/${id}`)}
@@ -117,7 +122,6 @@ function App() {
     }
     if (route.startsWith("lesson/")) {
       const lessonId = route.slice(7);
-      const pathId = appState.profile?.currentPath ?? "";
       return (
         <Lesson
           lessonId={lessonId}
@@ -132,8 +136,23 @@ function App() {
       );
     }
     if (route === "profile") return <Profile state={appState} onReset={handleReset} />;
+    if (route === "challenge" || route.startsWith("challenge/")) {
+      const modeFromRoute = route.startsWith("challenge/")
+        ? (route.slice(10) as ChallengeMode)
+        : "beginner";
+      return (
+        <Challenge
+          state={appState}
+          onStateChange={handleStateChange}
+          onBack={() => navigate("dashboard")}
+          initialMode={modeFromRoute}
+        />
+      );
+    }
     return <Dashboard state={appState} onNavigate={navigate} />;
   };
+
+  const isChallengePage = route === "challenge" || route.startsWith("challenge/");
 
   return (
     <TooltipProvider>
@@ -169,9 +188,15 @@ function App() {
         </header>
 
         {/* Main content */}
-        <main className="max-w-lg mx-auto px-4 pt-16 pb-20 relative z-10">
-          {renderContent()}
-        </main>
+        {isChallengePage ? (
+          <main className="fixed inset-0 top-12 bottom-14 overflow-hidden z-10">
+            {renderContent()}
+          </main>
+        ) : (
+          <main className="max-w-lg mx-auto px-4 pt-16 pb-20 relative z-10">
+            {renderContent()}
+          </main>
+        )}
 
         {/* Bottom nav */}
         <nav className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t border-border">
