@@ -1,6 +1,0 @@
-{
-  "tool": "none",
-  "success": true,
-  "logs": "No toolchain detected (neither Foundry nor Hardhat).",
-  "generatedAt": "2026-04-04T07:43:42.147Z"
-}

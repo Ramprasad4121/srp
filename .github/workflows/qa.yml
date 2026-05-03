@@ -1,36 +1,20 @@
-name: QA Game Trigger
+name: CI
 
 on:
   push:
-    branches: [ "**" ]
-  pull_request:
-    branches: [ "**" ]
+    branches: ["**"]
 
 jobs:
-  test:
+  typecheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v3
         with:
           version: 10.6.5
-          
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
-          
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        
-      - name: Install Dependencies
-        run: pnpm install
-        
-      - name: Run Node Tests
-        run: pnpm test
-        
-      - name: Run Foundry Tests
-        run: forge test
+          cache: "pnpm"
+      - run: pnpm install
+      - run: pnpm --filter @workspace/learn run typecheck

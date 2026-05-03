@@ -1,6 +1,0 @@
-[profile.default]
-src = "contracts"
-
-test = "tests"
-out = "out"
-libs = ["lib"]

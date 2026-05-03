@@ -1,24 +1,16 @@
 {
-  "name": "srp",
+  "name": "srp-learn",
   "private": true,
-  "version": "0.1.0",
-  "description": "Security Reasoning Protocol monorepo",
+  "version": "1.0.0",
+  "description": "SRP Learn — Web3 Smart Contract Learning Platform",
   "packageManager": "pnpm@10.6.5",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "build": "tsc -b",
-    "clean": "node scripts/clean.mjs",
-    "test": "npm run build && NODE_ENV=test node --test \"tests/**/*.test.mjs\"",
-    "typecheck": "tsc -b --pretty false"
+    "dev": "pnpm --filter @workspace/learn run dev",
+    "build": "pnpm --filter @workspace/learn run build",
+    "typecheck": "pnpm --filter @workspace/learn run typecheck"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.15.3",
     "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "@excalidraw/excalidraw": "^0.18.0"
   }
 }

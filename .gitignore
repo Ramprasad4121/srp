@@ -1,51 +1,8 @@
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-*.egg
-dist/
-build/
-*.whl
-
-# Environment
-.env
-venv/
-.venv/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Node / TypeScript
 node_modules/
-.turbo/
-coverage/
+dist/
+.env
+.env.local
+*.log
+.cache/
 *.tsbuildinfo
-apps/*/dist/
-packages/*/dist/
-
-# macOS
 .DS_Store
-
-# Foundry
-out/
-cache/
-
-# Runtime artifacts
-.runtime/
-traces/
-outputs/
-evolution_history/
-reports/*.json
-
-# SRP ephemeral
-.srp-assumptions.json
-.srp-context.json
-.srp/runs/
-.gstack/
-
-test_projects/
-test_project/
-.claude/skills/gstack/

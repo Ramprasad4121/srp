@@ -1,1 +1,0 @@
-{"version":3,"file":"setup-view.d.ts","sourceRoot":"","sources":["../../src/onboarding/setup-view.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,UAAU,EAAa,MAAM,KAAK,CAAC;AAK5C,qBACa,SAAU,SAAQ,UAAU;IACvC,OAAgB,MAAM,0BAkDpB;IAEO,OAAO,CAAC,KAAK,CAA0B;IACvC,OAAO,CAAC,KAAK,CAAK;IAElB,MAAM;IAQf,OAAO,CAAC,cAAc;IAqBtB,OAAO,CAAC,eAAe;YAWT,QAAQ;CAQvB"}
