@@ -169,96 +169,43 @@ export default function Dashboard({ state, onNavigate }: Props) {
       </div>
 
       {/* ── 3D NEURAL VOID SIMULATOR ── */}
-      <div
-        className="mt-6 border border-border relative overflow-hidden"
-        style={{ background: "#03020a" }}
-      >
-        {/* Animated grid bg */}
-        <div
-          className="absolute inset-0 opacity-20 pointer-events-none"
-          style={{
-            backgroundImage:
-              "linear-gradient(#2d1b6922 1px, transparent 1px), linear-gradient(90deg, #2d1b6922 1px, transparent 1px)",
-            backgroundSize: "20px 20px",
-          }}
-        />
-        <div className="relative px-5 pt-5 pb-4">
+      <div className="mt-6 border border-border bg-card overflow-hidden">
+        <div className="px-5 pt-5 pb-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <div
-                className="font-mono text-[10px] font-bold tracking-widest uppercase mb-1"
-                style={{ color: "#7c3aed" }}
-              >
-                3D Immersive · Neural Void Simulator
-              </div>
-              <h3
-                className="text-lg font-bold tracking-tight leading-tight"
-                style={{ color: "#e9d5ff" }}
-              >
+              <div className="label-mono mb-1">3D Immersive · Neural Void Simulator</div>
+              <h3 className="text-lg font-bold text-foreground tracking-tight leading-tight">
                 Watch Code Execute in 3D
               </h3>
-              <p
-                className="font-mono text-xs mt-1.5 leading-relaxed"
-                style={{ color: "#6b7280" }}
-              >
+              <p className="font-mono text-xs text-muted-foreground mt-1 leading-relaxed">
                 Paste Solidity or Rust — see EVM sequential flow vs Solana
                 parallel lanes in a live cyberpunk simulation.
               </p>
-              <div className="flex gap-3 mt-3">
+              <div className="flex flex-wrap gap-2 mt-3">
                 {[
-                  { label: "EVM Vault", color: "#7c3aed" },
-                  { label: "Logic Gates", color: "#ef4444" },
-                  { label: "Sealevel", color: "#10b981" },
-                  { label: "Reentrancy", color: "#f59e0b" },
+                  { label: "EVM Vault",   color: "#7c3aed" },
+                  { label: "Logic Gates", color: "#dc2626" },
+                  { label: "Sealevel",    color: "#16a34a" },
+                  { label: "Reentrancy",  color: "#d97706" },
                 ].map((tag) => (
-                  <div key={tag.label} className="flex items-center gap-1">
-                    <div
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{
-                        background: tag.color,
-                        boxShadow: `0 0 4px ${tag.color}`,
-                      }}
-                    />
-                    <span
-                      className="font-mono text-[9px] uppercase tracking-wide"
-                      style={{ color: "#374151" }}
-                    >
+                  <div key={tag.label} className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: tag.color }} />
+                    <span className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
                       {tag.label}
                     </span>
                   </div>
                 ))}
               </div>
             </div>
-            {/* Glowing orb decoration */}
-            <div
-              className="shrink-0 w-14 h-14 rounded-sm flex items-center justify-center text-2xl"
-              style={{
-                background: "#1a0a3e",
-                boxShadow: "0 0 20px #7c3aed44, inset 0 0 12px #7c3aed22",
-                border: "1px solid #2d1b69",
-              }}
-            >
+            <div className="shrink-0 w-12 h-12 border border-border bg-background flex items-center justify-center text-xl text-foreground">
               ⬡
             </div>
           </div>
           <button
             onClick={() => onNavigate("simulator")}
-            className="mt-4 w-full font-mono text-sm font-bold py-2.5 border transition-all"
-            style={{
-              borderColor: "#7c3aed",
-              background: "#7c3aed",
-              color: "#fff",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background =
-                "#6d28d9";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background =
-                "#7c3aed";
-            }}
+            className="mt-4 w-full btn-arrow justify-center py-3 text-sm font-semibold"
           >
-            ▶ Launch Neural Void Simulator
+            → Launch 3D Simulator
           </button>
         </div>
       </div>
