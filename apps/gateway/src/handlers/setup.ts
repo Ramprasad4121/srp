@@ -19,7 +19,7 @@ import type {
   SetupIdentity,
   SetupManifest
 } from "@srp/shared-types";
-import { createSetupUpdatedEvent } from "@srp/events";
+import { createSetupUpdatedEvent, createBootstrapUpdatedEvent } from "@srp/events";
 
 import { readJsonBody, sendError, sendJson } from "../http-utils.js";
 import { sharedEventBus } from "../events/event-bus.js";
@@ -332,6 +332,7 @@ export async function handlePostCompleteWorkspace(
   try {
     const manifest = await persistWorkspaceSetupCompleted(config.rootDirectory);
     sharedEventBus.emit(createSetupUpdatedEvent());
+    sharedEventBus.emit(createBootstrapUpdatedEvent());
     sendJson(res, 200, makeSetupResponse(manifest));
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);

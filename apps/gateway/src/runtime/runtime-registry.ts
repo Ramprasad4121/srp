@@ -35,6 +35,9 @@ export interface RuntimeEntry {
   liveRunStatus: SessionStatus;
   liveFailureDetail: string | undefined;
 
+  activeIdentity?: import("@srp/shared-types").SetupIdentity | undefined;
+  activeProjectMemory?: import("@srp/shared-types").ProjectMemory | undefined;
+
   runtimeMemory: SessionRuntimeMemory;
 
   knowledgeBus: KnowledgeBus;
@@ -80,6 +83,8 @@ export function createRuntimeEntry(projectId: string): RuntimeEntry {
     liveArtifacts: [],
     liveRunStatus: "idle",
     liveFailureDetail: undefined,
+    activeIdentity: undefined,
+    activeProjectMemory: undefined,
     runtimeMemory: createEmptyRuntimeMemory(),
     knowledgeBus: new KnowledgeBus(),
     agentRegistry: new AgentRegistry(),
