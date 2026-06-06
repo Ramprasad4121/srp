@@ -1,8 +1,0 @@
-uploads = []
-generated = []
-
-[[outputs]]
-id = "LkkmvCBIhbMhRzxQOANwA"
-uri = "file://.local/audits/SRP-FOUNDATIONS-AUDIT.md"
-type = "text"
-title = "SRP Foundations Audit"
