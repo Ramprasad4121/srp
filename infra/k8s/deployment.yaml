@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: srp
+  labels:
+    app: srp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: srp
+  template:
+    metadata:
+      labels:
+        app: srp
+    spec:
+      containers:
+        - name: srp
+          image: srp:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: srp
+spec:
+  selector:
+    app: srp
+  ports:
+    - port: 8080
+      targetPort: 8080

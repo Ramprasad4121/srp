@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SRP Security Operations</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="mark">SRP</span>
+        <span>Security Reasoning Protocol</span>
+      </div>
+      <nav>
+        <a href="#audit">Audit</a>
+        <a href="#agents">Agents</a>
+        <a href="#findings">Findings</a>
+        <a href="#monitoring">Monitoring</a>
+      </nav>
+      <label class="token">
+        API token
+        <input id="token" value="srp_demo_admin_token" autocomplete="off" />
+      </label>
+    </aside>
+
+    <main>
+      <section class="topbar">
+        <div>
+          <h1>Security Operations Dashboard</h1>
+          <p id="connection">Connecting to SRP event stream...</p>
+        </div>
+        <button id="runAudit">Run Audit</button>
+      </section>
+
+      <section class="metrics">
+        <div><strong id="auditCount">0</strong><span>Audits</span></div>
+        <div><strong id="findingCount">0</strong><span>Findings</span></div>
+        <div><strong id="provenCount">0</strong><span>Proven PoCs</span></div>
+        <div><strong id="incidentCount">0</strong><span>Incidents</span></div>
+      </section>
+
+      <section id="audit" class="workspace">
+        <form id="auditForm" class="panel">
+          <h2>Live Audit</h2>
+          <input name="name" value="ExampleVault" aria-label="Protocol name" />
+          <select name="chain" aria-label="Chain">
+            <option>ethereum</option>
+            <option>arbitrum</option>
+            <option>optimism</option>
+            <option>base</option>
+            <option>polygon</option>
+            <option>avalanche</option>
+            <option>solana</option>
+          </select>
+          <textarea name="docs" aria-label="Protocol docs">Only the governor may upgrade the vault. The vault must remain solvent after withdrawals.</textarea>
+          <textarea name="source" aria-label="Source code">contract Vault {
+  function withdraw() external {
+    (bool ok,) = msg.sender.call("");
+    require(ok);
+  }
+}</textarea>
+        </form>
+
+        <div id="agents" class="panel">
+          <h2>Active Agents</h2>
+          <div class="agent-grid">
+            <span>Intent</span><span>Discovery</span><span>DynaDebate</span><span>PoC</span><span>Watch</span><span>Report</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="findings" class="panel">
+        <h2>Findings Explorer</h2>
+        <div id="findingsList" class="findings"></div>
+      </section>
+
+      <section id="monitoring" class="panel">
+        <div class="section-head">
+          <h2>Runtime Monitoring</h2>
+          <button id="simulateIncident">Simulate Attack Signal</button>
+        </div>
+        <div id="incidents" class="incidents"></div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
