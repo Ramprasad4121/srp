@@ -44,6 +44,7 @@ export interface ProtocolIntent {
   trustBoundaries: string[];
   attackSurfaces: string[];
   invariants: string[];
+  defiPrimitives: string[];
   knowledgeGraph: KnowledgeGraph;
   threatModel: ThreatModel;
 }

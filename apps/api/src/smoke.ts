@@ -1,6 +1,6 @@
 import { runAudit } from "../../../packages/core/src/index.ts";
 
-const report = runAudit({
+const report = await runAudit({
   name: "SmokeVault",
   chain: "ethereum",
   documents: [{ path: "README.md", kind: "README", content: "Only the governor may upgrade the vault. The vault must remain solvent." }],

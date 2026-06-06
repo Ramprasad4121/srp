@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
+import crypto from "node:crypto";
 import { runAudit, RuntimeSecurityLayer, renderAuditReport, type AuditReport, type Incident, type ProtocolInput, type RuntimeSignal } from "../../../packages/core/src/index.ts";
 import { JsonStore } from "./storage.ts";
 
@@ -36,6 +37,15 @@ server.listen(PORT, HOST, () => {
 });
 
 async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, {
+      "access-control-allow-origin": "*",
+      "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
+      "access-control-allow-headers": "Authorization, Content-Type",
+    });
+    return res.end();
+  }
+
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
   const session = authenticate(req);
   if (!applyRateLimit(req, res, session)) return;
@@ -49,10 +59,13 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (url.pathname === "/api/audits" && req.method === "GET") return requireRole(req, res, session, "viewer", () => listAudits(res));
   if (url.pathname === "/api/audits" && req.method === "POST") return requireRole(req, res, session, "auditor", async () => createAudit(req, res, session));
   if (url.pathname.startsWith("/api/audits/") && req.method === "GET") return requireRole(req, res, session, "viewer", () => getAudit(url.pathname, res));
+  if (url.pathname.startsWith("/api/audits/") && req.method === "DELETE") return requireRole(req, res, session, "admin", async () => deleteAudit(url.pathname, res));
   if (url.pathname.startsWith("/api/reports/") && req.method === "GET") return requireRole(req, res, session, "viewer", () => getReport(url.pathname, res));
   if (url.pathname === "/api/incidents" && req.method === "GET") return requireRole(req, res, session, "viewer", async () => json(res, 200, { incidents: (await store.read()).incidents }));
   if (url.pathname === "/api/signals" && req.method === "POST") return requireRole(req, res, session, "auditor", async () => ingestSignal(req, res, session));
   if (url.pathname === "/api/audit-log" && req.method === "GET") return requireRole(req, res, session, "admin", async () => json(res, 200, { auditLog: (await store.read()).auditLog }));
+  if (url.pathname === "/api/protocols" && req.method === "GET") return requireRole(req, res, session, "viewer", () => listProtocols(res));
+  if (url.pathname === "/api/stats" && req.method === "GET") return requireRole(req, res, session, "viewer", () => getStats(res));
   if (req.method === "GET") return serveStatic(url.pathname, res);
   json(res, 404, { error: "Not found" });
 }
@@ -98,7 +111,9 @@ function applyRateLimit(req: IncomingMessage, res: ServerResponse, session: Sess
 
 async function createAudit(req: IncomingMessage, res: ServerResponse, session: Session | undefined): Promise<void> {
   const input = await readJson<ProtocolInput>(req);
-  const report = runAudit(input);
+  const report = await runAudit(input, (event, data) => {
+    broadcast(event, { ...data, subject: session?.subject });
+  });
   await store.update((state) => {
     state.audits.push(report);
   });
@@ -130,6 +145,46 @@ async function getReport(pathname: string, res: ServerResponse): Promise<void> {
   const audit = (await store.read()).audits.find((item) => item.id === id);
   if (!audit) return json(res, 404, { error: "Report not found" });
   text(res, 200, renderAuditReport(audit), "text/markdown; charset=utf-8");
+}
+
+async function deleteAudit(pathname: string, res: ServerResponse): Promise<void> {
+  const id = pathname.split("/").at(-1) ?? "";
+  await store.update((state) => {
+    state.audits = state.audits.filter(a => a.id !== id);
+  });
+  json(res, 200, { success: true });
+}
+
+async function listProtocols(res: ServerResponse): Promise<void> {
+  const audits = (await store.read()).audits;
+  const protocols = [...new Set(audits.map(a => a.protocol.name))];
+  json(res, 200, { protocols });
+}
+
+async function getStats(res: ServerResponse): Promise<void> {
+  const state = await store.read();
+  const totalAudits = state.audits.length;
+  let totalFindings = 0;
+  let provenCount = 0;
+  const severityCounts = { critical: 0, high: 0, medium: 0, low: 0, informational: 0 };
+  
+  for (const audit of state.audits) {
+    totalFindings += audit.findings.length;
+    for (const f of audit.findings) {
+      if (f.status === "proven") provenCount++;
+      if (f.severity in severityCounts) {
+        severityCounts[f.severity as keyof typeof severityCounts]++;
+      }
+    }
+  }
+  
+  json(res, 200, {
+    totalAudits,
+    totalFindings,
+    provenCount,
+    severityCounts,
+    totalIncidents: state.incidents.length
+  });
 }
 
 async function ingestSignal(req: IncomingMessage, res: ServerResponse, session: Session | undefined): Promise<void> {
@@ -181,9 +236,12 @@ async function readJson<T>(req: IncomingMessage): Promise<T> {
   return JSON.parse(Buffer.concat(chunks).toString("utf8")) as T;
 }
 
-function json(res: ServerResponse, status: number, body: unknown): void {
+function json(res: ServerResponse, status: number, body: any): void {
+  const payload = (status >= 400 && typeof body === 'object' && body !== null && !('requestId' in body)) 
+    ? { ...body, requestId: crypto.randomUUID() } 
+    : body;
   res.writeHead(status, { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*" });
-  res.end(JSON.stringify(body, null, 2));
+  res.end(JSON.stringify(payload, null, 2));
 }
 
 function text(res: ServerResponse, status: number, body: string, contentTypeHeader: string): void {

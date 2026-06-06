@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { runAudit, RuntimeSecurityLayer } from "../src/index.ts";
 
-test("EVM audit produces evidence-backed validated findings", () => {
-  const report = runAudit({
+test("EVM audit produces evidence-backed validated findings", async () => {
+  const report = await runAudit({
     name: "Vault",
     chain: "ethereum",
     documents: [{ path: "README.md", kind: "README", content: "Only the governor may upgrade the vault. The vault must remain solvent." }],
@@ -26,8 +26,8 @@ test("EVM audit produces evidence-backed validated findings", () => {
   assert.ok(report.findings.some((finding) => finding.status === "proven"));
 });
 
-test("Solana audit identifies account validation attack surfaces", () => {
-  const report = runAudit({
+test("Solana audit identifies account validation attack surfaces", async () => {
+  const report = await runAudit({
     name: "StakeProgram",
     chain: "solana",
     documents: [{ path: "docs.md", kind: "DOCS", content: "Rewards distributed must not exceed accrued rewards." }],
