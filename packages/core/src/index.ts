@@ -10,3 +10,6 @@ export * from "./types.ts";
 export * from "./solidity.ts";
 export * from "./anchor.ts";
 export * from "./utils.ts";
+export * from "./capabilities.ts";
+export * from "./catalog.ts";
+export * from "./export.ts";

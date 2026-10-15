@@ -2,6 +2,8 @@ const state = { audits: [], selectedAudit: null, incidents: [] };
 const tokenInput = document.querySelector("#token");
 const connection = document.querySelector("#connection");
 
+tokenInput.value = localStorage.getItem("srp.token") || "";
+
 function token() {
   return tokenInput.value.trim();
 }
@@ -51,16 +53,22 @@ function renderAudit(audit) {
   const findings = audit.findings || [];
   document.querySelector("#findingCount").textContent = findings.length;
   document.querySelector("#provenCount").textContent = findings.filter((finding) => finding.status === "proven").length;
+  document.querySelector("#coverage").textContent = audit.coverage ? `${Math.round(audit.coverage.ratio * 100)}%` : "-";
+  document.querySelector("#unknowns").innerHTML = (audit.unknowns || []).length
+    ? `<h3>Not analyzed</h3>${audit.unknowns.map((unknown) => `<p><span class="pill">${escapeHtml(unknown.severity)}</span> ${escapeHtml(unknown.file)}: ${escapeHtml(unknown.reason)}</p>`).join("")}`
+    : "";
   document.querySelector("#findingsList").innerHTML = findings.map((finding) => `
     <article class="finding">
       <h3>${escapeHtml(finding.title)}</h3>
       <div class="meta">
-        <span class="pill">${finding.severity}</span>
-        <span class="pill">${finding.status}</span>
-        <span class="pill">${finding.confidenceBand} ${finding.confidence}</span>
-        <span class="pill">${finding.detector}</span>
+        <span class="pill">${escapeHtml(finding.severity)}${finding.proposedSeverity && finding.proposedSeverity !== finding.severity ? ` (proposed ${escapeHtml(finding.proposedSeverity)})` : ""}</span>
+        <span class="pill">${escapeHtml(finding.status)}</span>
+        <span class="pill">${escapeHtml(finding.confidenceBand)} ${escapeHtml(finding.confidence)}</span>
+        <span class="pill">${escapeHtml(finding.detector)}</span>
       </div>
       <p>${escapeHtml(finding.impact)}</p>
+      <ul>${finding.evidence.map((evidence) => `<li><code>L${evidence.startLine}</code> ${escapeHtml(evidence.excerpt)} <em>${escapeHtml(evidence.rationale)}</em></li>`).join("")}</ul>
+      ${(finding.mitigations || []).length ? `<p>Mitigations: ${finding.mitigations.map(escapeHtml).join("; ")}</p>` : ""}
       <p>${escapeHtml(finding.remediation)}</p>
     </article>
   `).join("");
@@ -71,7 +79,7 @@ function renderIncidents() {
     ? state.incidents.map((incident) => `
       <article class="incident">
         <h3>${escapeHtml(incident.title)}</h3>
-        <div class="meta"><span class="pill">${incident.severity}</span><span class="pill">${incident.status}</span><span class="pill">${incident.protocol}</span></div>
+        <div class="meta"><span class="pill">${escapeHtml(incident.severity)}</span><span class="pill">${escapeHtml(incident.status)}</span><span class="pill">${escapeHtml(incident.protocol)}</span></div>
         <p>${incident.evidence.map(escapeHtml).join(" | ")}</p>
       </article>
     `).join("")
@@ -92,7 +100,13 @@ async function simulateIncident() {
 function connectEvents() {
   const events = new EventSource(`/api/events?token=${encodeURIComponent(token())}`);
   events.addEventListener("ready", () => connection.textContent = "Connected to live SRP event stream.");
-  events.addEventListener("audit.created", refresh);
+  events.addEventListener("audit.started", () => document.querySelectorAll("[data-stage]").forEach((node) => node.classList.remove("done")));
+  events.addEventListener("audit.stage", (event) => {
+    const stage = JSON.parse(event.data).stage;
+    document.querySelector(`[data-stage="${CSS.escape(stage)}"]`)?.classList.add("done");
+  });
+  events.addEventListener("audit.completed", refresh);
+  events.addEventListener("audit.proved", refresh);
   events.addEventListener("incident.created", refresh);
   events.onerror = () => connection.textContent = "Event stream paused. API calls still work.";
 }
@@ -103,6 +117,13 @@ function escapeHtml(value) {
 
 document.querySelector("#runAudit").addEventListener("click", runAudit);
 document.querySelector("#simulateIncident").addEventListener("click", simulateIncident);
-tokenInput.addEventListener("change", () => location.reload());
-connectEvents();
-refresh().catch((error) => connection.textContent = error.message);
+tokenInput.addEventListener("change", () => {
+  localStorage.setItem("srp.token", token());
+  location.reload();
+});
+if (token()) {
+  connectEvents();
+  refresh().catch((error) => connection.textContent = error.message);
+} else {
+  connection.textContent = "Paste an API token in the sidebar. Local dev: srp_demo_admin_token.";
+}

@@ -11,7 +11,8 @@ Security Reasoning Protocol (SRP) is an AI-native Web3 security operating system
 - DynaDebate: deterministic attacker / defender / judge rounds that argue over the cited lines and structural facts (reachability, ordering, mitigations).
 - Proof step: generated Foundry harnesses; a finding is `proven` only when you attach a passing local test result. Unproven high/critical findings are held at medium.
 - Coverage and residual unknowns in every report, so SRP says what it could not analyze.
-- REST + SSE API with token auth, RBAC, rate limits, and audit log; static dashboard; Docker and Kubernetes manifests; Node-native tests.
+- REST + SSE API with token auth, RBAC, rate limits, audit log, SARIF and evidence-bundle export, proof attachment, and a capabilities (doctor) endpoint; static dashboard; Docker and Kubernetes manifests; Node-native tests.
+- Runtime monitoring: threshold incidents from signals you post to the API. SRP does not watch mempools or chains itself yet.
 - Results on public fixtures, including misses: [docs/eval.md](docs/eval.md).
 
 ## Not built yet (planned)
@@ -29,7 +30,7 @@ npm test
 npm run dev
 ```
 
-Open `http://localhost:8080` and use the demo token:
+Open `http://localhost:8080` and paste the local demo token (demo tokens are disabled when `NODE_ENV=production`; set `SRP_TOKENS` there):
 
 ```text
 srp_demo_admin_token

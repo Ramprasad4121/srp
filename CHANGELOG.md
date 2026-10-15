@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Security
+- Auth bypass: tokens were looked up with `DEMO_TOKENS[token]`, so `Authorization: Bearer constructor` (or `toString`, `__proto__`) authenticated and passed every role check, including the admin audit log. Lookups now use own properties only.
+- Demo admin tokens were always on, including in the Docker image. They are now off when `NODE_ENV=production` unless `SRP_ALLOW_DEMO_TOKENS=1`; real tokens come from `SRP_TOKENS`.
+- SSE query tokens were written to the audit log in clear text. They are masked.
+- Static file guard used a bare prefix check; it now requires the web root plus a path separator.
+
+### Fixed (API and deploy)
+- Invalid JSON or missing fields returned `500` with a raw TypeError; an unknown chain was accepted with `201`. Now `400` with every problem listed.
+- No request body limit (`413` over 5 MB now).
+- The Docker image bound `127.0.0.1`, so `docker run -p 8080:8080` was unreachable. It now listens on `0.0.0.0`, runs as `node`, and keeps state in `/data`.
+- Kubernetes ran 2 replicas over a per-pod JSON file, so audits split between pods. Now 1 replica with a PVC, token secret, and a restricted security context.
+- Concurrent writes could interleave in the JSON store. Writes are serialized and atomic.
+- Runtime health was computed from memory and reset on restart. It now comes from stored incidents. Signals are validated.
+- The dashboard's "Active Agents" panel was static text and the admin token was prefilled. It now shows pipeline stages from SSE, coverage, unknowns, evidence lines, and asks for a token.
+
+### Added (API)
+- `GET /api/capabilities` (doctor), `POST /api/audits/{id}/proofs`, `GET /api/audits/{id}/evidence` and `POST /api/evidence-bundles/verify`, `GET /api/reports/{id}.sarif`.
+- SSE `audit.started`, `audit.stage`, `audit.completed`, `audit.proved`, and heartbeats.
+- `createSrpServer()` so the API is testable; 11 API tests including SSE.
+
+
 ### Changed (breaking for consumers of the report JSON)
 - Reports carry `schemaVersion: "srp.audit/v1"`, `coverage`, and `unknowns`. Evidence records gain `evidenceId`, `provider`, `operation`, and `kind`. Findings gain `context` (function, visibility, modifiers, facts) and `proposedSeverity`. PoC results gain `executed` and `harness`. Debate decisions can be `inconclusive`.
 - The PoC step no longer marks anything `proven` by itself. It used to label any reentrancy hit containing `call` as proven with 0.92 confidence without running anything. A finding is now proven only when a passing local test result is attached through `proofs`.

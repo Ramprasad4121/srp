@@ -1,3 +1,5 @@
+# Single replica: the API keeps state in a JSON file on one volume. Running more replicas
+# needs PostgreSQL storage and shared SSE fanout, which are not built yet (see docs/deployment.md).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,7 +7,9 @@ metadata:
   labels:
     app: srp
 spec:
-  replicas: 2
+  replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: srp
@@ -14,12 +18,35 @@ spec:
       labels:
         app: srp
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - name: srp
           image: srp:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: SRP_DATA_FILE
+              value: /data/state.json
+            - name: SRP_TOKENS
+              valueFrom:
+                secretKeyRef:
+                  name: srp-tokens
+                  key: SRP_TOKENS
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: "1", memory: 512Mi }
           readinessProbe:
             httpGet:
               path: /api/health
@@ -28,6 +55,20 @@ spec:
             httpGet:
               path: /api/health
               port: 8080
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: srp-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: srp-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
