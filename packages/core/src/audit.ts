@@ -77,9 +77,23 @@ export function assessCoverage(input: ProtocolInput): { unknowns: ResidualUnknow
   }
   const files = input.sources.length;
   return {
-    unknowns,
+    unknowns: groupUnknowns(unknowns),
     coverage: { files, analyzedFiles, functions, ratio: files ? Number((analyzedFiles / files).toFixed(2)) : 0, analyzers: [...analyzers] }
   };
+}
+
+/** One unknown per question: the same gap in 200 files is one line with a file list, not 200 lines. */
+function groupUnknowns(unknowns: ResidualUnknown[]): ResidualUnknown[] {
+  const groups = new Map<string, ResidualUnknown[]>();
+  for (const unknown of unknowns) {
+    const key = `${unknown.reason}|${unknown.severity}|${unknown.question.replace(unknown.file, "")}`;
+    groups.set(key, [...(groups.get(key) ?? []), unknown]);
+  }
+  return [...groups.values()].map((group) => {
+    const first = group[0] as ResidualUnknown;
+    if (group.length === 1) return first;
+    return { ...first, unknownId: stableId("unk", `${first.reason}:${group.length}`), file: `${group.length} files`, files: group.map((item) => item.file) };
+  });
 }
 
 function validateInput(input: ProtocolInput): void {

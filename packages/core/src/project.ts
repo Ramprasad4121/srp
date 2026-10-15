@@ -18,7 +18,7 @@ export interface LoadedProject {
 }
 
 const ALWAYS_SKIP = new Set(["node_modules", ".git", "out", "cache", "artifacts", "target", "typechain", "typechain-types", "coverage", ".anchor", "dist", "build"]);
-const TEST_DIRS = new Set(["test", "tests", "script", "scripts", "mocks", "mock"]);
+const TEST_DIRS = new Set(["test", "tests", "script", "scripts", "mocks", "mock", "echidna", "certora", "audits", "fuzz", "invariant", "invariants"]);
 
 /** Zero-config: detect the framework and chain, collect contracts, and use the README as a protocol document. */
 export function loadProject(path: string, options: LoadOptions = {}): LoadedProject {

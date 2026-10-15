@@ -54,7 +54,9 @@ export interface Evidence {
 /** Something SRP could not analyze. Silence is not safety, so gaps are reported. */
 export interface ResidualUnknown {
   unknownId: string;
+  /** The file, or "N files" when the same gap was found in several (listed in files). */
   file: string;
+  files?: string[];
   question: string;
   reason: string;
   severity: "low" | "medium" | "high";

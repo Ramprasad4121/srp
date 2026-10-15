@@ -225,3 +225,17 @@ test("_msgSender() checks count as caller checks, and overrides deferring to sup
   assert.ok(!ids(a).includes("evm-missing-access-control"));
   assert.ok(!ids(b).includes("evm-missing-access-control"));
 });
+
+test("per-caller settings (isOperator[msg.sender][x] = ...) are not missing access control", () => {
+  const src = `contract T { mapping(address => mapping(address => bool)) public isOperator; function setOperator(address operator, bool approved) public returns (bool) { isOperator[msg.sender][operator] = approved; return true; } }`;
+  assert.ok(!ids(src).includes("evm-missing-access-control"));
+  assert.ok(ids(src.replace("isOperator[msg.sender][operator]", "isOperator[operator][msg.sender]")).includes("evm-missing-access-control"));
+});
+
+test("the same gap across many files is one grouped unknown with a file list", () => {
+  const sources = ["A", "B", "C"].map((name) => ({ path: `${name}.sol`, language: "solidity" as const, content: `import "./X.sol"; contract ${name} { uint256 x; function f() external { x = 1; } }` }));
+  const report = runAudit({ name: "Grouped", chain: "ethereum", documents: [], sources });
+  const imports = report.unknowns.filter((unknown) => /Imports/.test(unknown.reason));
+  assert.equal(imports.length, 1);
+  assert.deepEqual(imports[0]?.files, ["A.sol", "B.sol", "C.sol"]);
+});
