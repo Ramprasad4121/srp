@@ -1,10 +1,16 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
+/**
+ * Single-process JSON file store. Writes are serialized and atomic (temp file + rename), so concurrent
+ * requests cannot interleave and a crash mid-write cannot leave a truncated file.
+ * Not for multi-replica deployments; see docs/deployment.md.
+ */
 export class JsonStore<T> {
   private loaded = false;
   private value: T;
   private readonly path: string;
+  private queue: Promise<unknown> = Promise.resolve();
 
   constructor(path: string, initialValue: T) {
     this.path = path;
@@ -16,12 +22,18 @@ export class JsonStore<T> {
     return this.value;
   }
 
-  async update(mutator: (value: T) => void): Promise<T> {
-    await this.load();
-    mutator(this.value);
-    await mkdir(dirname(this.path), { recursive: true });
-    await writeFile(this.path, JSON.stringify(this.value, null, 2));
-    return this.value;
+  update(mutator: (value: T) => void): Promise<T> {
+    const run = this.queue.then(async () => {
+      await this.load();
+      mutator(this.value);
+      await mkdir(dirname(this.path), { recursive: true });
+      const temp = `${this.path}.${process.pid}.tmp`;
+      await writeFile(temp, JSON.stringify(this.value));
+      await rename(temp, this.path);
+      return this.value;
+    });
+    this.queue = run.catch(() => undefined);
+    return run;
   }
 
   private async load(): Promise<void> {

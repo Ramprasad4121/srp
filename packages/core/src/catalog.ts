@@ -1,0 +1,24 @@
+/** Every detector SRP ships, for capabilities output and SARIF rule metadata. Keep in sync with docs/detectors.md. */
+export const DETECTORS: Array<{ id: string; chain: "evm" | "solana"; analyzer: string; severity: string; summary: string }> = [
+  { id: "evm-reentrancy-external-call", chain: "evm", analyzer: "srp-structural", severity: "high", summary: "State written after an external call in the same function." },
+  { id: "evm-missing-access-control", chain: "evm", analyzer: "srp-structural", severity: "high", summary: "Public function changes privileged state with no caller check." },
+  { id: "evm-unprotected-upgrade", chain: "evm", analyzer: "srp-structural", severity: "critical", summary: "UUPS _authorizeUpgrade has no access check." },
+  { id: "evm-arbitrary-delegatecall", chain: "evm", analyzer: "srp-structural", severity: "critical", summary: "delegatecall to a caller-supplied address." },
+  { id: "evm-arbitrary-external-call", chain: "evm", analyzer: "srp-structural", severity: "critical", summary: "Call with caller-chosen target and calldata." },
+  { id: "evm-oracle-manipulation", chain: "evm", analyzer: "srp-pattern", severity: "high", summary: "Price from AMM spot reserves." },
+  { id: "evm-oracle-stale-price", chain: "evm", analyzer: "srp-pattern", severity: "medium", summary: "Chainlink answer used without a freshness check." },
+  { id: "evm-tx-origin-auth", chain: "evm", analyzer: "srp-pattern", severity: "high", summary: "Authorization on tx.origin." },
+  { id: "evm-signature-replay", chain: "evm", analyzer: "srp-pattern", severity: "high", summary: "Signature verified in a state-changing function with no nonce or used-digest record." },
+  { id: "evm-erc4626-donation-inflation", chain: "evm", analyzer: "srp-pattern", severity: "high", summary: "Vault share math reads raw token balance." },
+  { id: "solana-missing-signer", chain: "solana", analyzer: "srp-anchor", severity: "critical", summary: "Authority account is not required to sign." },
+  { id: "solana-missing-has-one", chain: "solana", analyzer: "srp-anchor", severity: "high", summary: "Stored authority never compared to the authority account." },
+  { id: "solana-unchecked-account-owner", chain: "solana", analyzer: "srp-anchor", severity: "high", summary: "Raw account data read without an owner check." },
+  { id: "solana-account-data-matching", chain: "solana", analyzer: "srp-anchor", severity: "high", summary: "Unpacked token account owner never checked." },
+  { id: "solana-type-cosplay", chain: "solana", analyzer: "srp-anchor", severity: "medium", summary: "Borsh deserialization with no discriminator." },
+  { id: "solana-arbitrary-cpi", chain: "solana", analyzer: "srp-anchor", severity: "high", summary: "CPI target program not pinned." },
+  { id: "solana-sysvar-address-unchecked", chain: "solana", analyzer: "srp-anchor", severity: "high", summary: "Sysvar account not checked against its id." },
+  { id: "solana-duplicate-mutable-accounts", chain: "solana", analyzer: "srp-anchor", severity: "medium", summary: "Two accounts of one type never required to differ." },
+  { id: "solana-init-if-needed-reinit", chain: "solana", analyzer: "srp-anchor", severity: "medium", summary: "init_if_needed with no initialized guard." },
+  { id: "solana-manual-close-revival", chain: "solana", analyzer: "srp-anchor", severity: "medium", summary: "Account closed by zeroing lamports only." },
+  { id: "solana-pda-noncanonical-bump", chain: "solana", analyzer: "srp-anchor", severity: "medium", summary: "PDA derived with a supplied bump." }
+];

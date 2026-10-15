@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node apps/api/src/server.ts",
     "start": "node apps/api/src/server.ts",
-    "test": "node --test packages/core/test/*.test.ts",
+    "test": "node --test packages/core/test/*.test.ts apps/api/test/*.test.ts",
     "smoke": "node apps/api/src/smoke.ts"
   },
   "engines": {

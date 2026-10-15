@@ -14,13 +14,13 @@
       </div>
       <nav>
         <a href="#audit">Audit</a>
-        <a href="#agents">Agents</a>
+        <a href="#pipeline">Pipeline</a>
         <a href="#findings">Findings</a>
         <a href="#monitoring">Monitoring</a>
       </nav>
       <label class="token">
         API token
-        <input id="token" value="srp_demo_admin_token" autocomplete="off" />
+        <input id="token" placeholder="paste a bearer token" autocomplete="off" />
       </label>
     </aside>
 
@@ -36,7 +36,8 @@
       <section class="metrics">
         <div><strong id="auditCount">0</strong><span>Audits</span></div>
         <div><strong id="findingCount">0</strong><span>Findings</span></div>
-        <div><strong id="provenCount">0</strong><span>Proven PoCs</span></div>
+        <div><strong id="provenCount">0</strong><span>Proven (executed)</span></div>
+        <div><strong id="coverage">-</strong><span>Coverage</span></div>
         <div><strong id="incidentCount">0</strong><span>Incidents</span></div>
       </section>
 
@@ -55,18 +56,22 @@
           </select>
           <textarea name="docs" aria-label="Protocol docs">Only the governor may upgrade the vault. The vault must remain solvent after withdrawals.</textarea>
           <textarea name="source" aria-label="Source code">contract Vault {
+  mapping(address => uint256) balances;
   function withdraw() external {
-    (bool ok,) = msg.sender.call("");
+    (bool ok,) = msg.sender.call{value: balances[msg.sender]}("");
     require(ok);
+    balances[msg.sender] = 0;
   }
 }</textarea>
         </form>
 
-        <div id="agents" class="panel">
-          <h2>Active Agents</h2>
+        <div id="pipeline" class="panel">
+          <h2>Pipeline</h2>
+          <p>Stages light up as the server reports them over SSE.</p>
           <div class="agent-grid">
-            <span>Intent</span><span>Discovery</span><span>DynaDebate</span><span>PoC</span><span>Watch</span><span>Report</span>
+            <span data-stage="intent">Intent</span><span data-stage="discovery">Discovery</span><span data-stage="debate">DynaDebate</span><span data-stage="validation">Validation</span><span data-stage="coverage">Coverage</span>
           </div>
+          <div id="unknowns" class="unknowns"></div>
         </div>
       </section>
 

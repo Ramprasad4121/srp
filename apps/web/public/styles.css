@@ -42,3 +42,6 @@ button { border: 0; border-radius: 6px; background: #d5fb67; color: #111; paddin
   .workspace, .metrics { grid-template-columns: 1fr; }
   .topbar, .section-head { align-items: stretch; flex-direction: column; }
 }
+
+.agent-grid span.done { outline: 2px solid currentColor; font-weight: 700; }
+.unknowns p { margin: 4px 0; font-size: 0.9em; }

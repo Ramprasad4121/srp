@@ -11,14 +11,19 @@ npm run dev
 
 ```bash
 docker build -t srp .
-docker run -p 8080:8080 srp
+docker run -p 8080:8080 -e SRP_TOKENS="$(openssl rand -hex 16):admin:me" -v srp-data:/data srp
 ```
+
+The image runs as `node`, listens on `0.0.0.0:8080`, stores state in `/data/state.json`, and has demo tokens disabled.
 
 ## Kubernetes
 
 ```bash
+kubectl create secret generic srp-tokens --from-literal=SRP_TOKENS="$(openssl rand -hex 16):admin:ops"
 kubectl apply -f infra/k8s/deployment.yaml
 ```
+
+The manifest runs one replica with a persistent volume. The JSON file store is single-process; more replicas need the planned PostgreSQL store and shared SSE fanout.
 
 ## Production Notes
 
