@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Added (CLI and MCP)
+- `srp scan [path]`: zero-config scan of Foundry, Hardhat, and Anchor projects (framework and chain detection, skips lib/test/build output, size and count limits reported as unknowns), formats text / summary / json / sarif / md, `--fail-on` exit codes. Also `doctor`, `explain`, `verify-bundle`.
+- `srp mcp`: dependency-free MCP server on stdio with 8 tools (scan path, scan source, get finding, attach proof, coverage, export evidence, explain, capabilities). Path access confined to `SRP_MCP_ROOT`.
+- `srp.summary/v1`: compact per-finding JSON for agents and CI.
+
+### Fixed
+- Missing-access-control fired on per-caller settings such as `isOperator[msg.sender][x] = approved` (solmate ERC6909).
+- The same residual unknown was repeated per file (285 lines on OpenZeppelin); identical gaps are now grouped with a file list.
+- Echidna, Certora, audits, fuzz, and invariant directories are skipped by default like tests.
+
+### Changed
+- Findings with weak static evidence are `unverified` instead of `failed`. `failed` now only means an attached test run did not pass.
+- `engines.node` is `>=22.18` (type stripping on by default), matching what CI and the CLI need.
+
+
 ### Security
 - Auth bypass: tokens were looked up with `DEMO_TOKENS[token]`, so `Authorization: Bearer constructor` (or `toString`, `__proto__`) authenticated and passed every role check, including the admin audit log. Lookups now use own properties only.
 - Demo admin tokens were always on, including in the Docker image. They are now off when `NODE_ENV=production` unless `SRP_ALLOW_DEMO_TOKENS=1`; real tokens come from `SRP_TOKENS`.

@@ -294,7 +294,8 @@ function accessControlFinding(source: SourceFile, index: SolidityIndex, fn: Soli
       attackPath: ["Attacker deploys a malicious implementation", "Attacker calls upgradeToAndCall on the proxy", "_authorizeUpgrade accepts", "Proxy now runs attacker code"]
     });
   }
-  const write = stateWrites(fn, index.stateVariables).find((item) => PRIVILEGED_STATE.test(item.variable));
+  // Writes keyed by the caller (isOperator[msg.sender][x] = ...) only change the caller's own settings.
+  const write = stateWrites(fn, index.stateVariables).find((item) => PRIVILEGED_STATE.test(item.variable) && !/^\w+\[(msg\.sender|_msgSender\(\))\]/.test(item.target));
   const call = fn.body.match(PRIVILEGED_CALL);
   if (!write && !call) return undefined;
   const offset = write ? write.offset : fn.bodyStart + (call?.index ?? 0);

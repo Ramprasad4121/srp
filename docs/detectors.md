@@ -50,7 +50,8 @@ Native (non-Anchor) programs are not analyzed structurally. They are reported as
 SRP never marks a finding `proven` on its own. Findings start as `candidate`, become `debated`, and then:
 
 - `partial`: at least two cited lines or facts, no mitigation, confidence >= 0.6. A Foundry harness is generated for reentrancy and access-control findings.
-- `failed`: weaker evidence, or an attached test run that did not pass.
+- `unverified`: a single pattern match or a mitigated finding, nothing executed.
+- `failed`: an attached test run that did not pass.
 - `proven`: only when the request includes a `proofs` entry for the finding with `passed: true` (a PoC or test you ran locally).
 
 High and critical findings are shown at medium until proven; `proposedSeverity` keeps the detector's original call.

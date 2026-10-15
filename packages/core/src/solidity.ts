@@ -187,7 +187,12 @@ function findStateVariables(code: string): string[] {
   return [...vars];
 }
 
-export interface StateWrite { variable: string; offset: number }
+export interface StateWrite {
+  variable: string;
+  offset: number;
+  /** The written expression up to the operator, e.g. `balances[msg.sender]`. */
+  target: string;
+}
 
 /** Writes to contract state variables inside a function body (offsets are absolute in the stripped code). */
 export function stateWrites(fn: SolidityFunction, stateVariables: string[]): StateWrite[] {
@@ -197,10 +202,9 @@ export function stateWrites(fn: SolidityFunction, stateVariables: string[]): Sta
   const del = new RegExp(`\\bdelete\\s+(${names})\\b`, "g");
   const prefix = new RegExp(`(\\+\\+|--)\\s*(${names})\\b`, "g");
   const writes: StateWrite[] = [];
-  for (const regex of [assign, del]) {
-    for (const match of fn.body.matchAll(regex)) writes.push({ variable: match[1] ?? "", offset: fn.bodyStart + (match.index ?? 0) });
-  }
-  for (const match of fn.body.matchAll(prefix)) writes.push({ variable: match[2] ?? "", offset: fn.bodyStart + (match.index ?? 0) });
+  for (const match of fn.body.matchAll(assign)) writes.push({ variable: match[1] ?? "", offset: fn.bodyStart + (match.index ?? 0), target: match[0].replace(/(\+=|-=|\*=|\/=|\|=|&=|=|\+\+|--)$/, "").replace(/\s+/g, "") });
+  for (const match of fn.body.matchAll(del)) writes.push({ variable: match[1] ?? "", offset: fn.bodyStart + (match.index ?? 0), target: match[1] ?? "" });
+  for (const match of fn.body.matchAll(prefix)) writes.push({ variable: match[2] ?? "", offset: fn.bodyStart + (match.index ?? 0), target: match[2] ?? "" });
   // Local declarations shadowing a state variable name are not state writes.
   return writes
     .filter((write) => !new RegExp(`\\b(uint\\d*|int\\d*|address|bool|bytes\\d*|string|memory|storage)\\s+${write.variable}\\b`).test(fn.body))

@@ -15,3 +15,9 @@ jobs:
           node-version: 24
       - run: npm test
       - run: timeout 60 npm run smoke
+      - run: node apps/cli/src/cli.ts doctor
+      - name: CLI scans its own fixtures and fails on the known bug
+        run: |
+          mkdir -p /tmp/fx/src && printf 'contract A { mapping(address => uint256) b; function w() external { (bool ok,) = msg.sender.call{value: b[msg.sender]}(""); require(ok); b[msg.sender] = 0; } }' > /tmp/fx/src/A.sol
+          set +e; node apps/cli/src/cli.ts scan /tmp/fx; code=$?; set -e
+          test "$code" = 1

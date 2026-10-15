@@ -13,7 +13,7 @@ export function validateFindings(findings: Finding[], proofs: ProofRecord[] = []
     if (!result) return finding;
     const status = result.classification;
     const proposed = finding.proposedSeverity ?? finding.severity;
-    const verifiedConfidence = status === "proven" ? 0.95 : status === "partial" ? Math.min(finding.confidence, 0.71) : Math.min(finding.confidence, 0.44);
+    const verifiedConfidence = status === "proven" ? 0.95 : status === "partial" ? Math.min(finding.confidence, 0.71) : Math.min(finding.confidence, status === "failed" ? 0.3 : 0.44);
     const severity = (proposed === "high" || proposed === "critical") && status !== "proven" ? "medium" as const : proposed;
     return {
       ...finding,
@@ -38,7 +38,7 @@ function validateFinding(finding: Finding, proofs: ProofRecord[]): PocResult {
   const failed = proofs.find((proof) => !proof.passed);
   const structural = finding.evidence.length >= 2 || (finding.context?.facts.length ?? 0) >= 2;
   const unmitigated = !finding.mitigations?.length;
-  const classification: PocResult["classification"] = passed ? "proven" : failed ? "failed" : structural && unmitigated && finding.confidence >= 0.6 ? "partial" : "failed";
+  const classification: PocResult["classification"] = passed ? "proven" : failed ? "failed" : structural && unmitigated && finding.confidence >= 0.6 ? "partial" : "unverified";
   const proof = passed ?? failed;
   const command = proof?.command ?? (finding.detector.startsWith("solana") ? "anchor test" : `forge test --match-contract ${harnessName(finding)} -vvv`);
   return {

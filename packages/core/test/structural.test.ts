@@ -139,6 +139,13 @@ test("proof step: only an attached passing test makes a finding proven and resto
   assert.equal(failed?.status, "failed");
 });
 
+test("weak static evidence is 'unverified', never 'failed' (failed means an attached run did not pass)", () => {
+  const report = runAudit(evm(`contract W { address owner; function sweep() external { require(tx.origin == owner); } }`));
+  const hit = report.findings.find((item) => item.detector === "evm-tx-origin-auth");
+  assert.equal(hit?.status, "unverified");
+  assert.equal(report.pocResults.find((item) => item.findingId === hit?.id)?.executed, false);
+});
+
 test("debate arguments cite real lines and facts, and an unproven claim is inconclusive, not disproven", () => {
   const report = runAudit(evm(ETHER_STORE));
   const finding = report.findings.find((item) => item.detector === "evm-reentrancy-external-call");
@@ -217,4 +224,18 @@ test("_msgSender() checks count as caller checks, and overrides deferring to sup
   const b = `contract B is AccessControl { address public admin; function renounceRole(bytes32 r, address a) public override { admin = address(0); super.renounceRole(r, a); } }`;
   assert.ok(!ids(a).includes("evm-missing-access-control"));
   assert.ok(!ids(b).includes("evm-missing-access-control"));
+});
+
+test("per-caller settings (isOperator[msg.sender][x] = ...) are not missing access control", () => {
+  const src = `contract T { mapping(address => mapping(address => bool)) public isOperator; function setOperator(address operator, bool approved) public returns (bool) { isOperator[msg.sender][operator] = approved; return true; } }`;
+  assert.ok(!ids(src).includes("evm-missing-access-control"));
+  assert.ok(ids(src.replace("isOperator[msg.sender][operator]", "isOperator[operator][msg.sender]")).includes("evm-missing-access-control"));
+});
+
+test("the same gap across many files is one grouped unknown with a file list", () => {
+  const sources = ["A", "B", "C"].map((name) => ({ path: `${name}.sol`, language: "solidity" as const, content: `import "./X.sol"; contract ${name} { uint256 x; function f() external { x = 1; } }` }));
+  const report = runAudit({ name: "Grouped", chain: "ethereum", documents: [], sources });
+  const imports = report.unknowns.filter((unknown) => /Imports/.test(unknown.reason));
+  assert.equal(imports.length, 1);
+  assert.deepEqual(imports[0]?.files, ["A.sol", "B.sol", "C.sol"]);
 });

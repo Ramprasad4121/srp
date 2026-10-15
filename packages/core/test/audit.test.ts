@@ -60,7 +60,7 @@ pub struct Pool { pub authority: Pubkey, pub rewards: u64 }`
   assert.ok(report.intent.invariants.some((invariant) => invariant.toLowerCase().includes("reward")));
   assert.ok(report.findings.some((finding) => finding.detector === "solana-missing-has-one"));
   assert.ok(!report.findings.some((finding) => finding.detector === "solana-missing-signer"));
-  assert.ok(report.pocResults.every((result) => ["partial", "proven", "failed"].includes(result.classification)));
+  assert.ok(report.pocResults.every((result) => ["partial", "unverified", "proven", "failed"].includes(result.classification)));
 });
 
 test("runtime security layer stores incidents and computes health", () => {
