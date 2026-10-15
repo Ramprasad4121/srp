@@ -22,7 +22,7 @@ export function validateFindings(findings: Finding[]): { findings: Finding[]; po
 
 function validateFinding(finding: Finding): PocResult {
   const excerpt = finding.evidence.map((item) => item.excerpt).join("\n").toLowerCase();
-  const proven = finding.detector.includes("reentrancy") && /\bcall\b/.test(excerpt);
+  const proven = finding.detector.includes("reentrancy") && /\bcall\b/.test(excerpt) && !finding.mitigations?.length;
   const partial = finding.confidence >= 0.62 || finding.detector.includes("pda") || finding.detector.includes("cpi");
   const classification = proven ? "proven" : partial ? "partial" : "failed";
   const command = finding.proofOfConcept.includes("Foundry")
