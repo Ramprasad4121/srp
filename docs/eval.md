@@ -38,6 +38,17 @@ Missed: side-entrance, naive-receiver, selfie, climber, backdoor, compromised, a
 
 Commit `598d3905a6f4ebe68a52c79d461bedb7246fa187`, 368 files. 3 findings, all in mocks written to be unsafe: `UUPSUpgradeableMock._authorizeUpgrade` (commented "dangerous"), `UUPSUpgradeableUnsafeMock.upgradeToAndCall`, and `ERC20Reentrant`'s arbitrary `functionCall`. Zero findings in production contracts.
 
+## Whole-project CLI scans (`srp scan`, default skips)
+
+| Project | Commit | Files scanned | Findings |
+| --- | --- | --- | --- |
+| OpenZeppelin/openzeppelin-contracts | `598d3905` | 269 (mocks skipped) | 0 |
+| Uniswap/v3-core | `aab5aa0` | 40 | 0 |
+| transmissions11/solmate | `89365b8` | 20 | 0 (an earlier build flagged `ERC6909.setOperator`; per-caller writes are now excluded) |
+| theredguild/damn-vulnerable-defi | `64fddf9f` | 53 | 6, listed above |
+
+Each scan finishes in under a second.
+
 ## Reproduce
 
 ```bash

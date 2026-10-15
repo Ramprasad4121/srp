@@ -7,6 +7,11 @@
 - `srp mcp`: dependency-free MCP server on stdio with 8 tools (scan path, scan source, get finding, attach proof, coverage, export evidence, explain, capabilities). Path access confined to `SRP_MCP_ROOT`.
 - `srp.summary/v1`: compact per-finding JSON for agents and CI.
 
+### Fixed
+- Missing-access-control fired on per-caller settings such as `isOperator[msg.sender][x] = approved` (solmate ERC6909).
+- The same residual unknown was repeated per file (285 lines on OpenZeppelin); identical gaps are now grouped with a file list.
+- Echidna, Certora, audits, fuzz, and invariant directories are skipped by default like tests.
+
 ### Changed
 - Findings with weak static evidence are `unverified` instead of `failed`. `failed` now only means an attached test run did not pass.
 - `engines.node` is `>=22.18` (type stripping on by default), matching what CI and the CLI need.
