@@ -13,6 +13,7 @@ Security Reasoning Protocol (SRP) is an AI-native Web3 security operating system
 - Coverage and residual unknowns in every report, so SRP says what it could not analyze.
 - REST + SSE API with token auth, RBAC, rate limits, audit log, SARIF and evidence-bundle export, proof attachment, and a capabilities (doctor) endpoint; static dashboard; Docker and Kubernetes manifests; Node-native tests.
 - Runtime monitoring: threshold incidents from signals you post to the API. SRP does not watch mempools or chains itself yet.
+- Zero-config CLI (`srp scan`) with text, JSON, SARIF, and markdown output and CI exit codes; MCP server with scan, coverage, proof, and evidence tools.
 - Results on public fixtures, including misses: [docs/eval.md](docs/eval.md).
 
 ## Not built yet (planned)
@@ -24,6 +25,19 @@ Security Reasoning Protocol (SRP) is an AI-native Web3 security operating system
 - MCP adapters, PostgreSQL / Redis storage, and real identity are not built; demo tokens and a JSON file store are for local use only.
 
 ## Quick Start
+
+Scan a project (Node >= 22.18, no install, no dependencies):
+
+```bash
+git clone https://github.com/Ramprasad4121/srp && cd srp
+node apps/cli/src/cli.ts scan path/to/your/foundry-or-anchor-project
+node apps/cli/src/cli.ts scan . --format sarif --out srp.sarif   # GitHub code scanning
+node apps/cli/src/cli.ts mcp                                     # MCP server for AI agents
+```
+
+See [docs/cli.md](docs/cli.md) and [docs/mcp.md](docs/mcp.md).
+
+Run the API and dashboard:
 
 ```bash
 npm test

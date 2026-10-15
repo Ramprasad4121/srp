@@ -1,16 +1,21 @@
 {
   "name": "security-reasoning-protocol",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Security Reasoning Protocol, an AI-native Web3 security operating system for EVM and Solana teams.",
   "scripts": {
     "dev": "node apps/api/src/server.ts",
     "start": "node apps/api/src/server.ts",
-    "test": "node --test packages/core/test/*.test.ts apps/api/test/*.test.ts",
-    "smoke": "node apps/api/src/smoke.ts"
+    "test": "node --test packages/core/test/*.test.ts apps/api/test/*.test.ts apps/cli/test/*.test.ts apps/mcp/test/*.test.ts",
+    "smoke": "node apps/api/src/smoke.ts",
+    "scan": "node apps/cli/src/cli.ts scan",
+    "mcp": "node apps/cli/src/cli.ts mcp"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=22.18"
+  },
+  "bin": {
+    "srp": "apps/cli/src/cli.ts"
   }
 }

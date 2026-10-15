@@ -126,7 +126,8 @@ export interface Finding {
   confidence: number;
   confidenceBand: ConfidenceBand;
   evidence: Evidence[];
-  status: "candidate" | "debated" | "proven" | "partial" | "failed";
+  /** candidate -> debated -> partial (strong static evidence) | unverified (weak static evidence) | proven / failed (an attached test run passed / did not). */
+  status: "candidate" | "debated" | "proven" | "partial" | "unverified" | "failed";
   detector: string;
   mitigations?: string[];
   context?: FindingContext;
@@ -148,7 +149,7 @@ export interface DebateTranscript {
 
 export interface PocResult {
   findingId: string;
-  classification: "proven" | "partial" | "failed";
+  classification: "proven" | "partial" | "unverified" | "failed";
   /** False unless a real PoC or test run was attached via proofs. */
   executed: boolean;
   /** Generated Foundry or program-test harness to run locally, when SRP can write one. */

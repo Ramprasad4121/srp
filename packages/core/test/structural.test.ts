@@ -139,6 +139,13 @@ test("proof step: only an attached passing test makes a finding proven and resto
   assert.equal(failed?.status, "failed");
 });
 
+test("weak static evidence is 'unverified', never 'failed' (failed means an attached run did not pass)", () => {
+  const report = runAudit(evm(`contract W { address owner; function sweep() external { require(tx.origin == owner); } }`));
+  const hit = report.findings.find((item) => item.detector === "evm-tx-origin-auth");
+  assert.equal(hit?.status, "unverified");
+  assert.equal(report.pocResults.find((item) => item.findingId === hit?.id)?.executed, false);
+});
+
 test("debate arguments cite real lines and facts, and an unproven claim is inconclusive, not disproven", () => {
   const report = runAudit(evm(ETHER_STORE));
   const finding = report.findings.find((item) => item.detector === "evm-reentrancy-external-call");
