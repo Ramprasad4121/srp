@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { ConfidenceBand, Evidence } from "./types.ts";
+import type { ConfidenceBand, Evidence, EvidenceKind } from "./types.ts";
 
 export function stableId(prefix: string, value: string): string {
   return `${prefix}_${createHash("sha256").update(value).digest("hex").slice(0, 12)}`;
@@ -16,16 +16,30 @@ export function clampConfidence(score: number): number {
   return Math.max(0, Math.min(0.99, Number(score.toFixed(2))));
 }
 
-export function lineEvidence(file: string, content: string, needle: RegExp, rationale: string): Evidence | undefined {
-  const lines = content.split(/\r?\n/);
+/**
+ * First line whose (comment-stripped) text matches needle. `searchIn` must have the same line layout as content;
+ * the excerpt is always taken from the raw content.
+ */
+export function lineEvidence(file: string, content: string, needle: RegExp, rationale: string, searchIn: string = content, operation = "pattern"): Evidence | undefined {
+  const lines = searchIn.split(/\r?\n/);
   const index = lines.findIndex((line) => needle.test(line));
   if (index < 0) return undefined;
+  return evidenceAt(file, content, index + 1, rationale, "srp-pattern", operation, "observed");
+}
+
+export function evidenceAt(file: string, content: string, line: number, rationale: string, provider: string, operation: string, kind: EvidenceKind, endLine = line): Evidence {
+  const lines = content.split(/\r?\n/);
+  const excerpt = lines.slice(line - 1, endLine).map((item) => item.trim()).join(" ").slice(0, 240);
   return {
+    evidenceId: stableId("ev", `${file}:${line}:${endLine}:${excerpt}:${provider}:${operation}`),
     file,
-    startLine: index + 1,
-    endLine: index + 1,
-    excerpt: lines[index]?.trim().slice(0, 240) ?? "",
-    rationale
+    startLine: line,
+    endLine,
+    excerpt,
+    rationale,
+    provider,
+    operation,
+    kind
   };
 }
 

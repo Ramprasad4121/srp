@@ -11,9 +11,11 @@ test("EVM audit produces evidence-backed validated findings", () => {
       path: "Vault.sol",
       language: "solidity",
       content: `contract Vault {
+        mapping(address => uint256) balances;
         function withdraw() external {
-          (bool ok,) = msg.sender.call("");
+          (bool ok,) = msg.sender.call{value: balances[msg.sender]}("");
           require(ok);
+          balances[msg.sender] = 0;
         }
       }`
     }]
@@ -23,10 +25,14 @@ test("EVM audit produces evidence-backed validated findings", () => {
   assert.ok(report.intent.threatModel.assets.length >= 1);
   assert.ok(report.findings.length >= 1);
   assert.ok(report.findings.every((finding) => finding.evidence.length > 0));
-  assert.ok(report.findings.some((finding) => finding.status === "proven"));
+  assert.ok(report.findings.some((finding) => finding.detector === "evm-reentrancy-external-call"));
+  // Nothing was executed, so nothing may claim to be proven.
+  assert.ok(report.findings.every((finding) => finding.status !== "proven"));
+  assert.ok(report.pocResults.every((result) => result.executed === false));
+  assert.equal(report.coverage.analyzedFiles, 1);
 });
 
-test("Solana audit identifies account validation attack surfaces", () => {
+test("Solana audit reads Anchor constraints and invariants from docs", () => {
   const report = runAudit({
     name: "StakeProgram",
     chain: "solana",
@@ -34,17 +40,26 @@ test("Solana audit identifies account validation attack surfaces", () => {
     sources: [{
       path: "lib.rs",
       language: "rust",
-      content: `pub fn claim(ctx: Context<Claim>) -> Result<()> {
-        let signer = Pubkey::find_program_address(&[b"vault"], ctx.program_id);
-        invoke_signed(&ix, accounts, &[&[b"vault"]])?;
-        Ok(())
-      }`
+      content: `use anchor_lang::prelude::*;
+#[program]
+pub mod stake {
+    use super::*;
+    pub fn claim(ctx: Context<Claim>) -> Result<()> { Ok(()) }
+}
+#[derive(Accounts)]
+pub struct Claim<'info> {
+    #[account(mut)]
+    pub pool: Account<'info, Pool>,
+    pub authority: Signer<'info>,
+}
+#[account]
+pub struct Pool { pub authority: Pubkey, pub rewards: u64 }`
     }]
   });
 
   assert.ok(report.intent.invariants.some((invariant) => invariant.toLowerCase().includes("reward")));
-  assert.ok(report.findings.some((finding) => finding.detector.includes("pda")));
-  assert.ok(report.findings.some((finding) => finding.detector.includes("cpi")));
+  assert.ok(report.findings.some((finding) => finding.detector === "solana-missing-has-one"));
+  assert.ok(!report.findings.some((finding) => finding.detector === "solana-missing-signer"));
   assert.ok(report.pocResults.every((result) => ["partial", "proven", "failed"].includes(result.classification)));
 });
 

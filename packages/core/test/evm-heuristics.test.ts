@@ -151,14 +151,22 @@ test("reentrancy behind nonReentrant is recorded as mitigated and never marked p
   assert.ok(debate?.rounds.some((round) => /mitigation/i.test(round.defender)));
 });
 
-test("unguarded reentrancy is still proven", () => {
+test("unguarded reentrancy (state written after call) is flagged with both lines but not proven without an executed PoC", () => {
   const report = runAudit(evm(`contract Vault {
+    mapping(address => uint256) balances;
     function withdraw() external {
-      (bool ok,) = msg.sender.call("");
+      (bool ok,) = msg.sender.call{value: balances[msg.sender]}("");
       require(ok);
+      balances[msg.sender] = 0;
     }
   }`));
   const hit = report.findings.find((finding) => finding.detector === "evm-reentrancy-external-call");
-  assert.equal(hit?.status, "proven");
-  assert.equal(hit?.mitigations, undefined);
+  assert.ok(hit);
+  assert.deepEqual(hit.evidence.map((item) => item.startLine), [4, 6]);
+  assert.equal(hit.mitigations, undefined);
+  assert.equal(hit.status, "partial");
+  assert.equal(hit.proposedSeverity, "high");
+  const poc = report.pocResults.find((item) => item.findingId === hit.id);
+  assert.equal(poc?.executed, false);
+  assert.match(poc?.harness ?? "", /forge-std\/Test\.sol/);
 });
