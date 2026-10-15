@@ -28,6 +28,7 @@ The SSE endpoint also accepts `?token=` because `EventSource` cannot send header
 | GET | `/api/reports/{id}.sarif` | viewer | SARIF 2.1.0 |
 | POST | `/api/signals` | auditor | runtime signal you post (SRP does not watch chains itself) |
 | GET | `/api/incidents` | viewer | |
+| POST | `/api/incidents/{id}` | auditor | `{ "status": "acknowledged" | "resolved" | "open" }` |
 | GET | `/api/audit-log` | admin | last 10,000 entries |
 
 Rate limit: 240 requests per minute per subject (or IP when unauthenticated), `429` with `retry-after`.

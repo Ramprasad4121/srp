@@ -54,6 +54,9 @@ export class OrchestrationEngine {
   }
 
   async execute(mode: ExecutionMode, agentIds: string[], input: unknown): Promise<unknown[]> {
+    // debate and verification used to fall through to sequential silently. They are not implemented here;
+    // runDynaDebate and validateFindings implement those steps for audits.
+    if (mode === "debate" || mode === "verification") throw new Error(`Execution mode "${mode}" is not implemented by OrchestrationEngine; use runDynaDebate / validateFindings`);
     if (mode === "parallel") {
       const results = await Promise.all(agentIds.map((id) => this.runWithRetry(id, input)));
       this.memory.write(`parallel:${agentIds.join(",")}`, results);

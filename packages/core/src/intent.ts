@@ -6,8 +6,11 @@ const ASSET_WORDS = ["treasury", "vault", "pool", "bridge", "oracle", "collatera
 const GUARANTEE_WORDS = ["must", "only", "guarantee", "invariant", "ensure", "prevent", "permission"];
 
 export function buildProtocolIntent(input: ProtocolInput): ProtocolIntent {
-  const corpus = [...input.documents.map((doc) => doc.content), ...input.sources.map((source) => source.content)].join("\n");
-  const lower = corpus.toLowerCase();
+  // Sentences come only from prose: documents and NatSpec / doc comments. Splitting code on "." produced
+  // fragments like "sender.call" as "guarantees". Keyword presence checks still look at code.
+  const prose = [...input.documents.map((doc) => doc.content), ...input.sources.map((source) => docComments(source.content))].join("\n");
+  const lower = [prose, ...input.sources.map((source) => source.content)].join("\n").toLowerCase();
+  const corpus = prose;
   const assumptions = extractAssumptions(corpus, lower);
   const securityGuarantees = keywordSentences(corpus, GUARANTEE_WORDS, 8);
   const trustBoundaries = extractTrustBoundaries(lower);
@@ -46,8 +49,8 @@ export function buildProtocolIntent(input: ProtocolInput): ProtocolIntent {
 
 function extractAssumptions(corpus: string, lower: string): string[] {
   const assumptions = keywordSentences(corpus, ["assume", "trusted", "expected", "requires"], 6);
-  if (lower.includes("oracle")) assumptions.push("Oracle prices are assumed to be fresh and manipulation resistant.");
-  if (lower.includes("upgrade")) assumptions.push("Upgrade authority is assumed to be correctly governed and delay-protected.");
+  if (lower.includes("oracle")) assumptions.push("Inferred: oracle prices are assumed to be fresh and manipulation resistant.");
+  if (lower.includes("upgrade")) assumptions.push("Inferred: upgrade authority is assumed to be correctly governed and delay-protected.");
   return unique(assumptions);
 }
 
@@ -74,8 +77,8 @@ function extractAttackSurfaces(lower: string): string[] {
 
 function extractInvariants(corpus: string, lower: string): string[] {
   const invariants = keywordSentences(corpus, ["invariant", "must never", "total", "solvent", "conservation"], 8);
-  if (lower.includes("vault") || lower.includes("pool")) invariants.push("Protocol accounting must remain solvent after deposits, withdrawals, and liquidations.");
-  if (lower.includes("reward")) invariants.push("Rewards distributed must not exceed rewards accrued.");
+  if (lower.includes("vault") || lower.includes("pool")) invariants.push("Inferred: protocol accounting must remain solvent after deposits, withdrawals, and liquidations.");
+  if (lower.includes("reward")) invariants.push("Inferred: rewards distributed must not exceed rewards accrued.");
   return unique(invariants);
 }
 
@@ -94,4 +97,14 @@ function unique(values: string[]): string[] {
 
 export function intentId(input: ProtocolInput): string {
   return stableId("intent", `${input.name}:${input.chain}:${input.sources.map((source) => source.path).join(",")}`);
+}
+
+/** Text of triple-slash and slash-star-star doc comments (NatSpec, Rust doc comments), one line per comment line. */
+export function docComments(source: string): string {
+  const lines: string[] = [];
+  for (const match of source.matchAll(/\/\/\/!?(.*)$/gm)) lines.push((match[1] ?? "").replace(/@\w+\s*/, "").trim());
+  for (const match of source.matchAll(/\/\*\*([\s\S]*?)\*\//g)) {
+    for (const line of (match[1] ?? "").split(/\r?\n/)) lines.push(line.replace(/^\s*\*\s?/, "").replace(/@\w+\s*/, "").trim());
+  }
+  return lines.filter(Boolean).join("\n");
 }

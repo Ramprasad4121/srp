@@ -154,7 +154,15 @@ test("signals are validated and health survives in the store", async () => {
   assert.equal(bad.status, 400);
   const good = await call("/api/signals", { method: "POST", token: AUDITOR, body: JSON.stringify({ protocol: "V", chain: "ethereum", source: "treasury", metric: "out", value: 500, threshold: 100 }) });
   assert.equal(good.status, 202);
-  assert.equal((await good.json()).health.status, "critical");
+  const first = await good.json();
+  assert.equal(first.health.status, "critical");
+  // Incidents used to stay open forever, so health could never recover.
+  assert.equal((await call(`/api/incidents/${first.incident.id}`, { method: "POST", token: AUDITOR, body: JSON.stringify({ status: "nonsense" }) })).status, 400);
+  assert.equal((await call("/api/incidents/incident_nope", { method: "POST", token: AUDITOR, body: JSON.stringify({ status: "resolved" }) })).status, 404);
+  const resolved = await call(`/api/incidents/${first.incident.id}`, { method: "POST", token: AUDITOR, body: JSON.stringify({ status: "resolved" }) });
+  assert.equal((await resolved.json()).status, "resolved");
+  const quiet = await call("/api/signals", { method: "POST", token: AUDITOR, body: JSON.stringify({ protocol: "V", chain: "ethereum", source: "treasury", metric: "out", value: 1, threshold: 100 }) });
+  assert.equal((await quiet.json()).health.status, "healthy");
 });
 
 test("audit log is admin only and masks SSE query tokens", async () => {

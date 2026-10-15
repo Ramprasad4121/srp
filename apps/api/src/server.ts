@@ -135,6 +135,8 @@ export function createSrpServer(options: SrpServerOptions = {}): Server {
       });
     }
     if (path === "/api/incidents" && method === "GET") return requireRole(req, res, session, "viewer", async () => json(res, 200, { incidents: (await store.read()).incidents }));
+    const incident = path.match(/^\/api\/incidents\/([\w-]+)$/);
+    if (incident && method === "POST") return requireRole(req, res, session, "auditor", () => updateIncident(req, res, incident[1] ?? "", session));
     if (path === "/api/signals" && method === "POST") return requireRole(req, res, session, "auditor", () => ingestSignal(req, res, session));
     if (path === "/api/audit-log" && method === "GET") return requireRole(req, res, session, "admin", async () => json(res, 200, { auditLog: (await store.read()).auditLog }));
     if (path.startsWith("/api/")) return json(res, 404, { error: "Not found" });
@@ -291,6 +293,19 @@ export function createSrpServer(options: SrpServerOptions = {}): Server {
     json(res, 202, { incident: incident ?? null, health });
   }
 
+  async function updateIncident(req: IncomingMessage, res: ServerResponse, id: string, session: Session | undefined): Promise<void> {
+    const body = await readJson<{ status?: string }>(req);
+    if (!["open", "acknowledged", "resolved"].includes(body?.status ?? "")) throw new HttpError(400, "status must be open, acknowledged, or resolved");
+    let updated: Incident | undefined;
+    await store.update((state) => {
+      const found = state.incidents.find((item) => item.id === id);
+      if (found) { found.status = body.status as Incident["status"]; updated = found; }
+    });
+    if (!updated) throw new HttpError(404, "Incident not found");
+    broadcast("incident.updated", { incident: updated, subject: session?.subject });
+    json(res, 200, updated);
+  }
+
   function subscribe(req: IncomingMessage, res: ServerResponse, session: Session | undefined): void {
     res.writeHead(200, {
       "content-type": "text/event-stream",
@@ -373,6 +388,7 @@ function openApiDocument(): object {
       "/api/events": { get: { summary: "SSE: ready, audit.started, audit.stage, audit.completed, audit.proved, incident.created, heartbeat comments" } },
       "/api/signals": { post: { summary: "Ingest a runtime monitoring signal" } },
       "/api/incidents": { get: { summary: "List runtime incidents" } },
+      "/api/incidents/{id}": { post: { summary: "Set incident status: open, acknowledged, resolved" } },
       "/api/audit-log": { get: { summary: "List API audit log entries (admin)" } }
     }
   };

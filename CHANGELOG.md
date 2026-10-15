@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Fixed (honesty)
+- Intent "security guarantees" were built by splitting source code on periods, so fragments like `sender.call(...)` showed up as guarantees. Sentences now come only from documents and NatSpec / doc comments.
+- Generic assumptions and invariants SRP adds on its own are labelled `Inferred:` instead of reading as extracted from the protocol.
+- `OrchestrationEngine.execute("debate" | "verification")` silently ran agents sequentially. It now throws; the audit pipeline uses `runDynaDebate` and `validateFindings` for those steps.
+- Incidents could never be acknowledged or resolved, so protocol health stayed critical forever. `POST /api/incidents/{id}` sets the status.
+
+
 ### Added (CLI and MCP)
 - `srp scan [path]`: zero-config scan of Foundry, Hardhat, and Anchor projects (framework and chain detection, skips lib/test/build output, size and count limits reported as unknowns), formats text / summary / json / sarif / md, `--fail-on` exit codes. Also `doctor`, `explain`, `verify-bundle`.
 - `srp mcp`: dependency-free MCP server on stdio with 8 tools (scan path, scan source, get finding, attach proof, coverage, export evidence, explain, capabilities). Path access confined to `SRP_MCP_ROOT`.
