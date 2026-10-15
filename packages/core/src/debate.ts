@@ -22,6 +22,7 @@ function debateFinding(finding: Finding): DebateTranscript {
   const hasSpecificEvidence = finding.evidence.some((evidence) => evidence.excerpt.length > 12);
   const hasConcreteAttack = finding.attackPath.length >= 4;
   const highImpact = finding.severity === "critical" || finding.severity === "high";
+  const mitigations = finding.mitigations ?? [];
 
   const roundInputs = [
     {
@@ -40,6 +41,13 @@ function debateFinding(finding: Finding): DebateTranscript {
       delta: highImpact ? -0.03 : 0.03
     }
   ];
+  if (mitigations.length) {
+    roundInputs.push({
+      attacker: "Attacker argues the guard does not cover every path to the cited code.",
+      defender: `Defender cites mitigation: ${mitigations.join("; ")}.`,
+      delta: -0.1
+    });
+  }
 
   for (const input of roundInputs) {
     score = clampConfidence(score + input.delta);

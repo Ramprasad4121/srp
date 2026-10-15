@@ -75,6 +75,7 @@ export interface Finding {
   evidence: Evidence[];
   status: "candidate" | "debated" | "proven" | "partial" | "failed";
   detector: string;
+  mitigations?: string[];
 }
 
 export interface DebateTranscript {

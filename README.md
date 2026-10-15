@@ -37,4 +37,4 @@ curl -H "authorization: Bearer srp_demo_admin_token" \
   http://localhost:8080/api/audits
 ```
 
-See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md), [docs/deployment.md](docs/deployment.md), [docs/agents.md](docs/agents.md), and [docs/operator.md](docs/operator.md).
+See [docs/detectors.md](docs/detectors.md), [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md), [docs/deployment.md](docs/deployment.md), [docs/agents.md](docs/agents.md), and [docs/operator.md](docs/operator.md).
