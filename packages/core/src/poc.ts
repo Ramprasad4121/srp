@@ -1,44 +1,111 @@
-import type { Finding, PocResult } from "./types.ts";
+import type { Finding, PocResult, ProofRecord } from "./types.ts";
+import { confidenceBand } from "./utils.ts";
 
-export function validateFindings(findings: Finding[]): { findings: Finding[]; pocResults: PocResult[] } {
-  const pocResults = findings.map(validateFinding);
+/**
+ * Validation step. SRP does not execute exploits itself, so a finding is only "proven" when a locally
+ * executed PoC or test result is attached through `proofs`. Without one, the best a finding can be is
+ * "partial" (structural evidence complete, harness ready to run). High severity is held at medium until proven.
+ */
+export function validateFindings(findings: Finding[], proofs: ProofRecord[] = []): { findings: Finding[]; pocResults: PocResult[] } {
+  const pocResults = findings.map((finding) => validateFinding(finding, proofs.filter((proof) => proof.findingId === finding.id)));
   const updated = findings.map((finding) => {
     const result = pocResults.find((item) => item.findingId === finding.id);
     if (!result) return finding;
     const status = result.classification;
-    const verifiedConfidence = status === "proven" ? 0.92 : status === "partial" ? Math.min(finding.confidence, 0.71) : Math.min(finding.confidence, 0.44);
-    const severity = (finding.severity === "high" || finding.severity === "critical") && status !== "proven" ? "medium" as const : finding.severity;
+    const proposed = finding.proposedSeverity ?? finding.severity;
+    const verifiedConfidence = status === "proven" ? 0.95 : status === "partial" ? Math.min(finding.confidence, 0.71) : Math.min(finding.confidence, 0.44);
+    const severity = (proposed === "high" || proposed === "critical") && status !== "proven" ? "medium" as const : proposed;
     return {
       ...finding,
       status,
       severity,
+      proposedSeverity: proposed,
       confidence: verifiedConfidence,
-      confidenceBand: verifiedConfidence >= 0.9 ? "verified" as const : verifiedConfidence >= 0.72 ? "high" as const : verifiedConfidence >= 0.45 ? "medium" as const : "low" as const,
-      exploitability: result.classification === "proven" ? "Exploitability proven by deterministic validation evidence." : "Exploitability not fully proven by current validation evidence."
+      confidenceBand: confidenceBand(verifiedConfidence),
+      exploitability: status === "proven"
+        ? `Proven by a locally executed test: ${result.evidence.find((line) => line.startsWith("Assertion:"))?.slice(11) ?? result.command}.`
+        : result.executed
+          ? "An attached test run did not pass, so the exploit is not proven."
+          : "Not proven. No PoC has been executed; run the harness locally and attach the result."
     };
   });
   return { findings: updated, pocResults };
 }
 
-function validateFinding(finding: Finding): PocResult {
-  const excerpt = finding.evidence.map((item) => item.excerpt).join("\n").toLowerCase();
-  const proven = finding.detector.includes("reentrancy") && /\bcall\b/.test(excerpt) && !finding.mitigations?.length;
-  const partial = finding.confidence >= 0.62 || finding.detector.includes("pda") || finding.detector.includes("cpi");
-  const classification = proven ? "proven" : partial ? "partial" : "failed";
-  const command = finding.proofOfConcept.includes("Foundry")
-    ? `forge test --match-test ${finding.id.replace(/[^A-Za-z0-9_]/g, "_")}`
-    : `solana-program-test ${finding.id}`;
+function validateFinding(finding: Finding, proofs: ProofRecord[]): PocResult {
+  const harness = buildHarness(finding);
+  const passed = proofs.find((proof) => proof.passed);
+  const failed = proofs.find((proof) => !proof.passed);
+  const structural = finding.evidence.length >= 2 || (finding.context?.facts.length ?? 0) >= 2;
+  const unmitigated = !finding.mitigations?.length;
+  const classification: PocResult["classification"] = passed ? "proven" : failed ? "failed" : structural && unmitigated && finding.confidence >= 0.6 ? "partial" : "failed";
+  const proof = passed ?? failed;
+  const command = proof?.command ?? (finding.detector.startsWith("solana") ? "anchor test" : `forge test --match-contract ${harnessName(finding)} -vvv`);
   return {
     findingId: finding.id,
     classification,
+    executed: Boolean(proof),
+    ...(harness ? { harness } : {}),
     command,
     evidence: [
       `Detector: ${finding.detector}`,
       `Primary evidence: ${finding.evidence[0]?.file}:${finding.evidence[0]?.startLine}`,
-      classification === "proven" ? "State assertion can demonstrate attacker-controlled re-entry path." : "Static evidence requires harness completion or live target state."
+      ...(proof
+        ? [`Executed: ${proof.command} -> ${proof.passed ? "passed" : "failed"}`, `Assertion: ${proof.assertion}`]
+        : [structural ? "Static evidence: call site and state effect both cited. Not executed." : "Static evidence: single pattern match. Not executed."])
     ],
-    stateAssertions: classification === "proven"
-      ? ["Attacker balance increases", "Protocol accounting decreases unexpectedly", "Invariant fails after transaction"]
-      : ["No final high severity without executable state proof"]
+    stateAssertions: proof ? [proof.assertion] : harness ? ["Attacker balance grows", "Victim or protocol balance shrinks by the same amount"] : ["No final high severity without executable state proof"]
   };
+}
+
+function harnessName(finding: Finding): string {
+  const fn = (finding.context?.function ?? "Target").replace(/\W/g, "");
+  return `SRP_${finding.detector.replace(/\W/g, "_")}_${fn}`;
+}
+
+/** A Foundry harness for findings where the attack shape is fixed. Returned as text for the user to run. */
+function buildHarness(finding: Finding): string | undefined {
+  const fn = finding.context?.function;
+  if (!fn) return undefined;
+  const file = finding.evidence[0]?.file ?? "Target.sol";
+  if (finding.detector === "evm-reentrancy-external-call") {
+    return `// SPDX-License-Identifier: MIT
+// Generated by SRP for ${file}. Fill in the target constructor/deposit, then: forge test --match-contract ${harnessName(finding)} -vvv
+pragma solidity ^0.8.20;
+import "forge-std/Test.sol";
+
+interface ITarget { function ${fn}() external; }
+
+contract Reenter {
+    ITarget public target; uint256 public depth;
+    constructor(ITarget t) { target = t; }
+    function attack() external { target.${fn}(); }
+    receive() external payable { if (depth++ < 5 && address(target).balance > 0) target.${fn}(); }
+}
+
+contract ${harnessName(finding)} is Test {
+    function test_reenter_${fn}() public {
+        // ITarget target = ITarget(address(new Target()));  // deploy and fund the target here
+        // Reenter attacker = new Reenter(target);           // give the attacker a legitimate deposit
+        // uint256 before = address(attacker).balance;
+        // attacker.attack();
+        // assertGt(address(attacker).balance - before, depositAmount, "re-entry drained more than the deposit");
+    }
+}
+`;
+  }
+  if (finding.detector === "evm-missing-access-control" || finding.detector === "evm-unprotected-upgrade") {
+    return `// Generated by SRP for ${file}: forge test --match-contract ${harnessName(finding)} -vvv
+pragma solidity ^0.8.20;
+import "forge-std/Test.sol";
+contract ${harnessName(finding)} is Test {
+    function test_anyone_can_call_${fn}() public {
+        address attacker = makeAddr("attacker");
+        vm.prank(attacker);
+        // target.${fn}(...);  // expect success, then assert the privileged state now belongs to attacker
+    }
+}
+`;
+  }
+  return undefined;
 }
