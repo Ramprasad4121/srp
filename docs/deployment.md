@@ -25,6 +25,16 @@ kubectl apply -f infra/k8s/deployment.yaml
 
 The manifest runs one replica with a persistent volume. The JSON file store is single-process; more replicas need the planned PostgreSQL store and shared SSE fanout.
 
+## Behind a reverse proxy
+
+Unauthenticated requests are rate limited per client IP. Behind a load balancer or ingress every request arrives from the proxy's address, so all anonymous clients would share one bucket. Set `SRP_TRUST_PROXY` to the number of proxies in front of SRP (`true` means 1):
+
+```bash
+docker run -p 8080:8080 -e SRP_TRUST_PROXY=1 -e SRP_TOKENS=... srp
+```
+
+SRP then uses the Nth `X-Forwarded-For` entry from the right, the address your outermost trusted proxy saw. Entries further left are set by the client and ignored. Leave it unset (the default) when clients connect directly, otherwise anyone could pick their own bucket by sending the header. Authenticated requests are limited per token subject either way.
+
 ## Production Notes
 
 - Replace demo bearer tokens with an identity provider and short-lived JWTs.
