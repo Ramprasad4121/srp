@@ -31,7 +31,7 @@ The SSE endpoint also accepts `?token=` because `EventSource` cannot send header
 | POST | `/api/incidents/{id}` | auditor | `{ "status": "acknowledged" | "resolved" | "open" }` |
 | GET | `/api/audit-log` | admin | last 10,000 entries |
 
-Rate limit: 240 requests per minute per subject (or IP when unauthenticated), `429` with `retry-after`.
+Rate limit: 240 requests per minute per subject (or IP when unauthenticated), `429` with `retry-after`. Behind a proxy, set `SRP_TRUST_PROXY` (see deployment.md) so the client IP comes from `X-Forwarded-For`.
 
 ## Audit request
 

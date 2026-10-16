@@ -32,6 +32,12 @@ export interface SrpServerOptions {
   tokens?: Record<string, Session>;
   maxBodyBytes?: number;
   rateLimitPerMinute?: number;
+  /**
+   * Number of reverse proxies in front of the server whose X-Forwarded-For entries are trusted.
+   * 0 (default) ignores the header, so clients cannot spoof their rate-limit bucket.
+   * Defaults to SRP_TRUST_PROXY.
+   */
+  trustProxyHops?: number;
   heartbeatMs?: number;
   log?: (line: string) => void;
 }
@@ -69,10 +75,34 @@ export function tokensFromEnv(env: NodeJS.ProcessEnv = process.env): Record<stri
   return demoAllowed ? { ...DEMO_TOKENS, ...tokens } : tokens;
 }
 
+/** SRP_TRUST_PROXY: unset/0/false = off, true = 1 hop, or a hop count. */
+export function trustProxyFromEnv(env: NodeJS.ProcessEnv = process.env): number {
+  const raw = (env.SRP_TRUST_PROXY ?? "").trim().toLowerCase();
+  if (!raw || raw === "0" || raw === "false") return 0;
+  if (raw === "true") return 1;
+  const hops = Number(raw);
+  if (!Number.isInteger(hops) || hops < 0 || hops > 10) throw new Error(`Invalid SRP_TRUST_PROXY (need true, false, or a hop count 0-10): ${raw}`);
+  return hops;
+}
+
+/**
+ * Client address for rate limiting. With N trusted proxies, the client is the Nth X-Forwarded-For entry from the
+ * right (each proxy appends the address it saw). Entries further left are client-controlled and ignored. Falls back
+ * to the socket address when the header is missing or shorter than the trusted chain.
+ */
+export function clientAddress(socketAddress: string | undefined, forwardedFor: string | string[] | undefined, trustedHops: number): string {
+  const fallback = socketAddress ?? "unknown";
+  if (trustedHops <= 0 || forwardedFor === undefined) return fallback;
+  const entries = (Array.isArray(forwardedFor) ? forwardedFor.join(",") : forwardedFor).split(",").map((item) => item.trim()).filter(Boolean);
+  if (entries.length < trustedHops) return fallback;
+  return entries[entries.length - trustedHops] ?? fallback;
+}
+
 export function createSrpServer(options: SrpServerOptions = {}): Server {
   const tokens = options.tokens ?? tokensFromEnv();
   const maxBody = options.maxBodyBytes ?? 5 * 1024 * 1024;
   const rateLimit = options.rateLimitPerMinute ?? 240;
+  const trustProxyHops = options.trustProxyHops ?? trustProxyFromEnv();
   const log = options.log ?? ((line: string) => console.log(line));
   const store = new JsonStore<PersistedState>(options.dataFile ?? process.env.SRP_DATA_FILE ?? ".srp-data/state.json", { audits: [], incidents: [], auditLog: [] });
   const monitoring = new RuntimeSecurityLayer();
@@ -169,7 +199,8 @@ export function createSrpServer(options: SrpServerOptions = {}): Server {
   }
 
   function applyRateLimit(req: IncomingMessage, res: ServerResponse, session: Session | undefined): boolean {
-    const key = session?.subject ?? req.socket.remoteAddress ?? "anonymous";
+    // Separate namespaces so a token subject can never share a bucket with an IP address.
+    const key = session ? `subject:${session.subject}` : `ip:${clientAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"], trustProxyHops)}`;
     const now = Date.now();
     const current = rateCounters.get(key);
     if (!current || current.resetAt < now) {
