@@ -14,7 +14,7 @@ docker build -t srp .
 docker run -p 8080:8080 -e SRP_TOKENS="$(openssl rand -hex 16):admin:me" -v srp-data:/data srp
 ```
 
-The image runs as `node`, listens on `0.0.0.0:8080`, stores state in `/data/state.json`, and has demo tokens disabled.
+The image runs as `node`, listens on `0.0.0.0:8080`, stores state in `/data/state.json`, and has demo tokens disabled. `bash scripts/docker-smoke.sh` builds and checks it (CI runs this on every PR).
 
 ## Kubernetes
 

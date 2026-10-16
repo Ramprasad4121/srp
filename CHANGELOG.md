@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- CI: a `docker` job builds the image and runs `scripts/docker-smoke.sh` (health, 401 without a token, demo tokens rejected in production, one real audit, state kept across a restart).
 - Rate limiting behind a proxy: opt-in `SRP_TRUST_PROXY` (hop count, or `true` for 1) keys anonymous clients on the trusted `X-Forwarded-For` entry. Off by default, so a spoofed header changes nothing. Subject and IP buckets no longer share a namespace.
 - Build: `npm run build` compiles to dist/*.js with tsc (dev dependency only, zero runtime deps). `bin` now points at dist, so `npx srp scan` works from an installed tarball. `npm run test:pack` packs, installs and scans in a temp project, and runs in CI.
 - Fix: the CLI and MCP entry check follows symlinks, so the bin shim in node_modules/.bin starts correctly.
