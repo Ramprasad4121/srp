@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Build: `npm run build` compiles to dist/*.js with tsc (dev dependency only, zero runtime deps). `bin` now points at dist, so `npx srp scan` works from an installed tarball. `npm run test:pack` packs, installs and scans in a temp project, and runs in CI.
+- Fix: the CLI and MCP entry check follows symlinks, so the bin shim in node_modules/.bin starts correctly.
+
 ### Fixed (honesty)
 - Intent "security guarantees" were built by splitting source code on periods, so fragments like `sender.call(...)` showed up as guarantees. Sentences now come only from documents and NatSpec / doc comments.
 - Generic assumptions and invariants SRP adds on its own are labelled `Inferred:` instead of reading as extracted from the protocol.

@@ -1,0 +1,2 @@
+{"compilerOptions":{"target":"es2023","module":"nodenext","moduleResolution":"nodenext","outDir":"dist","rootDir":".","rewriteRelativeImportExtensions":true,"allowImportingTsExtensions":true,"skipLibCheck":true,"strict":false,"noEmitOnError":false,"types":["node"],"erasableSyntaxOnly":true},
+"include":["apps/cli/src","apps/api/src","apps/mcp/src","packages/core/src"]}
