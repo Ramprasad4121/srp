@@ -1,5 +1,7 @@
 # Security Reasoning Protocol
 
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 Security Reasoning Protocol (SRP) is an AI-native Web3 security operating system for EVM and Solana protocols. It is designed around evidence-first security workflows: intent extraction, vulnerability discovery, adversarial debate, exploit validation, runtime monitoring, and audit-grade reporting.
 
 ## What works today

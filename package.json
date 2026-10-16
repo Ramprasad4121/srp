@@ -27,7 +27,9 @@
   "files": [
     "dist",
     "README.md",
+    "LICENSE",
     "SECURITY.md",
     "CHANGELOG.md"
-  ]
+  ],
+  "license": "Apache-2.0"
 }
