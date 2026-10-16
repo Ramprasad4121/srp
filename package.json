@@ -10,12 +10,24 @@
     "test": "node --test packages/core/test/*.test.ts apps/api/test/*.test.ts apps/cli/test/*.test.ts apps/mcp/test/*.test.ts",
     "smoke": "node apps/api/src/smoke.ts",
     "scan": "node apps/cli/src/cli.ts scan",
-    "mcp": "node apps/cli/src/cli.ts mcp"
+    "mcp": "node apps/cli/src/cli.ts mcp",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "test:pack": "node scripts/pack-test.mjs"
   },
   "engines": {
     "node": ">=22.18"
   },
   "bin": {
-    "srp": "apps/cli/src/cli.ts"
-  }
+    "srp": "dist/apps/cli/src/cli.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "SECURITY.md",
+    "CHANGELOG.md"
+  ]
 }

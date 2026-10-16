@@ -239,5 +239,11 @@ export async function runMcpStdio(input: NodeJS.ReadableStream = process.stdin, 
   }
 }
 
-const invokedDirectly = process.argv[1] !== undefined && import.meta.url === new URL(`file://${process.argv[1]}`).href;
+import { realpathSync } from "node:fs";
+import { fileURLToPath, pathToFileURL } from "node:url";
+function isEntry(argv1: string | undefined, metaUrl: string): boolean {
+  if (!argv1) return false;
+  try { return pathToFileURL(realpathSync(argv1)).href === metaUrl; } catch { return false; }
+}
+const invokedDirectly = process.argv[1] !== undefined && isEntry(process.argv[1], import.meta.url);
 if (invokedDirectly) runMcpStdio();

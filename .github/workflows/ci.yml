@@ -13,7 +13,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - run: npm ci
       - run: npm test
+      - name: Packed tarball installs and scans (npx srp)
+        run: npm run test:pack
       - run: timeout 60 npm run smoke
       - run: node apps/cli/src/cli.ts doctor
       - name: CLI scans its own fixtures and fails on the known bug

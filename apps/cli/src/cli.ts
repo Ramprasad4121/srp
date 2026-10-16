@@ -123,5 +123,11 @@ export async function main(argv: string[], io = { out: (value: string) => proces
   }
 }
 
-const invokedDirectly = process.argv[1] !== undefined && import.meta.url === new URL(`file://${process.argv[1]}`).href;
+import { realpathSync } from "node:fs";
+import { fileURLToPath, pathToFileURL } from "node:url";
+function isEntry(argv1: string | undefined, metaUrl: string): boolean {
+  if (!argv1) return false;
+  try { return pathToFileURL(realpathSync(argv1)).href === metaUrl; } catch { return false; }
+}
+const invokedDirectly = process.argv[1] !== undefined && isEntry(process.argv[1], import.meta.url);
 if (invokedDirectly) main(process.argv.slice(2)).then((code) => { process.exitCode = code; });
