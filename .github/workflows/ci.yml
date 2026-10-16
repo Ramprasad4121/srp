@@ -24,3 +24,13 @@ jobs:
           mkdir -p /tmp/fx/src && printf 'contract A { mapping(address => uint256) b; function w() external { (bool ok,) = msg.sender.call{value: b[msg.sender]}(""); require(ok); b[msg.sender] = 0; } }' > /tmp/fx/src/A.sol
           set +e; node apps/cli/src/cli.ts scan /tmp/fx; code=$?; set -e
           test "$code" = 1
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Build image, run it, health + auth + one audit + persistence
+        run: bash scripts/docker-smoke.sh
