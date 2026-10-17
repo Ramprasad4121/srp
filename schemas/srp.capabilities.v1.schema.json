@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ramprasad4121/srp/blob/main/schemas/srp.capabilities.v1.schema.json",
+  "title": "SRP capabilities (doctor)",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "version",
+    "reportSchema",
+    "chains",
+    "analyzers",
+    "detectors",
+    "tools",
+    "notBuilt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "srp.capabilities/v1"
+    },
+    "version": {
+      "type": "string"
+    },
+    "reportSchema": {
+      "const": "srp.audit/v1"
+    },
+    "chains": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "analyzers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "languages",
+          "chains",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "chains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "detectors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "available",
+          "purpose"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "notBuilt": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}
