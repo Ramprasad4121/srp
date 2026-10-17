@@ -1,6 +1,6 @@
 import type { Evidence, Finding, FindingContext, ProtocolInput, Severity, SourceFile } from "./types.ts";
 import { clampConfidence, confidenceBand, evidenceAt, lineEvidence, stableId } from "./utils.ts";
-import { checksCaller, enclosingFunction, indexSolidity, stateWrites, stripComments, type SolidityFunction, type SolidityIndex } from "./solidity.ts";
+import { checksCaller, enclosingFunction, indexSolidity, matchBrace, stateWrites, stripComments, type SolidityFunction, type SolidityIndex } from "./solidity.ts";
 import { discoverAnchor } from "./anchor.ts";
 
 interface DetectorRule {
@@ -96,8 +96,87 @@ const EXTERNAL_CALL = /\.call\s*\{|\.call\s*\(|\.safeTransferFrom\s*\(|\b_safeMi
 const PRIVILEGED_STATE = /owner|admin|governor|guardian|implementation|treasury|feeRecipient|oracle|paused|minter|operator/i;
 const PRIVILEGED_CALL = /\bselfdestruct\s*\(|\bupgradeTo(AndCall)?\s*\(|\b_setImplementation\s*\(|\b_upgradeTo\w*\s*\(/;
 
+interface ContractInfo { name: string; bases: string[]; functions: Map<string, SolidityFunction[]> }
+interface ProjectRegistry { modifiers: Map<string, SolidityFunction[]>; contracts: Map<string, ContractInfo> }
+let registry: ProjectRegistry = { modifiers: new Map(), contracts: new Map() };
+
+/** Index every Solidity source together so modifiers and parent contracts resolve across files. */
+function buildRegistry(sources: SourceFile[]): ProjectRegistry {
+  const reg: ProjectRegistry = { modifiers: new Map(), contracts: new Map() };
+  for (const source of sources) {
+    if (!isSolidity(source)) continue;
+    const index = indexSolidity(source.content);
+    for (const fn of index.functions) if (fn.kind === "modifier") reg.modifiers.set(fn.name, [...(reg.modifiers.get(fn.name) ?? []), fn]);
+    for (const match of index.code.matchAll(/\b(?:abstract\s+)?(contract|library|interface)\s+([A-Za-z_]\w*)(?:\s+is\s+([^{]+))?\s*\{/g)) {
+      const open = (match.index ?? 0) + match[0].length - 1;
+      const close = matchBrace(index.code, open);
+      const info: ContractInfo = {
+        name: match[2] ?? "",
+        bases: (match[3] ?? "").replace(/\([^)]*\)/g, "").split(",").map((b) => b.trim()).filter(Boolean),
+        functions: new Map()
+      };
+      for (const fn of index.functions) {
+        if (fn.bodyStart > open && fn.bodyStart < close && enclosingContractOpen(index.code, fn.bodyStart) === open) info.functions.set(fn.name, [...(info.functions.get(fn.name) ?? []), fn]);
+      }
+      reg.contracts.set(info.name, info);
+    }
+  }
+  return reg;
+}
+
+function enclosingContractOpen(code: string, offset: number): number {
+  let best = -1;
+  for (const match of code.matchAll(/\b(?:contract|library|interface)\s+[A-Za-z_]\w*[^{]*\{/g)) {
+    const open = (match.index ?? 0) + match[0].length - 1;
+    if (open < offset && matchBrace(code, open) > offset) best = open;
+  }
+  return best;
+}
+
+/** A modifier defined in the project counts as a guard only when its body checks the caller. Unknown (imported, not supplied) modifiers are assumed to guard. */
+function modifierGuards(name: string): boolean {
+  const defs = registry.modifiers.get(name);
+  if (!defs?.length) return true;
+  return defs.some((def) => checksCaller(def) || (/\brequire\s*\(|\brevert\b/.test(def.body) && /\b(owner|admin|governor|role|authori)/i.test(def.body)));
+}
+
+/** "yes": a parent override guards it. "no": every parent resolved and none guards. "unknown": a base is missing from the supplied sources. */
+function parentGuard(fnName: string, owner: string | undefined, seen = new Set<string>()): "yes" | "no" | "unknown" {
+  const info = owner ? registry.contracts.get(owner) : undefined;
+  if (!info) return "unknown";
+  let result: "yes" | "no" | "unknown" = "no";
+  for (const base of info.bases) {
+    if (seen.has(base)) continue;
+    seen.add(base);
+    const parent = registry.contracts.get(base);
+    if (!parent) { result = "unknown"; continue; }
+    const impls = parent.functions.get(fnName) ?? [];
+    for (const impl of impls) {
+      if (accessModifiers(impl).length || checksCaller(impl)) return "yes";
+      if (/\bsuper\s*\.\s*\w+\s*\(/.test(impl.body)) {
+        const up = parentGuard(fnName, base, seen);
+        if (up === "yes") return "yes";
+        if (up === "unknown") result = "unknown";
+      }
+    }
+    const up = impls.length ? "no" : parentGuard(fnName, base, seen);
+    if (up === "yes") return "yes";
+    if (up === "unknown") result = "unknown";
+  }
+  return result;
+}
+
+function ownerOf(fn: SolidityFunction, source: SourceFile): string | undefined {
+  const index = indexSolidity(source.content);
+  const open = enclosingContractOpen(index.code, fn.bodyStart);
+  if (open < 0) return undefined;
+  const m = /(?:contract|library|interface)\s+([A-Za-z_]\w*)[^{]*$/.exec(index.code.slice(0, open + 1));
+  return m?.[1];
+}
+
 export function discoverVulnerabilities(input: ProtocolInput): Finding[] {
   const chainFamily = input.chain === "solana" ? "solana" : "evm";
+  registry = buildRegistry(input.sources);
   const findings: Finding[] = [];
   for (const source of input.sources) {
     const stripped = stripComments(source.content);
@@ -196,7 +275,7 @@ const NON_ACCESS_MODIFIER = /^(nonReentrant|noReentrancy|lock|whenNotPaused|when
 
 /** Modifiers that can restrict who calls. Reentrancy locks and pause switches do not. */
 function accessModifiers(fn: SolidityFunction): string[] {
-  return fn.modifiers.filter((modifier) => !NON_ACCESS_MODIFIER.test(modifier));
+  return fn.modifiers.filter((modifier) => !NON_ACCESS_MODIFIER.test(modifier) && modifierGuards(modifier));
 }
 
 function isEntrypoint(fn: SolidityFunction): boolean {
@@ -276,8 +355,8 @@ function reentrancyFinding(source: SourceFile, index: SolidityIndex, fn: Solidit
 function accessControlFinding(source: SourceFile, index: SolidityIndex, fn: SolidityFunction): Finding | undefined {
   if (!isEntrypoint(fn) && !(fn.name === "_authorizeUpgrade")) return undefined;
   if (accessModifiers(fn).length || checksCaller(fn)) return undefined;
-  // An override that defers to super may inherit the parent's check; SRP does not resolve inheritance yet.
-  if (/\bsuper\s*\.\s*\w+\s*\(/.test(fn.body)) return undefined;
+  // An override that defers to super inherits the parent's check. Skip unless every parent resolved and none guards.
+  if (/\bsuper\s*\.\s*\w+\s*\(/.test(fn.body) && parentGuard(fn.name, ownerOf(fn, source)) !== "no") return undefined;
   if (fn.name === "_authorizeUpgrade") {
     const line = fn.startLine;
     return makeFinding({
