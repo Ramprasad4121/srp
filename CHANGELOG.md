@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Cross-file resolution: modifiers and `is Parent` chains resolve across supplied files; modifiers that never check the caller no longer count as guards; `super` overrides are flagged when every parent resolves and none guards (unresolved parents stay skipped).
+
 - Positioning: README and package description now say "agent-native" (deterministic, offline, called by agents and CI) instead of "AI-native", since no model runs in the pipeline. A test keeps the claim honest.
 - Schemas: JSON Schema (draft 2020-12) for `srp.audit/v1`, `srp.summary/v1`, `srp.evidence-bundle/v1`, `srp.capabilities/v1` in schemas/, shipped in the npm package. A test validates real outputs against them. MCP `srp_export_evidence` and `srp_capabilities` now publish an `outputSchema`; the other tools return varied shapes and are not covered yet.
 - License: Apache-2.0 (LICENSE file, package.json field, README badge).
