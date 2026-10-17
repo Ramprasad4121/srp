@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Docs: launch scope is CLI, MCP and Action; the JSON-file web server is documented as single-operator only, no hosted demo.
+
 - Cross-file resolution: modifiers and `is Parent` chains resolve across supplied files; modifiers that never check the caller no longer count as guards; `super` overrides are flagged when every parent resolves and none guards (unresolved parents stay skipped).
 
 - Positioning: README and package description now say "agent-native" (deterministic, offline, called by agents and CI) instead of "AI-native", since no model runs in the pipeline. A test keeps the claim honest.
