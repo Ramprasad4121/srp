@@ -1,94 +1,54 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SRP Security Operations</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <script>document.documentElement.dataset.theme = localStorage.getItem("srp.theme") || "light";</script>
+    <title>SRP Console</title>
+    <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <aside class="sidebar">
-      <div class="brand">
-        <span class="mark">SRP</span>
-        <span>Security Reasoning Protocol</span>
+    <a class="skip" href="#view">Skip to content</a>
+    <div class="shell">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="#/overview">
+          <span class="logo" aria-hidden="true">S</span>
+          <div><strong>SRP</strong><small>Security Reasoning Protocol</small></div>
+        </a>
+        <nav aria-label="Main">
+          <a href="#/overview" data-nav="overview"><span class="ico" aria-hidden="true">◐</span>Overview</a>
+          <a href="#/scan" data-nav="scan"><span class="ico" aria-hidden="true">✦</span>New Scan</a>
+          <a href="#/findings" data-nav="findings"><span class="ico" aria-hidden="true">◎</span>Findings</a>
+          <a href="#/battlechain" data-nav="battlechain"><span class="ico" aria-hidden="true">⚔</span>BattleChain</a>
+          <a href="#/tools" data-nav="tools"><span class="ico" aria-hidden="true">⌘</span>Analyzers</a>
+          <a href="#/reports" data-nav="reports"><span class="ico" aria-hidden="true">▤</span>Reports</a>
+          <a href="#/monitoring" data-nav="monitoring"><span class="ico" aria-hidden="true">◉</span>Monitoring</a>
+          <a href="#/settings" data-nav="settings"><span class="ico" aria-hidden="true">⚙</span>Settings</a>
+        </nav>
+        <div class="sidebar-foot">
+          <label class="toggle">
+            <span>Demo mode</span>
+            <input type="checkbox" id="demoToggle">
+          </label>
+          <label class="toggle">
+            <span>Dark mode</span>
+            <input type="checkbox" id="themeToggle">
+          </label>
+          <p class="conn" role="status" aria-live="polite"><span id="connDot" class="dot"></span><span id="connStatus">Checking API...</span></p>
+        </div>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="icon-btn" id="menuBtn" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false">☰</button>
+          <h1 id="viewTitle">Overview</h1>
+          <span id="modeBadge" class="badge"></span>
+        </header>
+        <main id="view" tabindex="-1"></main>
       </div>
-      <nav>
-        <a href="#audit">Audit</a>
-        <a href="#pipeline">Pipeline</a>
-        <a href="#findings">Findings</a>
-        <a href="#monitoring">Monitoring</a>
-      </nav>
-      <label class="token">
-        API token
-        <input id="token" placeholder="paste a bearer token" autocomplete="off" />
-      </label>
-    </aside>
-
-    <main>
-      <section class="topbar">
-        <div>
-          <h1>Security Operations Dashboard</h1>
-          <p id="connection">Connecting to SRP event stream...</p>
-        </div>
-        <button id="runAudit">Run Audit</button>
-      </section>
-
-      <section class="metrics">
-        <div><strong id="auditCount">0</strong><span>Audits</span></div>
-        <div><strong id="findingCount">0</strong><span>Findings</span></div>
-        <div><strong id="provenCount">0</strong><span>Proven (executed)</span></div>
-        <div><strong id="coverage">-</strong><span>Coverage</span></div>
-        <div><strong id="incidentCount">0</strong><span>Incidents</span></div>
-      </section>
-
-      <section id="audit" class="workspace">
-        <form id="auditForm" class="panel">
-          <h2>Live Audit</h2>
-          <input name="name" value="ExampleVault" aria-label="Protocol name" />
-          <select name="chain" aria-label="Chain">
-            <option>ethereum</option>
-            <option>arbitrum</option>
-            <option>optimism</option>
-            <option>base</option>
-            <option>polygon</option>
-            <option>avalanche</option>
-            <option>solana</option>
-          </select>
-          <textarea name="docs" aria-label="Protocol docs">Only the governor may upgrade the vault. The vault must remain solvent after withdrawals.</textarea>
-          <textarea name="source" aria-label="Source code">contract Vault {
-  mapping(address => uint256) balances;
-  function withdraw() external {
-    (bool ok,) = msg.sender.call{value: balances[msg.sender]}("");
-    require(ok);
-    balances[msg.sender] = 0;
-  }
-}</textarea>
-        </form>
-
-        <div id="pipeline" class="panel">
-          <h2>Pipeline</h2>
-          <p>Stages light up as the server reports them over SSE.</p>
-          <div class="agent-grid">
-            <span data-stage="intent">Intent</span><span data-stage="discovery">Discovery</span><span data-stage="debate">DynaDebate</span><span data-stage="validation">Validation</span><span data-stage="coverage">Coverage</span>
-          </div>
-          <div id="unknowns" class="unknowns"></div>
-        </div>
-      </section>
-
-      <section id="findings" class="panel">
-        <h2>Findings Explorer</h2>
-        <div id="findingsList" class="findings"></div>
-      </section>
-
-      <section id="monitoring" class="panel">
-        <div class="section-head">
-          <h2>Runtime Monitoring</h2>
-          <button id="simulateIncident">Simulate Attack Signal</button>
-        </div>
-        <div id="incidents" class="incidents"></div>
-      </section>
-    </main>
-
-    <script src="/app.js"></script>
+    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="mock-data.js"></script>
+    <script src="app.js"></script>
   </body>
 </html>
