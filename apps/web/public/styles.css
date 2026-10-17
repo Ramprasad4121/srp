@@ -37,7 +37,7 @@
   --card-2: #25221e;
   --ink: #f3ede3;
   --ink-2: #c3bbae;
-  --muted: #8a8276;
+  --muted: #a8a093;
   --line: rgba(243, 237, 227, 0.08);
   --accent: #ff6a3d;
   --accent-soft: rgba(255, 106, 61, 0.14);
@@ -253,7 +253,7 @@ dl.kv dd { margin: 0; }
 
 /* ---------- tools, solodit, battlechain ---------- */
 .thread { padding-bottom: 24px; }
-.composer { margin-top: 8px; }
+.composer { margin-top: 8px; position: static; }
 #view:has(.composer) { padding-bottom: 32px; }
 .pill.ext { background: color-mix(in srgb, var(--low) 10%, transparent); color: var(--low); }
 .pill.bc { background: var(--accent-soft); color: var(--accent); text-decoration: none; font-weight: 600; }

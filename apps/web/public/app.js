@@ -210,7 +210,7 @@ function foundBy(audit, finding) {
 }
 
 function externalOnly(audit) {
-  if (state.live || !audit.id.startsWith("audit_demo")) return [];
+  if (state.live || audit.id !== "audit_demo_vault") return [];
   const topics = new Set(audit.findings.map((f) => TOPIC(f.detector)));
   return EXTERNAL_DEMO.filter((x) => !topics.has(x.topic) && x.title);
 }
@@ -500,7 +500,8 @@ const views = {
           <h2>Ready for BattleChain</h2>
           <p class="small muted">Findings proven by a local test run. Fix these before requesting Attack Mode.</p>
           <ul class="mini-list">${proven.length ? proven.map((f) => `<li><a href="#/finding?audit=${encodeURIComponent(f.audit.id)}&id=${encodeURIComponent(f.id)}">${esc(f.title)}</a>${sev(f.severity)}</li>`).join("") : `<li class="muted">No proven findings yet.</li>`}</ul>
-          <button class="primary" type="button" id="requestAttack" style="margin-top:14px">Request Attack Mode</button>
+          <button class="primary" type="button" id="requestAttack" style="margin-top:14px" ${BATTLE_DEMO.step >= 5 ? "disabled" : ""}>${["", "", "Request Attack Mode", "Simulate DAO approval", "Request promotion", "Promotion requested"][BATTLE_DEMO.step]}</button>
+          <p class="small muted">Demo only. A real request needs a wallet and the AttackRegistry.</p>
         </div>
       </section>`;
   },
