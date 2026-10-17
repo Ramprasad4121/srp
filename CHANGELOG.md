@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Detect legacy `call.value()()` reentrancy; add `scripts/bench-smartbugs.ts` and SmartBugs-curated results to docs/eval.md (launch blocker 5).
 
 - Docs: launch scope is CLI, MCP and Action; the JSON-file web server is documented as single-operator only, no hosted demo.
 

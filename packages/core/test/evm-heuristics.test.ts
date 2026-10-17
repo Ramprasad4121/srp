@@ -170,3 +170,17 @@ test("unguarded reentrancy (state written after call) is flagged with both lines
   assert.equal(poc?.executed, false);
   assert.match(poc?.harness ?? "", /forge-std\/Test\.sol/);
 });
+
+test("legacy pre-0.5 call.value()() reentrancy is detected (SmartBugs reentrancy_dao shape)", () => {
+  const report = runAudit(evm(`pragma solidity ^0.4.19;
+  contract DAO {
+    mapping(address => uint) credit;
+    function withdrawAll() public {
+      uint c = credit[msg.sender];
+      bool ok = msg.sender.call.value(c)();
+      require(ok);
+      credit[msg.sender] = 0;
+    }
+  }`));
+  assert.ok(report.findings.some((finding) => finding.detector === "evm-reentrancy-external-call"));
+});

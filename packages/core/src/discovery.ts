@@ -92,7 +92,7 @@ const RULES: DetectorRule[] = [
   }
 ];
 
-const EXTERNAL_CALL = /\.call\s*\{|\.call\s*\(|\.safeTransferFrom\s*\(|\b_safeMint\s*\(|\.functionCallWithValue\s*\(/g;
+const EXTERNAL_CALL = /\.call\s*\{|\.call\s*\.\s*value\s*\(|\.call\s*\(|\.safeTransferFrom\s*\(|\b_safeMint\s*\(|\.functionCallWithValue\s*\(/g;
 const PRIVILEGED_STATE = /owner|admin|governor|guardian|implementation|treasury|feeRecipient|oracle|paused|minter|operator/i;
 const PRIVILEGED_CALL = /\bselfdestruct\s*\(|\bupgradeTo(AndCall)?\s*\(|\b_setImplementation\s*\(|\b_upgradeTo\w*\s*\(/;
 
