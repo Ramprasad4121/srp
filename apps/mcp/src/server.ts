@@ -24,7 +24,7 @@ import {
 } from "../../../packages/core/src/index.ts";
 
 type Json = Record<string, unknown>;
-interface Tool { name: string; description: string; inputSchema: Json; run(args: Json): Json }
+interface Tool { name: string; description: string; inputSchema: Json; outputSchema?: Json; run(args: Json): Json }
 
 const SUPPORTED_PROTOCOLS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const MAX_SESSION_AUDITS = 50;
@@ -142,6 +142,7 @@ export class SrpMcp {
         name: "srp_export_evidence",
         description: "Export an srp.evidence-bundle/v1 (findings, evidence, unknowns, sha256 digest) for a report or another tool.",
         inputSchema: { type: "object", required: ["auditId"], properties: { auditId: { type: "string" } }, additionalProperties: false },
+        outputSchema: { type: "object", required: ["schemaVersion", "auditId", "findings", "unknowns", "coverage", "digest"], properties: { schemaVersion: { const: "srp.evidence-bundle/v1" }, digest: { type: "string" } } },
         run: (args) => exportEvidenceBundle(this.audit(args.auditId)) as unknown as Json
       },
       {
@@ -158,6 +159,7 @@ export class SrpMcp {
         name: "srp_capabilities",
         description: "Analyzers, detectors, chains, local tools (forge, anchor), and what SRP does not do yet.",
         inputSchema: { type: "object", properties: {}, additionalProperties: false },
+        outputSchema: { type: "object", required: ["schemaVersion", "version", "detectors", "analyzers", "notBuilt"], properties: { schemaVersion: { const: "srp.capabilities/v1" }, version: { type: "string" } } },
         run: () => capabilities() as unknown as Json
       }
     ];
@@ -202,7 +204,7 @@ export class SrpMcp {
       case "ping":
         return reply({});
       case "tools/list":
-        return reply({ tools: this.tools.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })) });
+        return reply({ tools: this.tools.map(({ name, description, inputSchema, outputSchema }) => ({ name, description, inputSchema, ...(outputSchema ? { outputSchema } : {}) })) });
       case "tools/call": {
         const tool = this.tools.find((item) => item.name === request.params?.name);
         if (!tool) return fail(-32602, `Unknown tool: ${String(request.params?.name)}`);

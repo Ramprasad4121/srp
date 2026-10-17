@@ -30,6 +30,11 @@ test("initialize negotiates a protocol version and lists tools with schemas", ()
   const names = list.result.tools.map((tool: { name: string }) => tool.name);
   for (const name of ["srp_scan_path", "srp_scan_source", "srp_attach_proof", "srp_coverage", "srp_export_evidence", "srp_capabilities"]) assert.ok(names.includes(name), name);
   assert.ok(list.result.tools.every((tool: { inputSchema: { type: string } }) => tool.inputSchema.type === "object"));
+  const withOutput = list.result.tools.filter((tool: any) => tool.outputSchema).map((tool: any) => tool.name).sort();
+  assert.deepEqual(withOutput, ["srp_capabilities", "srp_export_evidence"]);
+  const caps = call(server, "srp_capabilities", {});
+  const outSchema = list.result.tools.find((tool: any) => tool.name === "srp_capabilities").outputSchema;
+  for (const key of outSchema.required) assert.ok(key in caps.result.structuredContent, key);
 });
 
 test("scan inline source, read a finding, attach a passing proof", () => {

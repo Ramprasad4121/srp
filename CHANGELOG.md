@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Schemas: JSON Schema (draft 2020-12) for `srp.audit/v1`, `srp.summary/v1`, `srp.evidence-bundle/v1`, `srp.capabilities/v1` in schemas/, shipped in the npm package. A test validates real outputs against them. MCP `srp_export_evidence` and `srp_capabilities` now publish an `outputSchema`; the other tools return varied shapes and are not covered yet.
 - License: Apache-2.0 (LICENSE file, package.json field, README badge).
 - CI: a `docker` job builds the image and runs `scripts/docker-smoke.sh` (health, 401 without a token, demo tokens rejected in production, one real audit, state kept across a restart).
 - Rate limiting behind a proxy: opt-in `SRP_TRUST_PROXY` (hop count, or `true` for 1) keys anonymous clients on the trusted `X-Forwarded-For` entry. Off by default, so a spoofed header changes nothing. Subject and IP buckets no longer share a namespace.

@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ramprasad4121/srp/blob/main/schemas/srp.evidence-bundle.v1.schema.json",
+  "title": "SRP evidence bundle",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "auditId",
+    "protocol",
+    "chain",
+    "generatedAt",
+    "findings",
+    "unknowns",
+    "coverage",
+    "digest"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "srp.evidence-bundle/v1"
+    },
+    "auditId": {
+      "type": "string"
+    },
+    "protocol": {
+      "type": "string"
+    },
+    "chain": {
+      "type": "string"
+    },
+    "generatedAt": {
+      "type": "string"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "detector",
+          "severity",
+          "status",
+          "confidence",
+          "evidence",
+          "facts"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "detector": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low",
+              "informational"
+            ]
+          },
+          "proposedSeverity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low",
+              "informational"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "candidate",
+              "debated",
+              "proven",
+              "partial",
+              "unverified",
+              "failed"
+            ]
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "file",
+                "startLine",
+                "endLine",
+                "excerpt",
+                "rationale"
+              ],
+              "properties": {
+                "evidenceId": {
+                  "type": "string"
+                },
+                "file": {
+                  "type": "string"
+                },
+                "startLine": {
+                  "type": "integer"
+                },
+                "endLine": {
+                  "type": "integer"
+                },
+                "excerpt": {
+                  "type": "string"
+                },
+                "rationale": {
+                  "type": "string"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "operation": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "observed",
+                    "derived",
+                    "inferred"
+                  ]
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "facts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "unknowns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "unknownId",
+          "file",
+          "question",
+          "reason",
+          "severity"
+        ],
+        "properties": {
+          "unknownId": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "question": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "required": [
+        "files",
+        "analyzedFiles",
+        "functions",
+        "ratio",
+        "analyzers"
+      ],
+      "properties": {
+        "files": {
+          "type": "integer"
+        },
+        "analyzedFiles": {
+          "type": "integer"
+        },
+        "functions": {
+          "type": "integer"
+        },
+        "ratio": {
+          "type": "number"
+        },
+        "analyzers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": true
+}
