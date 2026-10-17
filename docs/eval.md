@@ -55,3 +55,15 @@ Each scan finishes in under a second.
 git clone --depth 1 https://github.com/coral-xyz/sealevel-attacks
 node scripts/scan-dir.ts sealevel-attacks/programs solana
 ```
+
+## EVM: smartbugs/smartbugs-curated (labelled)
+
+Commit `230e649123477eff332742a59a1c7cc6dc286cab`, 143 `.sol` files, every file contains at least one labelled vulnerability. Reproduce: `git clone https://github.com/smartbugs/smartbugs-curated /tmp/sb && node scripts/bench-smartbugs.ts /tmp/sb`.
+
+| Category | Files | Mapped detectors | Files detected |
+| --- | --- | --- | --- |
+| reentrancy | 31 | `evm-reentrancy-external-call` | 21 |
+| access_control | 18 | missing-access-control, tx-origin, arbitrary-delegatecall, unprotected-upgrade | 11 |
+| arithmetic, bad_randomness, denial_of_service, front_running, short_addresses, time_manipulation, unchecked_low_level_calls, other | 94 | none (SRP has no detector yet) | 0 |
+
+Read this honestly: the set is old Solidity (0.4.x), recall is by file not by labelled line, and a mapped detector firing in a file is not proof it hit the labelled line. Overall, 32 of 143 files (22%) get a finding from a mapped detector; SRP does not yet cover most of this corpus's classes. The set contains no clean contracts, so **precision cannot be measured here**; the script prints which detectors fire on unrelated categories (mostly `evm-missing-access-control` on old-style constructors/fallbacks) as a false-positive signal to work down. A clean-contract precision set is still open work. Before this benchmark, legacy `call.value()()` was not recognised and reentrancy recall was 0/31.
