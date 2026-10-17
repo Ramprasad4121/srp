@@ -43,3 +43,8 @@ SRP then uses the Nth `X-Forwarded-For` entry from the right, the address your o
 - Store secrets in the platform secret manager, not environment files.
 - Run API instances behind TLS and a Web Application Firewall.
 - Keep detector and integration adapters versioned independently from the core engine.
+
+
+## Launch scope: local and CI first
+
+The public launch is the CLI (`srp scan`), the MCP server, and the GitHub Action. The web server stores state in a single JSON file and rewrites it per request, including the audit log, so it is meant for one operator on a trusted machine or private network. We do not run a hosted demo and do not recommend exposing it to the internet. A SQLite or Postgres backend with append-only audit entries is on the roadmap before any hosted offering.
