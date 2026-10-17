@@ -166,6 +166,80 @@ function severityBar(findings) {
   }).join("")}</div>`;
 }
 
+
+// ---------- analyzers and external tools ----------
+// Built-in rows mirror /api/capabilities. Every external tool is a planned integration: SRP does not run it yet (wire later).
+const TOOLS = [
+  { id: "srp-structural", name: "SRP structural", chain: "evm", kind: "static", status: "built-in", about: "Per-function Solidity index: visibility, modifiers, params, state writes." },
+  { id: "srp-pattern", name: "SRP pattern", chain: "evm", kind: "static", status: "built-in", about: "Guarded file-level patterns for Solidity." },
+  { id: "srp-anchor", name: "SRP Anchor", chain: "solana", kind: "static", status: "built-in", about: "Anchor account constraints and account data structs." },
+  { id: "slither", name: "Slither", chain: "evm", kind: "static", status: "planned", url: "https://github.com/crytic/slither", about: "Solidity static analysis framework by Trail of Bits." },
+  { id: "aderyn", name: "Aderyn", chain: "evm", kind: "static", status: "planned", url: "https://github.com/Cyfrin/aderyn", about: "Rust-based Solidity static analyzer." },
+  { id: "mythril", name: "Mythril", chain: "evm", kind: "symbolic", status: "planned", url: "https://github.com/Consensys/mythril", about: "Symbolic execution for EVM bytecode." },
+  { id: "semgrep", name: "Semgrep", chain: "evm", kind: "static", status: "planned", url: "https://github.com/Decurity/semgrep-smart-contracts", about: "Pattern rules for smart contracts." },
+  { id: "solhint", name: "Solhint", chain: "evm", kind: "lint", status: "planned", url: "https://github.com/protofire/solhint", about: "Solidity linter with security rules." },
+  { id: "4naly3er", name: "4naly3er", chain: "evm", kind: "static", status: "planned", url: "https://github.com/Picodes/4naly3er", about: "Pattern-based report generator for common issues." },
+  { id: "wake", name: "Wake", chain: "evm", kind: "static", status: "planned", url: "https://github.com/Ackee-Blockchain/wake", about: "Python framework with detectors and testing." },
+  { id: "halmos", name: "Halmos", chain: "evm", kind: "dynamic", status: "planned", url: "https://github.com/a16z/halmos", about: "Symbolic testing of Foundry tests." },
+  { id: "echidna", name: "Echidna", chain: "evm", kind: "dynamic", status: "planned", url: "https://github.com/crytic/echidna", about: "Property-based fuzzer." },
+  { id: "medusa", name: "Medusa", chain: "evm", kind: "dynamic", status: "planned", url: "https://github.com/crytic/medusa", about: "Parallel coverage-guided fuzzer." },
+  { id: "anchor-sentinel", name: "Anchor-Sentinel", chain: "solana", kind: "static", status: "planned", url: "https://github.com/Ramprasad4121/anchor-sentinel", about: "Static analyzer for Anchor programs." },
+  { id: "cargo-audit", name: "cargo-audit", chain: "solana", kind: "deps", status: "planned", url: "https://github.com/rustsec/rustsec", about: "Known-vulnerable crate advisories." },
+  { id: "clippy", name: "Clippy", chain: "solana", kind: "lint", status: "planned", url: "https://github.com/rust-lang/rust-clippy", about: "Rust lints." },
+  { id: "xray", name: "Soteria / sec3 X-ray", chain: "solana", kind: "static", status: "planned", url: "https://www.sec3.dev/", about: "Solana program scanner." }
+];
+const toolName = (id) => TOOLS.find((t) => t.id === id)?.name || id;
+
+// wire later: demo results from external tools, merged into SRP findings by file and nearby line.
+const EXTERNAL_DEMO = [
+  { tool: "slither", check: "reentrancy-eth", topic: "reentrancy", file: "Vault.sol", line: 17 },
+  { tool: "aderyn", check: "state-change-after-external-call", topic: "reentrancy", file: "Vault.sol", line: 18 },
+  { tool: "slither", check: "tx-origin", topic: "tx-origin", file: "Vault.sol", line: 29 },
+  { tool: "solhint", check: "avoid-tx-origin", topic: "tx-origin", file: "Vault.sol", line: 29 },
+  { tool: "aderyn", check: "centralization-risk", topic: "access-control", file: "Vault.sol", line: 23 },
+  { tool: "slither", check: "arbitrary-send-eth", topic: "arbitrary-send", file: "Vault.sol", line: 30, severity: "medium", title: "sweep sends ETH to a caller-chosen address" }
+];
+const TOPIC = (detector) => /reentr/.test(detector) ? "reentrancy" : /origin/.test(detector) ? "tx-origin" : /access/.test(detector) ? "access-control" : detector;
+const SOLODIT_KEYWORDS = { reentrancy: "reentrancy withdraw", "tx-origin": "tx.origin authorization", "access-control": "missing access control owner" };
+
+function foundBy(audit, finding) {
+  const own = [...new Set(finding.evidence.map((e) => e.provider).filter(Boolean))];
+  if (state.live || !audit.id.startsWith("audit_demo")) return own;
+  const near = EXTERNAL_DEMO.filter((x) => x.topic === TOPIC(finding.detector) && finding.evidence.some((e) => e.file === x.file && Math.abs(e.startLine - x.line) <= 2));
+  return [...own, ...new Set(near.map((x) => x.tool))];
+}
+
+function externalOnly(audit) {
+  if (state.live || !audit.id.startsWith("audit_demo")) return [];
+  const topics = new Set(audit.findings.map((f) => TOPIC(f.detector)));
+  return EXTERNAL_DEMO.filter((x) => !topics.has(x.topic) && x.title);
+}
+
+const toolChips = (ids) => ids.map((id) => `<span class="pill ${id.startsWith("srp-") ? "" : "ext"}">${esc(toolName(id))}</span>`).join("");
+const battleBadge = (f) => f.status === "proven" ? `<a class="pill bc" href="#/battlechain">Ready for BattleChain</a>` : "";
+
+function soloditCard(finding) {
+  const keywords = SOLODIT_KEYWORDS[TOPIC(finding.detector)] || finding.title;
+  return `<div class="card">
+    <h2>Similar real-world findings from Solodit</h2>
+    <p class="small muted">Search Solodit's public database of audit findings for this pattern. Keywords: <strong>${esc(keywords)}</strong></p>
+    <div class="row"><a class="btn primary" href="https://solodit.cyfrin.io/" target="_blank" rel="noopener">Open Solodit</a><button type="button" data-copy="${esc(keywords)}">Copy keywords</button></div>
+    <div class="skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+    <p class="small muted" style="margin-bottom:0">Matched results will list here once the Solodit API is wired.</p>
+  </div>`;
+}
+
+// wire later: BattleChain lifecycle is demo state only. SRP is not affiliated with Cyfrin or BattleChain.
+const BATTLE_STEPS = [
+  ["Deploy", "Deploy the audited contracts to BattleChain with real funds."],
+  ["Safe Harbor", "Adopt a Safe Harbor agreement with bounty terms."],
+  ["Request attack", "Request Attack Mode through the AttackRegistry."],
+  ["DAO approval", "The BattleChain DAO reviews and approves the request."],
+  ["Under attack", "Whitehats may legally attack the contracts for bounties."],
+  ["Promote", "Request promotion and move to production."]
+];
+const BATTLE_DEMO = { step: 2, state: "ATTACK_REQUESTED", network: "BattleChain testnet (chain ID 627)" };
+
 // ---------- views ----------
 
 const views = {
@@ -240,6 +314,7 @@ const views = {
         <label class="sr-only" for="src" style="position:absolute;left:-999px">Source code</label>
         <textarea id="src" name="source" spellcheck="false">${esc(SAMPLE_SOL)}</textarea>
         <div id="fileList" class="chips"></div>
+        <div class="chips" id="toolPicker" role="group" aria-label="Analyzers">${TOOLS.filter((t) => t.chain === "evm").map((t) => `<button type="button" class="chip" data-tool="${t.id}" aria-pressed="${t.status === "built-in"}">${esc(t.name)}${t.status === "built-in" ? "" : " (planned)"}</button>`).join("")}</div>
         <div class="composer-bar">
           <input name="name" value="Vault" aria-label="Protocol name" style="max-width:150px">
           <select name="chain" aria-label="Chain">${CHAINS.map((c) => `<option>${c}</option>`).join("")}</select>
@@ -286,7 +361,8 @@ const views = {
         <h2 class="display" style="font-size:clamp(1.8rem,3.4vw,2.6rem);margin-top:14px">${esc(finding.title)}</h2>
       </section>
       <section class="card">
-        <div class="row">${sev(finding.severity)}${finding.proposedSeverity && finding.proposedSeverity !== finding.severity ? `<span class="pill">proposed ${esc(finding.proposedSeverity)}</span>` : ""}${pill(finding.status)}<span class="pill">${esc(finding.confidenceBand)} confidence ${esc(finding.confidence)}</span><span class="pill mono">${esc(finding.detector)}</span></div>
+        <div class="row">${sev(finding.severity)}${finding.proposedSeverity && finding.proposedSeverity !== finding.severity ? `<span class="pill">proposed ${esc(finding.proposedSeverity)}</span>` : ""}${pill(finding.status)}<span class="pill">${esc(finding.confidenceBand)} confidence ${esc(finding.confidence)}</span><span class="pill mono">${esc(finding.detector)}</span>${battleBadge(finding)}</div>
+        <div class="row small" style="margin-top:12px"><span class="muted">Found by</span>${toolChips(foundBy(audit, finding))}</div>
         <p class="muted small" style="margin:14px 0">${esc(audit.protocol.name)} on ${esc(audit.protocol.chain)}${finding.context?.function ? `, function <code>${esc(finding.context.function)}</code>` : ""}</p>
         <dl class="kv">
           <dt>Impact</dt><dd>${esc(finding.impact)}</dd>
@@ -309,9 +385,10 @@ const views = {
               <div class="msg attacker"><span class="who">Attacker</span>${esc(r.attacker)}</div>
               <div class="msg defender"><span class="who">Defender</span>${esc(r.defender)}</div>
               <div class="msg judge"><span class="who">Judge</span>${esc(r.judge)}</div>
-            `).join("")}</div>` : `<p class="muted">No debate transcript for this finding.</p>`}
+            `).join("")}</div>${finding.status === "proven" && debate.decision !== "exploit_proven" ? `<p class="small muted">The debate ran on static evidence before the proof was attached. The attached test run is what marks this finding proven.</p>` : ""}` : `<p class="muted">No debate transcript for this finding.</p>`}
         </div>
       </section>
+      ${soloditCard(finding)}
       <section class="grid cols-2">
         <div class="card">
           <h2>Fix</h2>
@@ -319,11 +396,12 @@ const views = {
           ${(finding.mitigations || []).length ? `<h3>Mitigations seen</h3><ul>${finding.mitigations.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>` : ""}
           <h3>Proof status</h3>
           <div class="row">${pill(poc?.classification || finding.status)}<span class="small muted">${poc?.executed ? "A local test run was attached." : "Not executed yet. Run the harness locally and attach the result."}</span></div>
+          ${finding.status === "proven" ? `<p class="small"><a href="#/battlechain">Next: battle-test on BattleChain</a></p>` : ""}
           ${poc?.evidence?.length ? `<ul class="small">${poc.evidence.map((e) => `<li>${esc(e)}</li>`).join("")}</ul>` : ""}
           <h3>Attach proof result</h3>
           <form id="proofForm" class="grid" style="gap:10px">
             <label class="field">Command<input name="command" value="${esc(`forge test --match-contract SRP_${finding.detector.replace(/-/g, "_")} -vvv`)}" required></label>
-            <label class="field">Assertion<input name="assertion" placeholder="attacker drained 10 ETH with 1 ETH deposited" required></label>
+            <label class="field">Assertion<input name="assertion" value="attacker drained 10 ETH with 1 ETH deposited" required></label>
             <label class="field">Output (optional)<textarea name="output" style="min-height:70px"></textarea></label>
             <div class="row"><label class="toggle"><input type="checkbox" name="passed" checked><span>Test passed</span></label><button class="primary" type="submit">Attach proof</button></div>
           </form>
@@ -368,6 +446,65 @@ const views = {
         </div>`).join("") : `<p class="empty">No incidents.</p>`}</section>`;
   },
 
+  tools() {
+    const group = (chain) => TOOLS.filter((t) => t.chain === chain).map((t, i) => `
+      <div class="item" style="animation-delay:${i * 40}ms">
+        <span class="pill">${esc(t.kind)}</span>
+        <span><div class="title">${t.url ? `<a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(t.name)}</a>` : esc(t.name)}</div><div class="sub">${esc(t.about)}</div></span>
+        <span class="pill ${t.status === "built-in" ? "ok" : ""}">${t.status === "built-in" ? "Built-in" : "Planned integration"}</span>
+      </div>`).join("");
+    return `
+      <section class="hero"><p class="eyebrow">Analyzers</p><h2 class="display">One report, <em>many eyes.</em></h2>
+        <p class="lede">SRP's own analyzers run today. External static and dynamic tools are planned integrations; when wired, their results merge into SRP findings and duplicates collapse by file, line and topic.</p></section>
+      <section class="card">
+        <h2>Solodit search</h2>
+        <form id="soloditForm" class="searchbar" style="box-shadow:none;background:var(--card-2)">
+          <span aria-hidden="true" class="muted">⌕</span>
+          <input name="q" placeholder="Search real-world audit findings, for example: reentrancy withdraw" aria-label="Solodit keywords">
+          <button class="primary" type="submit">Search Solodit</button>
+        </form>
+        <p class="small muted" style="margin-bottom:0">Opens solodit.cyfrin.io with your keywords copied. In-app results come once the Solodit API is wired.</p>
+      </section>
+      <h2 class="display" style="font-size:1.5rem;margin:6px 4px 0">EVM</h2>
+      <section class="stack">${group("evm")}</section>
+      <h2 class="display" style="font-size:1.5rem;margin:6px 4px 0">Solana</h2>
+      <section class="stack">${group("solana")}</section>`;
+  },
+
+  battlechain() {
+    const proven = allFindings().filter((f) => f.status === "proven");
+    const audit = state.audits[0];
+    return `
+      <section class="hero"><p class="eyebrow">After proof</p><h2 class="display">Battle-test on <em>BattleChain.</em></h2>
+        <p class="lede">BattleChain is a pre-mainnet ZKsync-based L2 (mainnet chain ID 626, testnet 627). Protocols deploy audited contracts with real funds, adopt Safe Harbor, and let whitehats legally attack them for bounties before promoting to production. SRP is not affiliated with Cyfrin or BattleChain.</p>
+        <div class="row" style="margin-top:16px"><a class="btn" href="https://battlechain.com" target="_blank" rel="noopener">battlechain.com</a><a class="btn" href="https://docs.battlechain.com" target="_blank" rel="noopener">Docs</a></div></section>
+      <section class="card">
+        <div class="row spread"><h2 style="margin:0">${esc(audit?.protocol?.name || "Protocol")} lifecycle</h2><span class="pill">Demo state: ${esc(BATTLE_DEMO.state)}</span></div>
+        <ol class="track">${BATTLE_STEPS.map(([name, about], i) => `
+          <li class="${i < BATTLE_DEMO.step ? "done" : i === BATTLE_DEMO.step ? "now" : ""}"><span class="node" aria-hidden="true">${i < BATTLE_DEMO.step ? "✓" : i + 1}</span><strong>${name}</strong><span class="small muted">${about}</span></li>`).join("")}</ol>
+        <p class="small muted" style="margin-bottom:0">${esc(BATTLE_DEMO.network)}. States: attack requested, UNDER_ATTACK, PROMOTION_REQUESTED, production. Deploy scripts can use the Foundry library <code>cyfrin/battlechain-lib</code>.</p>
+      </section>
+      <section class="grid cols-2">
+        <div class="card">
+          <h2>Safe Harbor bounty terms</h2>
+          <p class="small muted">Example terms for the demo. The protocol sets the real ones in its Safe Harbor agreement.</p>
+          <dl class="kv">
+            <dt>Bounty</dt><dd>10% of funds recovered</dd>
+            <dt>Cap</dt><dd>$250,000 per incident</dd>
+            <dt>Return to</dt><dd>Protocol recovery address</dd>
+            <dt>Identity</dt><dd>Not required for eligible whitehats</dd>
+            <dt>Scope</dt><dd>${esc(audit?.protocol?.sources?.map((x) => x.path).join(", ") || "Vault.sol")}</dd>
+          </dl>
+        </div>
+        <div class="card">
+          <h2>Ready for BattleChain</h2>
+          <p class="small muted">Findings proven by a local test run. Fix these before requesting Attack Mode.</p>
+          <ul class="mini-list">${proven.length ? proven.map((f) => `<li><a href="#/finding?audit=${encodeURIComponent(f.audit.id)}&id=${encodeURIComponent(f.id)}">${esc(f.title)}</a>${sev(f.severity)}</li>`).join("") : `<li class="muted">No proven findings yet.</li>`}</ul>
+          <button class="primary" type="button" id="requestAttack" style="margin-top:14px">Request Attack Mode</button>
+        </div>
+      </section>`;
+  },
+
   settings() {
     const caps = state.capabilities;
     return `
@@ -399,7 +536,7 @@ const views = {
   }
 };
 
-const TITLES = { overview: "Overview", scan: "New Scan", findings: "Findings", finding: "Finding", reports: "Reports", monitoring: "Monitoring", settings: "Settings" };
+const TITLES = { tools: "Analyzers", battlechain: "BattleChain", overview: "Overview", scan: "New Scan", findings: "Findings", finding: "Finding", reports: "Reports", monitoring: "Monitoring", settings: "Settings" };
 
 function evidenceBlock(audit, e) {
   const source = sourceFor(audit, e.file);
@@ -429,12 +566,14 @@ function renderFindingsTable() {
     (!f.detector || x.detector === f.detector) && (!f.audit || x.audit.id === f.audit) &&
     (!q || [x.title, x.detector, x.context?.function, ...x.evidence.map((e) => e.file)].join(" ").toLowerCase().includes(q))
   ).sort((a, b) => SEVERITIES.indexOf(a.severity) - SEVERITIES.indexOf(b.severity));
-  $("#findingsTable").innerHTML = rows.length ? `<p class="small muted" style="margin:0 4px 12px">${rows.length} finding${rows.length === 1 ? "" : "s"}</p><div class="stack">${rows.map((x, i) => `
+  const extra = f.severity && f.severity !== "medium" || f.status || f.detector ? [] : state.audits.filter((a) => !f.audit || a.id === f.audit).flatMap((a) => externalOnly(a).map((x) => ({ ...x, audit: a })));
+  const extraHtml = extra.length ? `<h2 class="display" style="font-size:1.3rem;margin:26px 4px 12px">Only external tools flagged</h2><div class="stack">${extra.map((x) => `<div class="item">${sev(x.severity)}<span><div class="title">${esc(x.title)}</div><div class="sub"><span class="loc">${esc(x.file)}:L${x.line}</span>, ${esc(toolName(x.tool))} <span class="mono">${esc(x.check)}</span>. Demo data, not yet triaged by SRP.</div></span>${pill("unverified")}</div>`).join("")}</div>` : "";
+  $("#findingsTable").innerHTML = (rows.length ? `<p class="small muted" style="margin:0 4px 12px">${rows.length} finding${rows.length === 1 ? "" : "s"}</p><div class="stack">${rows.map((x, i) => `
     <a class="item" style="animation-delay:${i * 50}ms" href="#/finding?audit=${encodeURIComponent(x.audit.id)}&id=${encodeURIComponent(x.id)}">
       ${sev(x.severity)}
-      <span><div class="title">${esc(x.title)}</div><div class="sub"><span class="loc">${esc(x.evidence[0]?.file)}:L${x.evidence[0]?.startLine ?? "?"}</span>, ${esc(x.audit.protocol.name)}, <span class="mono">${esc(x.detector)}</span></div></span>
-      ${pill(x.status)}
-    </a>`).join("")}</div>` : `<p class="empty">No findings match these filters.</p>`;
+      <span><div class="title">${esc(x.title)}</div><div class="sub"><span class="loc">${esc(x.evidence[0]?.file)}:L${x.evidence[0]?.startLine ?? "?"}</span>, ${esc(x.audit.protocol.name)}, <span class="mono">${esc(x.detector)}</span></div><div class="row" style="margin-top:8px;gap:6px">${toolChips(foundBy(x.audit, x))}</div></span>
+      <span class="row" style="justify-content:flex-end">${battleBadge(x)}${pill(x.status)}</span>
+    </a>`).join("")}</div>` : `<p class="empty">No findings match these filters.</p>`) + extraHtml;
 }
 
 const wait = (ms) => new Promise((r) => setTimeout(r, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : ms));
@@ -451,10 +590,11 @@ function bubble(html, who = "srp") {
 
 function findingCard(audit, f) {
   return `<details class="fcard">
-    <summary>${sev(f.severity)}<span><strong>${esc(f.title)}</strong><div class="loc">${esc(f.evidence[0]?.file)}:L${f.evidence[0]?.startLine ?? "?"}</div></span></summary>
+    <summary>${sev(f.severity)}<span><strong>${esc(f.title)}</strong> ${battleBadge(f)}<div class="loc">${esc(f.evidence[0]?.file)}:L${f.evidence[0]?.startLine ?? "?"}</div></span></summary>
     <div class="body">
       <p style="margin:0">${esc(f.impact)}</p>
       ${f.evidence[0] ? `<div class="code"><pre><code><span class="ln hit"><span class="n">${f.evidence[0].startLine}</span>${esc(f.evidence[0].excerpt)}</span></code></pre></div>` : ""}
+      <div class="row small"><span class="muted">Found by</span>${toolChips(foundBy(audit, f))}</div>
       <p class="small muted" style="margin:0">Fix: ${esc(f.remediation)}</p>
       <div class="row">${pill(f.status)}<a class="btn" href="#/finding?audit=${encodeURIComponent(audit.id)}&id=${encodeURIComponent(f.id)}">Open evidence, debate and harness</a></div>
     </div></details>`;
@@ -498,6 +638,8 @@ async function runScan(form) {
       reply.insertAdjacentHTML("beforeend", findingCard(audit, f));
       reply.scrollIntoView({ behavior: "smooth", block: "end" });
     }
+    const planned = [...document.querySelectorAll("[data-tool][aria-pressed=true]")].map((b) => TOOLS.find((t) => t.id === b.dataset.tool)).filter((t) => t && t.status !== "built-in");
+    if (planned.length) reply.insertAdjacentHTML("beforeend", `<p class="small muted">${planned.map((t) => esc(t.name)).join(", ")} ${planned.length === 1 ? "is a" : "are"} planned integration${planned.length === 1 ? "" : "s"} and did not run.${state.live ? "" : " Demo findings show sample corroboration from external tools."}</p>`);
     if ((audit.unknowns || []).length) reply.insertAdjacentHTML("beforeend", `<p class="small muted">Not analyzed: ${audit.unknowns.map((u) => `${esc(u.file)} (${esc(u.reason)})`).join("; ")}</p>`);
     await wait(300);
     bubble(`Want the full write-up? <a href="#/reports">Export SARIF, evidence bundle or markdown</a>, or open a finding to run its Foundry harness and attach the result.`);
@@ -557,9 +699,9 @@ async function exportReport(kind, id) {
     const content = state.live ? await api(path) : (kind === "bundle" ? mock?.bundle : mock?.[kind]);
     if (!content) throw new Error("No demo export for this audit");
     const name = kind === "md" ? `${id}.md` : kind === "sarif" ? `${id}.sarif` : `${id}.evidence.json`;
-    download(name, content, kind === "md" ? "text/markdown" : "application/json");
     const text = typeof content === "string" ? content : JSON.stringify(content, null, 2);
-    preview.innerHTML = `<div class="code harness"><pre><code>${esc(text.slice(0, 6000))}${text.length > 6000 ? "\n..." : ""}</code></pre></div>`;
+    preview.innerHTML = `<div class="row spread" style="margin-bottom:12px"><strong style="color:var(--ink)">${esc(name)}</strong><button class="primary" type="button" id="dl">Download</button></div><div class="code harness"><pre><code>${esc(text.slice(0, 6000))}${text.length > 6000 ? "\n..." : ""}</code></pre></div>`;
+    $("#dl").addEventListener("click", () => download(name, content, kind === "md" ? "text/markdown" : "application/json"));
   } catch (error) {
     toast(`Export failed: ${error.message}`);
   }
@@ -574,7 +716,7 @@ async function simulateSignal() {
       if (result.incident) state.incidents.unshift(result.incident);
     } else {
       // wire later: demo mode fabricates the incident locally for the walkthrough.
-      state.incidents.unshift({ id: `inc_demo_${Date.now()}`, protocol, severity: "critical", title: "Treasury outflow above threshold", evidence: [`treasury outflow_usd ${signal.value} > threshold ${signal.threshold}`], createdAt: new Date().toISOString(), status: "open" });
+      state.incidents.unshift({ id: `inc_demo_${Date.now()}`, protocol, severity: "critical", title: "Treasury outflow above threshold", evidence: [`treasury outflow_usd ${signal.value} > threshold ${signal.threshold}`, "chain ethereum"], createdAt: new Date().toISOString(), status: "open" });
     }
     toast("Incident created");
     route();
@@ -645,6 +787,12 @@ function bind(view, params) {
       const solana = form.chain.value === "solana";
       form.source.value = solana ? SAMPLE_ANCHOR : SAMPLE_SOL;
     });
+    const picker = (chain) => TOOLS.filter((t) => t.chain === chain).map((t) => `<button type="button" class="chip" data-tool="${t.id}" aria-pressed="${t.status === "built-in"}">${esc(t.name)}${t.status === "built-in" ? "" : " (planned)"}</button>`).join("");
+    form.chain.addEventListener("change", () => { $("#toolPicker").innerHTML = picker(form.chain.value === "solana" ? "solana" : "evm"); });
+    $("#toolPicker").addEventListener("click", (e) => {
+      const chip = e.target.closest("[data-tool]");
+      if (chip) chip.setAttribute("aria-pressed", String(chip.getAttribute("aria-pressed") !== "true"));
+    });
     $("#loadSample").addEventListener("click", () => { form.source.value = form.chain.value === "solana" ? SAMPLE_ANCHOR : SAMPLE_SOL; });
     $("#fileInput").addEventListener("change", (e) => readFiles(e.target.files));
     const zone = form;
@@ -658,6 +806,25 @@ function bind(view, params) {
     const findingId = params.get("id");
     $("#copyHarness")?.addEventListener("click", () => copy(findFinding(auditId, findingId).audit.pocResults.find((p) => p.findingId === findingId).harness));
     $("#proofForm")?.addEventListener("submit", (e) => { e.preventDefault(); attachProof(e.target, auditId, findingId); });
+  }
+  document.querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", () => copy(b.dataset.copy)));
+  if (view === "tools") {
+    $("#soloditForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const q = e.target.q.value.trim();
+      if (q) navigator.clipboard?.writeText(q).catch(() => {});
+      window.open("https://solodit.cyfrin.io/", "_blank", "noopener");
+      toast(q ? "Keywords copied. Paste them into Solodit search." : "Opening Solodit");
+    });
+  }
+  if (view === "battlechain") {
+    // wire later: needs a wallet and the AttackRegistry contract; demo only advances local state.
+    $("#requestAttack").addEventListener("click", () => {
+      if (BATTLE_DEMO.step < 3) Object.assign(BATTLE_DEMO, { step: 3, state: "ATTACK_REQUESTED" });
+      else if (BATTLE_DEMO.step < 5) Object.assign(BATTLE_DEMO, { step: BATTLE_DEMO.step + 1, state: BATTLE_DEMO.step + 1 === 4 ? "UNDER_ATTACK" : "PROMOTION_REQUESTED" });
+      toast(`Demo: ${BATTLE_DEMO.state}`);
+      route();
+    });
   }
   if (view === "reports") {
     document.querySelectorAll("[data-export]").forEach((b) => b.addEventListener("click", () => exportReport(b.dataset.export, b.dataset.id)));

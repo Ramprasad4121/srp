@@ -250,3 +250,26 @@ dl.kv dd { margin: 0; }
   .item { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---------- tools, solodit, battlechain ---------- */
+.thread { padding-bottom: 24px; }
+.composer { margin-top: 8px; }
+#view:has(.composer) { padding-bottom: 32px; }
+.pill.ext { background: color-mix(in srgb, var(--low) 10%, transparent); color: var(--low); }
+.pill.bc { background: var(--accent-soft); color: var(--accent); text-decoration: none; font-weight: 600; }
+.card.ink .loc, .card.ink .mini-list li span:last-child { color: color-mix(in srgb, var(--bg) 85%, transparent) !important; opacity: 1 !important; }
+.card.ink h2 { color: color-mix(in srgb, var(--bg) 78%, transparent); }
+.skeleton { display: grid; gap: 8px; margin: 16px 0 10px; }
+.skeleton span { height: 12px; border-radius: 8px; background: linear-gradient(90deg, var(--card-2), var(--bg-2), var(--card-2)); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
+.skeleton span:nth-child(2) { width: 82%; } .skeleton span:nth-child(3) { width: 64%; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+.track { list-style: none; margin: 22px 0 18px; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; position: relative; }
+.track li { display: grid; gap: 6px; align-content: start; position: relative; font-size: 0.92rem; }
+.track li::before { content: ""; position: absolute; top: 17px; left: 36px; right: -12px; height: 2px; background: var(--line); }
+.track li:last-child::before { display: none; }
+.track li.done::before { background: var(--accent); }
+.track .node { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--card-2); color: var(--muted); font-weight: 600; position: relative; z-index: 1; transition: .3s var(--ease); }
+.track li.done .node { background: var(--accent); color: #fff; }
+.track li.now .node { background: var(--ink); color: var(--bg); box-shadow: 0 0 0 6px var(--accent-soft); animation: pulse 2s infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 10px transparent; } }
+@media (max-width: 900px) { .track { grid-template-columns: 1fr 1fr; } .track li::before { display: none; } }

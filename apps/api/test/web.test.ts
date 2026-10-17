@@ -33,7 +33,7 @@ test("console shell and assets are served", async () => {
 test("app.js parses and has every screen", () => {
   const source = readFileSync(pub("app.js"), "utf8");
   new vm.Script(source);
-  for (const view of ["overview", "scan", "findings", "finding", "reports", "monitoring", "settings"]) assert.match(source, new RegExp(`\\b${view}\\(`), view);
+  for (const view of ["overview", "scan", "findings", "finding", "reports", "monitoring", "settings", "tools", "battlechain"]) assert.match(source, new RegExp(`\\b${view}\\(`), view);
 });
 
 test("demo data is the sample Vault with three proven high findings", () => {
