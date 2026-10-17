@@ -2,7 +2,7 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-Security Reasoning Protocol (SRP) is an AI-native Web3 security operating system for EVM and Solana protocols. It is designed around evidence-first security workflows: intent extraction, vulnerability discovery, adversarial debate, exploit validation, runtime monitoring, and audit-grade reporting.
+Security Reasoning Protocol (SRP) is an agent-native Web3 security scanner for EVM and Solana protocols: deterministic, offline analysis with stable JSON, SARIF, and MCP outputs that AI coding agents and CI can call directly. It is designed around evidence-first security workflows: intent extraction, vulnerability discovery, adversarial debate, exploit validation, runtime monitoring, and audit-grade reporting.
 
 ## What works today
 
@@ -20,7 +20,7 @@ Security Reasoning Protocol (SRP) is an AI-native Web3 security operating system
 
 ## Not built yet (planned)
 
-- No LLM reasoning. "AI-native" is the direction; today every step is deterministic and offline. Model-backed triage is on the roadmap.
+- No LLM reasoning inside SRP. Every step is deterministic and offline; agents call SRP as a tool. Optional model-backed triage (bring your own key) is on the roadmap.
 - No exploit execution inside SRP. Run the generated harness with `forge test` and attach the result.
 - No cross-file analysis (inheritance, imports, cross-contract calls).
 - The agent registry and orchestration engine exist as a library but the audit pipeline does not run through them yet.
