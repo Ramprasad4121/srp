@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- New detector `evm-unchecked-low-level-call` (medium): `.call`/`.send`/`.delegatecall` used as a bare statement. SmartBugs unchecked_low_level_calls: 52/52 files; 0 findings on OpenZeppelin, v3-core, solmate.
 - Detect legacy `call.value()()` reentrancy; add `scripts/bench-smartbugs.ts` and SmartBugs-curated results to docs/eval.md (launch blocker 5).
 
 - Docs: launch scope is CLI, MCP and Action; the JSON-file web server is documented as single-operator only, no hosted demo.
