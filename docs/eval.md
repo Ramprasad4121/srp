@@ -69,7 +69,7 @@ Commit `230e649123477eff332742a59a1c7cc6dc286cab`, 143 `.sol` files, every file 
 | bad_randomness | 8 | `evm-weak-randomness` | 4 |
 | denial_of_service, front_running, short_addresses, time_manipulation, other | 19 | none (SRP has no detector yet) | 0 |
 
-Read this honestly: the set is old Solidity (0.4.x), recall is by file not by labelled line, and a mapped detector firing in a file is not proof it hit the labelled line. Overall, 102 of 143 files (71%) get a finding from a mapped detector; SRP does not yet cover most of this corpus's classes. The set contains no clean contracts, so **precision cannot be measured here**; the script prints which detectors fire on unrelated categories (mostly `evm-missing-access-control` on old-style constructors/fallbacks) as a false-positive signal to work down. A clean-contract precision set is still open work. Before this benchmark, legacy `call.value()()` was not recognised and reentrancy recall was 0/31.
+Read this honestly: the set is old Solidity (0.4.x), recall is by file not by labelled line, and a mapped detector firing in a file is not proof it hit the labelled line. Overall, 102 of 143 files (71%) get a finding from a mapped detector; SRP does not yet cover most of this corpus's classes. The set contains no clean contracts, so **precision cannot be measured here**; the script prints which detectors fire on unrelated categories (mostly `evm-missing-access-control` on old-style constructors/fallbacks) as a false-positive signal to work down. The separate clean-contract check below covers false positives. Before this benchmark, legacy `call.value()()` was not recognised and reentrancy recall was 0/31.
 
 
 Note on `unchecked_low_level_calls` 52/52: every file in that category is labelled for exactly this bug class and the detector is a plain syntactic rule (call/send/delegatecall as a bare statement), so full file recall is expected and says little about subtle cases. The detector also fires in 5 files labelled with other categories (reentrancy, access_control, bad_randomness, denial_of_service, time_manipulation x2); I have not hand-verified those, so treat them as unlabelled rather than as true or false positives. On the clean corpora (OpenZeppelin contracts, Uniswap v3-core, solmate) it produces 0 findings.
@@ -78,3 +78,16 @@ Note on `unchecked_low_level_calls` 52/52: every file in that category is labell
 Note on `bad_randomness` 4/8 (`evm-weak-randomness`, added with this benchmark run): hits are lottery.sol, blackjack.sol, etheraffle.sol-style hashing of block fields, and `uint(blockhash(..))` casts. Misses are honest: `random_number_generator.sol` computes the value in a `view private` helper (the rule only inspects state-changing functions), and `old_blockhash.sol` compares `blockhash` to a guess with no hash or modulo. The detector also fires in 5 files labelled `unchecked_low_level_calls` plus others (lottery-style contracts), which I have not hand-verified. 0 findings on OpenZeppelin, Uniswap v3-core and solmate.
 
 Note on `arithmetic` 14/15 (`evm-unchecked-arithmetic`): the rule is a pre-0.8 pragma with no SafeMath plus a `+= -= *=` or `a op b` assignment that uses a function parameter or `msg.value`. High file recall mostly reflects that nearly every 0.4.x contract in this set does unchecked arithmetic, so the same detector also fires in 55 files with other labels (28 of 31 reentrancy files, 14 of 52 unchecked_low_level_calls); those may be real but unlabelled, and I have not hand-verified them. Do not read 14/15 as precision. On clean corpora: 0 findings on OpenZeppelin and solmate. Uniswap v3-core (`pragma =0.7.6`) had one finding on `position.tokensOwed0 -= amount0` where `amount0` is a bounded local, which the caller-operand rule removed; bounded-by-`min` guards are not modelled in general, so expect that false-positive shape in other 0.7 code.
+
+
+## EVM: clean-contract false-positive check
+
+Reproduce: `node scripts/bench-clean.ts` (clones the pinned commits, scans every file one by one, exits non-zero if anything fires). Skipped directories: `node_modules`, `lib`, `test`, `tests`, `mocks`. OpenZeppelin's `mocks/` are intentionally unsafe test doubles (e.g. an `upgradeToAndCall` with no guard); SRP flags 3 findings there (evm-unprotected-upgrade, evm-missing-access-control, evm-arbitrary-external-call), which are correct for what the files are, so they are excluded rather than counted either way.
+
+| Corpus | Commit | Files | Findings | Parse errors |
+| --- | --- | --- | --- | --- |
+| OpenZeppelin contracts (`contracts/`) | b04d141 | 249 | 0 | 0 |
+| Uniswap v3-core (`contracts/`) | aab5aa0 | 33 | 0 | 0 |
+| solmate (`src/`) | 89365b8 | 20 | 0 | 0 |
+
+What this does and does not show: 0 findings on 302 well-reviewed files is a floor for noise on mature Solidity 0.7/0.8 code. It is not a precision number: these libraries contain no labelled bugs, so it says nothing about recall, and it says nothing about application-level contracts (vaults, AMMs, lending) where the heuristics are more likely to misfire. Findings that appear here later are regressions to fix, not to suppress.
