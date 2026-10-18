@@ -241,3 +241,14 @@ test("weak randomness: silent on deadline checks, view functions and unrelated h
   assert.ok(!detectors(safe).includes("evm-weak-randomness"));
   assert.ok(!detectors(`contract L { function f() external { uint x = uint(keccak256(abi.encodePacked(block.timestamp))) % 3; } }`, "solana").includes("evm-weak-randomness"));
 });
+
+test("unchecked arithmetic: fires on pre-0.8 compound assignment, silent with SafeMath, 0.8 and view code", () => {
+  const old = `pragma solidity ^0.4.25;
+  contract T { mapping(address=>uint) public balances; mapping(address=>uint) public lockTime;
+    function increaseLockTime(uint _s) public { lockTime[msg.sender] += _s; }
+    function burn(uint v) public { balances[msg.sender] -= v; } }`;
+  assert.ok(detectors(old).includes("evm-unchecked-arithmetic"));
+  assert.ok(!detectors(old.replace("^0.4.25", "^0.8.20")).includes("evm-unchecked-arithmetic"));
+  assert.ok(!detectors(old.replace("contract T {", "contract T { using SafeMath for uint;")).includes("evm-unchecked-arithmetic"));
+  assert.ok(!detectors(`pragma solidity ^0.4.25; contract V { function f(uint a, uint b) public pure returns (uint) { uint c = a + b; return c; } function g() public { uint i = 0; i += 1; } }`).includes("evm-unchecked-arithmetic"));
+});

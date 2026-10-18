@@ -21,6 +21,8 @@ interface DetectorRule {
   mitigatedBy?: { pattern: RegExp; label: string; penalty: number };
   /** Only fire when the match sits in a state-changing (non view/pure), non-library function. */
   stateChangingOnly?: boolean;
+  /** Only fire when the matched statement uses a parameter of its function or msg.value, i.e. a caller-supplied operand. */
+  callerOperand?: boolean;
 }
 
 /**
@@ -63,6 +65,22 @@ const RULES: DetectorRule[] = [
     remediation: "Use a verifiable randomness source (Chainlink VRF, commit-reveal with a delay) and never decide outcomes from block fields.",
     confidence: 0.5,
     stateChangingOnly: true
+  },
+  {
+    id: "evm-unchecked-arithmetic",
+    title: "Arithmetic on a pre-0.8 compiler can silently overflow or underflow",
+    severity: "medium",
+    chain: "evm",
+    pattern: /[\w\])]\s*(?:\+=|-=|\*=)\s*(?!\d+\s*;)[^;]*?[A-Za-z_][^;]*;|(?<![=!<>+\-*])=(?!=)\s*[A-Za-z_][\w.\[\]]*\s*[-+*]\s*[A-Za-z_][\w.\[\]]*\s*;/,
+    requires: /pragma\s+solidity\s*[\^~>=<\s]*0\.[4-7]\b/,
+    suppressIf: /\bSafeMath\b|pragma\s+solidity[^;]*\b0\.(?:8|9)\b/,
+    mitigatedBy: { pattern: /require\s*\([^;]*>=[^;]*\)/, label: "a require(... >= ...) bound exists in the file; confirm it covers the operands before the arithmetic", penalty: 0.15 },
+    evidence: "The pragma targets a compiler before 0.8, where + - * wrap around without reverting, and no SafeMath is used in this file.",
+    impact: "An attacker supplies a value that wraps a balance, counter or lock time, for example underflowing a subtraction to a huge balance or overflowing a lock to zero.",
+    remediation: "Compile with Solidity 0.8 or newer, or route every operation through SafeMath, and bound user-supplied operands before arithmetic.",
+    confidence: 0.5,
+    stateChangingOnly: true,
+    callerOperand: true
   },
   {
     id: "evm-signature-replay",
@@ -228,9 +246,18 @@ function stateChangingEvidence(source: SourceFile, stripped: string, rule: Detec
   for (const match of stripped.matchAll(global)) {
     const fn = enclosingFunction(index, match.index ?? 0);
     if (!fn || fn.inLibrary || fn.mutability === "view" || fn.mutability === "pure") continue;
+    if (rule.callerOperand && !usesCallerOperand(match[0], fn)) continue;
     return evidenceAt(source.path, source.content, index.lineAt(match.index ?? 0), rule.evidence, "srp-pattern", rule.id, "observed");
   }
   return undefined;
+}
+
+function usesCallerOperand(statement: string, fn: SolidityFunction): boolean {
+  if (/\bmsg\s*\.\s*value\b/.test(statement)) return true;
+  return fn.params.some((param) => {
+    const name = param.trim().split(/\s+/).pop() ?? "";
+    return /^[A-Za-z_]\w*$/.test(name) && new RegExp(`\\b${name}\\b`).test(statement);
+  });
 }
 
 export function isSolidity(source: SourceFile): boolean {

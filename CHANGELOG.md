@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- New detector `evm-unchecked-arithmetic` (medium): unchecked `+ - *` on a caller-supplied operand under a pre-0.8 pragma without SafeMath. SmartBugs arithmetic 14/15 files (also fires broadly on other old contracts, see docs/eval.md); 0 findings on OpenZeppelin, v3-core, solmate.
 - New detector `evm-weak-randomness` (medium): keccak/sha256/modulo over `block.timestamp`, `number`, `blockhash`, `difficulty`, `prevrandao` or `now` in a state-changing function. SmartBugs bad_randomness 4/8 files; 0 findings on OpenZeppelin, v3-core, solmate.
 - New detector `evm-unchecked-low-level-call` (medium): `.call`/`.send`/`.delegatecall` used as a bare statement. SmartBugs unchecked_low_level_calls: 52/52 files; 0 findings on OpenZeppelin, v3-core, solmate.
 - Detect legacy `call.value()()` reentrancy; add `scripts/bench-smartbugs.ts` and SmartBugs-curated results to docs/eval.md (launch blocker 5).
