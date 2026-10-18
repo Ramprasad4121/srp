@@ -295,8 +295,69 @@ function structuralEvm(source: SourceFile): Finding[] {
     if (delegate) out.push(delegate);
     const arbitrary = arbitraryCallFinding(source, index, fn);
     if (arbitrary) out.push(arbitrary);
+    const unchecked = uncheckedLowLevelCallFinding(source, index, fn);
+    if (unchecked) out.push(unchecked);
   }
   return out;
+}
+
+/**
+ * A low-level call/send/delegatecall used as a bare statement, so its success flag is thrown away.
+ * Only statement-initial forms count (`target.call(...)`; `target.send(x);`). Anything assigned,
+ * wrapped in require/assert/if, or returned is treated as checked. `.send` needs exactly one
+ * argument, which keeps token.send(to, amount, data) (ERC777) out.
+ */
+function uncheckedLowLevelCallFinding(source: SourceFile, index: SolidityIndex, fn: SolidityFunction): Finding | undefined {
+  if (fn.inLibrary) return undefined;
+  const call = /\.(call|delegatecall|send)\b\s*(\{[^}]*\}|\.\s*value\s*\([^)]*\)(?:\s*\.\s*gas\s*\([^)]*\))?)?\s*\(/g;
+  for (const match of fn.body.matchAll(call)) {
+    const at = match.index ?? 0;
+    const open = at + match[0].length - 1;
+    const close = matchParen(fn.body, open);
+    if (close < 0) continue;
+    if (match[1] === "send" && topLevelArgs(fn.body.slice(open + 1, close)) !== 1) continue;
+    const before = fn.body.slice(0, at);
+    const statementStart = Math.max(before.lastIndexOf(";"), before.lastIndexOf("{"), before.lastIndexOf("}")) + 1;
+    const receiver = before.slice(statementStart).trim();
+    if (!/^[\w.\[\]()\s]+$/.test(receiver) || /^(return|require|assert|if|while|for|emit|revert)\b/.test(receiver)) continue;
+    if (!/^\s*;/.test(fn.body.slice(close + 1))) continue;
+    const line = index.lineAt(fn.bodyStart + at);
+    return makeFinding({
+      detector: "evm-unchecked-low-level-call",
+      title: `Unchecked low-level ${match[1]}: ${fn.name} ignores whether the call succeeded`,
+      severity: "medium",
+      impact: "A failed call is silently skipped while the surrounding state change stands, so balances, payouts or accounting can diverge from what actually happened (for example a recipient is marked paid but never received funds).",
+      remediation: "Capture the success flag and revert on failure: (bool ok, ) = target.call{value: amount}(\"\"); require(ok). Use a vetted helper such as OpenZeppelin Address.sendValue for plain ETH transfers.",
+      confidence: 0.72,
+      chain: "evm",
+      file: source.path,
+      evidence: [evidenceAt(source.path, source.content, line, `The return value of ${match[1]} in ${fn.name} is discarded.`, "srp-structural", "evm-unchecked-low-level-call", "observed")],
+      context: context(fn, [`L${line}: ${match[1]} used as a bare statement`, "No success flag captured, required, or returned"]),
+      attackPath: ["Attacker makes the recipient call fail (reverting fallback, out-of-gas, or a contract with no payable receive)", `${fn.name} runs its state changes as if the call worked`, "Funds or entitlements are recorded as delivered but are not", "Accounting no longer matches reality"]
+    });
+  }
+  return undefined;
+}
+
+function matchParen(text: string, open: number): number {
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === "(") depth++;
+    else if (text[i] === ")" && --depth === 0) return i;
+  }
+  return -1;
+}
+
+function topLevelArgs(args: string): number {
+  if (!args.trim()) return 0;
+  let depth = 0;
+  let count = 1;
+  for (const char of args) {
+    if ("([{".includes(char)) depth++;
+    else if (")]}".includes(char)) depth--;
+    else if (char === "," && depth === 0) count++;
+  }
+  return count;
 }
 
 function context(fn: SolidityFunction, facts: string[]): FindingContext {

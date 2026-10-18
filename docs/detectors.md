@@ -19,6 +19,7 @@ None of these execute code. A finding is a lead with cited lines, not a proof. S
 | `evm-unprotected-upgrade` | structural | UUPS `_authorizeUpgrade` with no modifier and no caller check | `onlyOwner` or any caller check |
 | `evm-arbitrary-delegatecall` | structural | a public function delegatecalls to one of its own parameters with no access check | target is a stored implementation |
 | `evm-arbitrary-external-call` | structural | a public function calls a caller-chosen target with caller-chosen calldata (Truster) | access modifier or caller check (`nonReentrant` does not count) |
+| `evm-unchecked-low-level-call` | structural | `.call` / `.send` / `.delegatecall` used as a bare statement, success flag discarded (`.send` only with one argument) | result assigned, required, tested in `if`, or returned |
 | `evm-oracle-manipulation` | pattern | `getReserves`, `slot0`, `get_dy`, `getAmountsOut` spot reads | TWAP (`observe`, `consult`, `OracleLibrary`) or Chainlink in the file |
 | `evm-oracle-stale-price` | pattern | `latestRoundData(` | any comparison on `updatedAt` |
 | `evm-tx-origin-auth` | pattern | `tx.origin ==` / `!=` | |

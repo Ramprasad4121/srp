@@ -184,3 +184,37 @@ test("legacy pre-0.5 call.value()() reentrancy is detected (SmartBugs reentrancy
   }`));
   assert.ok(report.findings.some((finding) => finding.detector === "evm-reentrancy-external-call"));
 });
+
+const UNCHECKED = `contract Payout {
+  mapping(address => uint256) public owed;
+  function pay(address to) public {
+    owed[to] = 0;
+    to.send(1 ether);
+  }
+  function pay2(address payable to) public {
+    to.call.value(1 ether)("");
+  }
+  function pay3(address to) public {
+    to.call{value: 1 ether}("");
+  }
+}`;
+
+const CHECKED = `contract Payout {
+  function a(address to) public { (bool ok, ) = to.call{value: 1 ether}(""); require(ok); }
+  function b(address to) public { require(to.send(1 ether)); }
+  function c(address to) public { if (!to.send(1 ether)) revert(); }
+  function d(address to) public returns (bool) { return to.send(1 ether); }
+  function e(address to) public { bool ok = to.send(1 ether); require(ok); }
+  function f(address token, address to) public { IERC777(token).send(to, 1, ""); }
+  function g(address to) public { payable(to).transfer(1 ether); }
+}`;
+
+test("unchecked low-level call: flags bare send, call.value and call{value}", () => {
+  const hits = discoverVulnerabilities(evm(UNCHECKED)).filter((finding) => finding.detector === "evm-unchecked-low-level-call");
+  assert.equal(hits.length, 3);
+  assert.deepEqual(hits.map((hit) => hit.evidence[0]?.startLine).sort((a, b) => (a ?? 0) - (b ?? 0)), [5, 8, 11]);
+});
+
+test("unchecked low-level call: checked, returned, assigned and ERC777 send are clean", () => {
+  assert.equal(detectors(CHECKED).includes("evm-unchecked-low-level-call"), false);
+});
