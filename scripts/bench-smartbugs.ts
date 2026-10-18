@@ -10,7 +10,7 @@ if (!root) { console.error("usage: node scripts/bench-smartbugs.ts <dir>"); proc
 const map: Record<string, string[]> = {
   reentrancy: ["evm-reentrancy-external-call"],
   access_control: ["evm-missing-access-control", "evm-tx-origin-auth", "evm-arbitrary-delegatecall", "evm-unprotected-upgrade"],
-  arithmetic: [], bad_randomness: [], denial_of_service: [], front_running: [], short_addresses: [], time_manipulation: [], unchecked_low_level_calls: ["evm-unchecked-low-level-call"], other: [],
+  arithmetic: [], bad_randomness: ["evm-weak-randomness"], denial_of_service: [], front_running: [], short_addresses: [], time_manipulation: [], unchecked_low_level_calls: ["evm-unchecked-low-level-call"], other: [],
 };
 const fired: Record<string, Record<string, number>> = {};
 const rows: string[] = [];

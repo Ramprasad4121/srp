@@ -6,6 +6,7 @@ export const DETECTORS: Array<{ id: string; chain: "evm" | "solana"; analyzer: s
   { id: "evm-arbitrary-delegatecall", chain: "evm", analyzer: "srp-structural", severity: "critical", summary: "delegatecall to a caller-supplied address." },
   { id: "evm-arbitrary-external-call", chain: "evm", analyzer: "srp-structural", severity: "critical", summary: "Call with caller-chosen target and calldata." },
   { id: "evm-unchecked-low-level-call", chain: "evm", analyzer: "srp-structural", severity: "medium", summary: "Return value of call/send/delegatecall discarded." },
+  { id: "evm-weak-randomness", chain: "evm", analyzer: "srp-pattern", severity: "medium", summary: "Randomness derived from block timestamp, number, blockhash or difficulty." },
   { id: "evm-oracle-manipulation", chain: "evm", analyzer: "srp-pattern", severity: "high", summary: "Price from AMM spot reserves." },
   { id: "evm-oracle-stale-price", chain: "evm", analyzer: "srp-pattern", severity: "medium", summary: "Chainlink answer used without a freshness check." },
   { id: "evm-tx-origin-auth", chain: "evm", analyzer: "srp-pattern", severity: "high", summary: "Authorization on tx.origin." },

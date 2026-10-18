@@ -53,6 +53,18 @@ const RULES: DetectorRule[] = [
     confidence: 0.7
   },
   {
+    id: "evm-weak-randomness",
+    title: "Randomness is derived from block data a validator or caller can influence",
+    severity: "medium",
+    chain: "evm",
+    pattern: /(?:keccak256|sha3|sha256)\s*\([^;]*?(?:\bblock\s*\.\s*(?:timestamp|difficulty|prevrandao|number|coinbase)\b|(?:\bblock\s*\.\s*)?\bblockhash\s*\(|\bnow\b)|\buint\d*\s*\(\s*(?:block\s*\.\s*)?blockhash\s*\(|(?:\bblock\s*\.\s*(?:timestamp|difficulty|prevrandao|number)\b|(?:\bblock\s*\.\s*)?\bblockhash\s*\([^;%]*|\bnow\b)\s*\)*\s*%/,
+    evidence: "A hash or modulo over block.timestamp, block.number, blockhash, difficulty or prevrandao is predictable by a contract caller in the same block and biasable by the block producer.",
+    impact: "An attacker contract computes the same value in the same transaction and only proceeds when it wins, so lotteries, raffles and random mints pay out to whoever checks first.",
+    remediation: "Use a verifiable randomness source (Chainlink VRF, commit-reveal with a delay) and never decide outcomes from block fields.",
+    confidence: 0.5,
+    stateChangingOnly: true
+  },
+  {
     id: "evm-signature-replay",
     title: "Signature is verified without a nonce or used-signature record",
     severity: "high",

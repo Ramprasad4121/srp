@@ -218,3 +218,26 @@ test("unchecked low-level call: flags bare send, call.value and call{value}", ()
 test("unchecked low-level call: checked, returned, assigned and ERC777 send are clean", () => {
   assert.equal(detectors(CHECKED).includes("evm-unchecked-low-level-call"), false);
 });
+
+test("weak randomness: flags keccak over block fields and modulo of blockhash", () => {
+  const lottery = `contract Lottery {
+    address[] players;
+    function draw() external {
+      uint256 r = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, msg.sender))) % players.length;
+      payable(players[r]).transfer(address(this).balance);
+    }
+  }`;
+  assert.ok(detectors(lottery).includes("evm-weak-randomness"));
+  const legacy = `contract Roll { function roll() public returns (uint) { return uint(blockhash(block.number - 1)) % 6; } }`;
+  assert.ok(detectors(legacy).includes("evm-weak-randomness"));
+});
+
+test("weak randomness: silent on deadline checks, view functions and unrelated hashing", () => {
+  const safe = `contract Ok {
+    function swap(uint256 deadline) external { require(block.timestamp <= deadline, "late"); }
+    function id(address a) external pure returns (bytes32) { return keccak256(abi.encodePacked(a)); }
+    function peek() external view returns (uint256) { return uint256(keccak256(abi.encodePacked(block.timestamp))) % 10; }
+  }`;
+  assert.ok(!detectors(safe).includes("evm-weak-randomness"));
+  assert.ok(!detectors(`contract L { function f() external { uint x = uint(keccak256(abi.encodePacked(block.timestamp))) % 3; } }`, "solana").includes("evm-weak-randomness"));
+});
