@@ -490,6 +490,24 @@ function reentrancyFinding(source: SourceFile, index: SolidityIndex, fn: Solidit
   });
 }
 
+/**
+ * A state variable that the contract itself treats as the authority (some function or modifier compares
+ * `msg.sender` to it) and that this function sets to the caller with no condition on it. This catches
+ * owner-like roles with unconventional names (`creator`, `manager`) and legacy constructors whose name no
+ * longer matches the contract (Rubixi `DynamicPyramid`). A one-time guard such as `require(creator == address(0))`
+ * mentions the variable in a condition and suppresses the rule.
+ */
+function callerGuardAssignment(index: SolidityIndex, fn: SolidityFunction, write: { variable: string; offset: number; target: string }): boolean {
+  if (write.target !== write.variable) return false;
+  const name = write.variable.replace(/[$]/g, "\\$");
+  const assignedToCaller = new RegExp(`(?<![\\w.])${name}\\s*=\\s*(?:payable\\s*\\(\\s*)?(?:msg\\.sender|_msgSender\\s*\\(\\s*\\))\\s*\\)?\\s*;`);
+  if (!assignedToCaller.test(fn.body)) return false;
+  if (new RegExp(`\\b(?:require|assert|if)\\s*\\([^;{]*\\b${name}\\b`).test(fn.body)) return false;
+  const caller = "(?:msg\\.sender|_msgSender\\s*\\(\\s*\\))";
+  const compared = new RegExp(`${caller}\\s*[!=]=\\s*(?:payable\\s*\\(\\s*)?${name}\\b|\\b${name}\\s*\\)?\\s*[!=]=\\s*${caller}`);
+  return index.functions.some((other) => other !== fn && compared.test(other.body));
+}
+
 /** Public state-changing function that sets privileged state or runs a privileged call with no caller check. */
 function accessControlFinding(source: SourceFile, index: SolidityIndex, fn: SolidityFunction): Finding | undefined {
   if (!isEntrypoint(fn) && !(fn.name === "_authorizeUpgrade")) return undefined;
@@ -513,7 +531,7 @@ function accessControlFinding(source: SourceFile, index: SolidityIndex, fn: Soli
     });
   }
   // Writes keyed by the caller (isOperator[msg.sender][x] = ...) only change the caller's own settings.
-  const write = stateWrites(fn, index.stateVariables).find((item) => PRIVILEGED_STATE.test(item.variable) && !/^\w+\[(msg\.sender|_msgSender\(\))\]/.test(item.target));
+  const write = stateWrites(fn, index.stateVariables).find((item) => (PRIVILEGED_STATE.test(item.variable) || callerGuardAssignment(index, fn, item)) && !/^\w+\[(msg\.sender|_msgSender\(\))\]/.test(item.target));
   const call = fn.body.match(PRIVILEGED_CALL);
   if (!write && !call) return undefined;
   const offset = write ? write.offset : fn.bodyStart + (call?.index ?? 0);

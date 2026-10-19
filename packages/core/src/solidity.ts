@@ -119,11 +119,14 @@ export function indexSolidity(source: string): SolidityIndex {
     const open = (lib.index ?? 0) + lib[0].length - 1;
     libraries.push([open, matchBrace(code, open)]);
   }
-  const header = /\b(function\s+([A-Za-z_]\w*)|receive|fallback|constructor|modifier\s+([A-Za-z_]\w*))\s*\(/g;
+  // Pre-0.5 code writes `modifier onlyOwner { ... }` with no parentheses, so the opening paren is optional there.
+  const header = /\b(function\s+([A-Za-z_]\w*)|receive|fallback|constructor|modifier\s+([A-Za-z_]\w*))\s*(\(|(?=\{))/g;
   for (const match of code.matchAll(header)) {
     const start = match.index ?? 0;
+    const noParens = match[4] === "";
+    if (noParens && !match[3]) continue;
     const parenOpen = start + match[0].length - 1;
-    const parenClose = matchParen(code, parenOpen);
+    const parenClose = noParens ? start + match[0].length : matchParen(code, parenOpen);
     // Header runs until the body brace or a ';' (interface / abstract declaration).
     let cursor = parenClose;
     while (cursor < code.length && code[cursor] !== "{" && code[cursor] !== ";") cursor += 1;
@@ -137,7 +140,7 @@ export function indexSolidity(source: string): SolidityIndex {
     const visibility = (words.find((word) => ["public", "external", "internal", "private"].includes(word)) as SolidityFunction["visibility"] | undefined)
       ?? (kind === "receive" || kind === "fallback" ? "external" : kind === "modifier" ? "internal" : "public");
     const mutability = (words.find((word) => ["view", "pure", "payable"].includes(word)) as SolidityFunction["mutability"] | undefined) ?? "nonpayable";
-    const params = code.slice(parenOpen + 1, parenClose - 1)
+    const params = (noParens ? "" : code.slice(parenOpen + 1, parenClose - 1))
       .split(",")
       .map((param) => param.trim().split(/\s+/).at(-1) ?? "")
       .filter((param) => /^[A-Za-z_]\w*$/.test(param));

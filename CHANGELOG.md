@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- `evm-missing-access-control` now also flags a public function that sets a caller-compared role variable (`creator`, `manager`) to `msg.sender`, covering legacy mis-named constructors (Rubixi, wallet_03); the indexer reads paren-less `modifier name {`. SmartBugs access_control 11/18 to 13/18; 0 findings on 302 clean files.
 - Add `scripts/bench-clean.ts`: reproducible false-positive check on pinned OpenZeppelin, Uniswap v3-core and solmate (302 files, 0 findings; `mocks/` skipped), exits non-zero on any finding.
 - New detector `evm-unchecked-arithmetic` (medium): unchecked `+ - *` on a caller-supplied operand under a pre-0.8 pragma without SafeMath. SmartBugs arithmetic 14/15 files (also fires broadly on other old contracts, see docs/eval.md); 0 findings on OpenZeppelin, v3-core, solmate.
 - New detector `evm-dos-unbounded-payout-loop` (medium): public function loops over a storage array with a per-element transfer/send/call. SmartBugs denial_of_service: see docs/eval.md.
