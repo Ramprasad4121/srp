@@ -27,3 +27,11 @@ test("action.yml wires the CLI, SARIF upload and exit code", () => {
   }
   assert.ok(!/\bnpx\b/.test(text), "action must not depend on an npm publish");
 });
+
+test("action.yml has no unquoted plain scalar containing a colon (GitHub rejects it)", () => {
+  const lines = readFileSync(new URL("action.yml", root), "utf8").split("\n");
+  for (const [i, line] of lines.entries()) {
+    const m = line.match(/^\s*(?:- )?[A-Za-z_-]+:\s+([^"'|>\s].*)$/);
+    if (m && /: /.test(m[1]) && !/^\$\{\{/.test(m[1])) assert.fail(`action.yml line ${i + 1} has an unquoted value with ": ": ${line.trim()}`);
+  }
+});

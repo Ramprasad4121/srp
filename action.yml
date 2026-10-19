@@ -19,7 +19,7 @@ inputs:
     description: Where to write the SARIF report.
     default: srp.sarif
   upload-sarif:
-    description: Upload the SARIF report to GitHub code scanning (needs `security-events: write`).
+    description: "Upload the SARIF report to GitHub code scanning (needs security-events write permission)."
     default: "true"
 
 outputs:
