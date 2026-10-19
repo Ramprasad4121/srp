@@ -25,6 +25,24 @@ jobs:
           set +e; node apps/cli/src/cli.ts scan /tmp/fx; code=$?; set -e
           test "$code" = 1
 
+  action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Action scans a vulnerable fixture and fails on it
+        run: |
+          mkdir -p fx/src && printf 'contract A { mapping(address => uint256) b; function w() external { (bool ok,) = msg.sender.call{value: b[msg.sender]}(""); require(ok); b[msg.sender] = 0; } }' > fx/src/A.sol
+      - id: srp
+        uses: ./
+        continue-on-error: true
+        with:
+          path: fx
+          upload-sarif: "false"
+      - name: Expect exit code 1 and a SARIF file
+        run: |
+          test "${{ steps.srp.outputs.exit-code }}" = 1
+          grep -q '"version": "2.1.0"' srp.sarif
+
   docker:
     runs-on: ubuntu-latest
     steps:
