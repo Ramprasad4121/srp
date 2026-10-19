@@ -24,6 +24,7 @@ None of these execute code. A finding is a lead with cited lines, not a proof. S
 | `evm-oracle-stale-price` | pattern | `latestRoundData(` | any comparison on `updatedAt` |
 | `evm-tx-origin-auth` | pattern | `tx.origin ==` / `!=` | |
 | `evm-unchecked-arithmetic` | pattern | `+= -= *=` or `a op b` using a function parameter or `msg.value`, in a state-changing function of a file with a pre-0.8 pragma and no SafeMath | Does not model bounds checks beyond lowering confidence when a `require(... >= ...)` exists; fires on bounded operands |
+| `evm-dos-unbounded-payout-loop` | structural | public/external function with `for (...; i < arr.length; ...)` over a storage array and a `transfer`/`send`/`call`/`safeTransfer` inside the loop | Does not fire for loops bounded by a parameter or constant, or over memory arrays. Cannot see an off-chain cap on array growth |
 | `evm-weak-randomness` | pattern | hash or `%` over `block.timestamp`/`number`/`blockhash`/`difficulty`/`prevrandao`/`now` in a state-changing function | Also fires on benign uses such as nonces or salts; review the line |
 | `evm-signature-replay` | pattern, function-aware | `ecrecover`, `ECDSA.recover`, `SignatureChecker.isValid` inside a state-changing, non-library function | `nonce`, used-signature or used-digest maps; view/pure helpers and libraries |
 | `evm-erc4626-donation-inflation` | pattern | `balanceOf(address(this))` in a file with ERC4626 share math | `_decimalsOffset`, virtual or dead shares |
