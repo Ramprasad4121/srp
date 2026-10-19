@@ -239,3 +239,28 @@ test("the same gap across many files is one grouped unknown with a file list", (
   assert.equal(imports.length, 1);
   assert.deepEqual(imports[0]?.files, ["A.sol", "B.sol", "C.sol"]);
 });
+
+test("missing access control: public function that sets a caller-compared role (creator) is flagged, including paren-less legacy modifiers", () => {
+  const wallet = `pragma solidity ^0.4.24;
+  contract Wallet {
+    address creator;
+    function initWallet() public { creator = msg.sender; }
+    function migrate(address to) public { require(msg.sender == creator); to.transfer(this.balance); }
+  }`;
+  assert.ok(ids(wallet).includes("evm-missing-access-control"));
+  const rubixi = `pragma solidity ^0.4.15;
+  contract Rubixi {
+    address private creator;
+    function DynamicPyramid() { creator = msg.sender; }
+    modifier onlyowner { if (msg.sender == creator) _; }
+    function collectAllFees() onlyowner { creator.transfer(1); }
+  }`;
+  assert.ok(ids(rubixi).includes("evm-missing-access-control"));
+});
+
+test("missing access control: caller assignment is not flagged when guarded, one-time-initialised, or not an authority variable", () => {
+  const guarded = `contract A { address creator; function setCreator() public onlyOwner { creator = msg.sender; } function g() public { require(msg.sender == creator); } modifier onlyOwner { require(msg.sender == creator); _; } }`;
+  const once = `contract B { address creator; function init() public { require(creator == address(0)); creator = msg.sender; } function g() public { require(msg.sender == creator); } }`;
+  const unrelated = `contract C { address lastCaller; function ping() public { lastCaller = msg.sender; } }`;
+  for (const src of [guarded, once, unrelated]) assert.ok(!ids(src).includes("evm-missing-access-control"));
+});
