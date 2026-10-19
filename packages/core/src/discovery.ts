@@ -336,8 +336,47 @@ function structuralEvm(source: SourceFile): Finding[] {
     if (arbitrary) out.push(arbitrary);
     const unchecked = uncheckedLowLevelCallFinding(source, index, fn);
     if (unchecked) out.push(unchecked);
+    const dos = unboundedPayoutLoopFinding(source, index, fn);
+    if (dos) out.push(dos);
   }
   return out;
+}
+
+/**
+ * Denial of service by unbounded iteration: a public/external state-changing function loops over a
+ * storage array (`i < arr.length`) and makes an ETH transfer/send/external call per element. The array
+ * grows without a cap, so one failing recipient or enough entries to exceed the block gas limit
+ * freezes the whole payout. Only storage arrays count (a state variable), and the loop body must
+ * contain a per-element transfer/send/call; a loop bounded by a constant or a parameter does not match.
+ */
+function unboundedPayoutLoopFinding(source: SourceFile, index: SolidityIndex, fn: SolidityFunction): Finding | undefined {
+  if (fn.inLibrary || fn.kind === "constructor" || !isEntrypoint(fn)) return undefined;
+  const loop = /\bfor\s*\(([^;{}]*);([^;{}]*);([^{}]*?)\)\s*\{/g;
+  for (const match of fn.body.matchAll(loop)) {
+    const array = /\b([A-Za-z_]\w*)\s*\.\s*length\b/.exec(match[2]);
+    if (!array || !index.stateVariables.includes(array[1]!)) continue;
+    const open = (match.index ?? 0) + match[0].length - 1;
+    const close = matchBrace(fn.body, open);
+    if (close < 0) continue;
+    const inner = fn.body.slice(open, close + 1);
+    const payout = /\.\s*(transfer|send)\s*\(|\.\s*call\s*(?:\{|\.\s*value\s*\()|\.\s*safeTransfer(?:From)?\s*\(|\bsendValue\s*\(/.exec(inner);
+    if (!payout) continue;
+    const line = index.lineAt(fn.bodyStart + (match.index ?? 0));
+    return makeFinding({
+      detector: "evm-dos-unbounded-payout-loop",
+      title: `Unbounded payout loop: ${fn.name} pays every entry of ${array[1]} in one transaction`,
+      severity: "medium",
+      impact: "The array only grows, so once it is long enough the loop exceeds the block gas limit and the function can never succeed again. A single recipient that reverts on receipt (a contract with a rejecting fallback) also blocks every payout behind it.",
+      remediation: "Switch to pull payments (each recipient withdraws their own balance), or process in bounded batches with a stored cursor, and never let one failed transfer revert the whole loop.",
+      confidence: 0.55,
+      chain: "evm",
+      file: source.path,
+      evidence: [evidenceAt(source.path, source.content, line, `Loop over storage array ${array[1]}.length with a per-element ${payout[1] ?? "external call"} inside ${fn.name}.`, "srp-structural", "evm-dos-unbounded-payout-loop", "observed")],
+      context: context(fn, [`L${line}: loop bound is ${array[1]}.length (storage)`, "Per-element ETH or token transfer inside the loop", "No visible cap on the array size or batch cursor"]),
+      attackPath: [`Attacker adds many entries to ${array[1]} or registers a contract that reverts on receipt`, `${fn.name} iterates ${array[1]} and hits the gas limit or the reverting recipient`, "The transaction reverts every time", "Funds held by the contract for this flow are stuck"]
+    });
+  }
+  return undefined;
 }
 
 /**

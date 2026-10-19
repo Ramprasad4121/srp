@@ -6,6 +6,7 @@ export const DETECTORS: Array<{ id: string; chain: "evm" | "solana"; analyzer: s
   { id: "evm-arbitrary-delegatecall", chain: "evm", analyzer: "srp-structural", severity: "critical", summary: "delegatecall to a caller-supplied address." },
   { id: "evm-arbitrary-external-call", chain: "evm", analyzer: "srp-structural", severity: "critical", summary: "Call with caller-chosen target and calldata." },
   { id: "evm-unchecked-low-level-call", chain: "evm", analyzer: "srp-structural", severity: "medium", summary: "Return value of call/send/delegatecall discarded." },
+  { id: "evm-dos-unbounded-payout-loop", chain: "evm", analyzer: "srp-structural", severity: "medium", summary: "Public function loops over a storage array and transfers per element, so growth or one reverting recipient blocks it." },
   { id: "evm-weak-randomness", chain: "evm", analyzer: "srp-pattern", severity: "medium", summary: "Randomness derived from block timestamp, number, blockhash or difficulty." },
   { id: "evm-unchecked-arithmetic", chain: "evm", analyzer: "srp-pattern", severity: "medium", summary: "Unchecked + - * on a pre-0.8 compiler without SafeMath." },
   { id: "evm-oracle-manipulation", chain: "evm", analyzer: "srp-pattern", severity: "high", summary: "Price from AMM spot reserves." },

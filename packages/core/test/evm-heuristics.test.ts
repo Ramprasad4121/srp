@@ -252,3 +252,17 @@ test("unchecked arithmetic: fires on pre-0.8 compound assignment, silent with Sa
   assert.ok(!detectors(old.replace("contract T {", "contract T { using SafeMath for uint;")).includes("evm-unchecked-arithmetic"));
   assert.ok(!detectors(`pragma solidity ^0.4.25; contract V { function f(uint a, uint b) public pure returns (uint) { uint c = a + b; return c; } function g() public { uint i = 0; i += 1; } }`).includes("evm-unchecked-arithmetic"));
 });
+
+test("dos payout loop: flags storage-array loop with per-element transfer, silent on bounded or memory loops", () => {
+  const bad = `contract Refund { address[] refundAddresses; mapping(address=>uint) refunds;
+    function refundAll() public { for (uint x; x < refundAddresses.length; x++) { require(refundAddresses[x].send(refunds[refundAddresses[x]])); } } }`;
+  assert.ok(detectors(bad).includes("evm-dos-unbounded-payout-loop"));
+  const pull = `contract Pull { mapping(address=>uint) refunds;
+    function withdraw() public { uint a = refunds[msg.sender]; refunds[msg.sender] = 0; payable(msg.sender).transfer(a); } }`;
+  assert.ok(!detectors(pull).includes("evm-dos-unbounded-payout-loop"));
+  const batch = `contract B { address[] list;
+    function pay(address[] memory to) public { for (uint i = 0; i < to.length; i++) { payable(to[i]).transfer(1); } }
+    function sum() public { uint t; for (uint i = 0; i < list.length; i++) { t += i; } }
+    function view1() public view returns (uint) { uint t; for (uint i = 0; i < list.length; i++) { t += 1; } return t; } }`;
+  assert.ok(!detectors(batch).includes("evm-dos-unbounded-payout-loop"));
+});
