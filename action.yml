@@ -1,0 +1,65 @@
+name: SRP Web3 security scan
+description: Deterministic, offline security scan for Solidity (Foundry, Hardhat) and Anchor projects. Uploads SARIF to GitHub code scanning and fails the job on findings at or above a severity.
+author: Ramprasad4121
+branding:
+  icon: shield
+  color: gray-dark
+
+inputs:
+  path:
+    description: Project directory to scan, relative to the workspace.
+    default: "."
+  fail-on:
+    description: Fail the job if a finding is at or above this severity (none, low, medium, high, critical).
+    default: high
+  chain:
+    description: Force a chain (ethereum or solana). Default is detected from Anchor.toml or Cargo.toml.
+    default: ""
+  sarif-file:
+    description: Where to write the SARIF report.
+    default: srp.sarif
+  upload-sarif:
+    description: "Upload the SARIF report to GitHub code scanning (needs security-events write permission)."
+    default: "true"
+
+outputs:
+  sarif-file:
+    description: Path of the SARIF report.
+    value: ${{ inputs.sarif-file }}
+  exit-code:
+    description: "SRP exit code: 0 clean, 1 findings at or above fail-on, 2 usage error. Not set when the job fails; use the step outcome."
+    value: ${{ steps.scan.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 24
+    - id: scan
+      shell: bash
+      env:
+        SRP_PATH: ${{ inputs.path }}
+        SRP_FAIL_ON: ${{ inputs.fail-on }}
+        SRP_CHAIN: ${{ inputs.chain }}
+        SRP_SARIF: ${{ inputs.sarif-file }}
+      run: |
+        args=(scan "$SRP_PATH" --format sarif --out "$SRP_SARIF" --fail-on "$SRP_FAIL_ON")
+        if [ -n "$SRP_CHAIN" ]; then args+=(--chain "$SRP_CHAIN"); fi
+        set +e
+        node "$GITHUB_ACTION_PATH/apps/cli/src/cli.ts" "${args[@]}"
+        code=$?
+        set -e
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+    - if: ${{ inputs.upload-sarif == 'true' && steps.scan.outputs.exit-code != '2' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.sarif-file }}
+        category: srp
+    - if: ${{ steps.scan.outputs.exit-code != '0' }}
+      shell: bash
+      env:
+        CODE: ${{ steps.scan.outputs.exit-code }}
+      run: |
+        echo "SRP exited with $CODE (1 = findings at or above fail-on, 2 = usage error). See the SARIF report or code scanning alerts."
+        exit "$CODE"

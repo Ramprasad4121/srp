@@ -22,7 +22,7 @@ Security Reasoning Protocol (SRP) is an agent-native Web3 security scanner for E
 
 - No LLM reasoning inside SRP. Every step is deterministic and offline; agents call SRP as a tool. Optional model-backed triage (bring your own key) is on the roadmap.
 - No exploit execution inside SRP. Run the generated harness with `forge test` and attach the result.
-- No cross-file analysis (inheritance, imports, cross-contract calls).
+- Cross-file analysis resolves `is Parent` chains and modifiers by name across files; cross-contract call graphs, remappings and solc AST are not built.
 - The agent registry and orchestration engine exist as a library but the audit pipeline does not run through them yet.
 - MCP adapters, PostgreSQL / Redis storage, and real identity are not built; demo tokens and a JSON file store are for local use only.
 
@@ -36,6 +36,8 @@ node apps/cli/src/cli.ts scan path/to/your/foundry-or-anchor-project
 node apps/cli/src/cli.ts scan . --format sarif --out srp.sarif   # GitHub code scanning
 node apps/cli/src/cli.ts mcp                                     # MCP server for AI agents
 ```
+
+GitHub Action (SARIF to code scanning, fails on high): [docs/github-action.md](docs/github-action.md). Rules files that make Claude Code, Cursor and Codex scan the contracts they write: [docs/agent-rules](docs/agent-rules/README.md).
 
 See [docs/cli.md](docs/cli.md) and [docs/mcp.md](docs/mcp.md).
 
