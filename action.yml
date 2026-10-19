@@ -27,7 +27,7 @@ outputs:
     description: Path of the SARIF report.
     value: ${{ inputs.sarif-file }}
   exit-code:
-    description: "SRP exit code: 0 clean, 1 findings at or above fail-on, 2 usage error."
+    description: "SRP exit code: 0 clean, 1 findings at or above fail-on, 2 usage error. Not set when the job fails; use the step outcome."
     value: ${{ steps.scan.outputs.exit-code }}
 
 runs:

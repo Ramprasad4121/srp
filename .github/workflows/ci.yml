@@ -38,9 +38,9 @@ jobs:
         with:
           path: fx
           upload-sarif: "false"
-      - name: Expect exit code 1 and a SARIF file
+      - name: Expect the action to fail on the finding and leave a SARIF file
         run: |
-          test "${{ steps.srp.outputs.exit-code }}" = 1
+          test "${{ steps.srp.outcome }}" = failure
           grep -q '"version": "2.1.0"' srp.sarif
 
   docker:
