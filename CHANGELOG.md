@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Config and suppressions: optional `srp.config.json` (`ignorePaths`, `disabledDetectors`, `severityOverrides`, validated) and inline `// srp-ignore <detector>: reason` comments. Suppressed findings are reported as low residual unknowns, never silent. CLI only for now. See docs/cli.md.
 - Add `action.yml` (composite GitHub Action: scan, SARIF upload to code scanning, fail on `fail-on`), docs/github-action.md, and agent rules files for Claude Code, Codex/AGENTS.md and Cursor in docs/agent-rules/ (a test checks they only name real MCP tools). README no longer says there is no cross-file analysis.
 - `evm-missing-access-control` now also flags a public function that sets a caller-compared role variable (`creator`, `manager`) to `msg.sender`, covering legacy mis-named constructors (Rubixi, wallet_03); the indexer reads paren-less `modifier name {`. SmartBugs access_control 11/18 to 13/18; 0 findings on 302 clean files.
 - Add `scripts/bench-clean.ts`: reproducible false-positive check on pinned OpenZeppelin, Uniswap v3-core and solmate (302 files, 0 findings; `mocks/` skipped), exits non-zero on any finding.

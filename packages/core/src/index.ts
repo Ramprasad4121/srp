@@ -14,3 +14,4 @@ export * from "./capabilities.ts";
 export * from "./catalog.ts";
 export * from "./export.ts";
 export * from "./project.ts";
+export * from "./config.ts";

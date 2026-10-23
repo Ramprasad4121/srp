@@ -100,3 +100,16 @@ test("doctor, explain, verify-bundle, help", async () => {
   assert.match((await run("explain", "solana-missing-signer")).out, /Authority account is not required to sign/);
   assert.match((await run("help")).out, /srp scan/);
 });
+
+test("scan: srp.config.json is picked up and reported, bad config exits 2", async () => {
+  mkdirSync(join(dir, "configured"), { recursive: true });
+  writeFileSync(join(dir, "configured", "EtherStore.sol"), ETHER_STORE);
+  assert.equal((await run("scan", join(dir, "configured"))).code, 1);
+  writeFileSync(join(dir, "configured", "srp.config.json"), JSON.stringify({ disabledDetectors: ["evm-reentrancy-external-call"] }));
+  const result = await run("scan", join(dir, "configured"), "--format", "summary");
+  assert.equal(result.code, 0);
+  assert.ok(JSON.parse(result.out).unknowns.some((u: { reason: string }) => u.reason.includes("Suppressed")));
+  writeFileSync(join(dir, "configured", "srp.config.json"), JSON.stringify({ nope: 1 }));
+  assert.equal((await run("scan", join(dir, "configured"))).code, 2);
+  assert.equal((await run("scan", join(dir, "configured"), "--config", join(dir, "missing.json"))).code, 2);
+});

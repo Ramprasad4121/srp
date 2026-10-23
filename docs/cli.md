@@ -16,6 +16,22 @@ npm run scan -- path/to/project --format sarif --out srp.sarif
 - Files over 1 MB or past 2,000 files are skipped and listed as residual unknowns, never silently dropped.
 - The project README is read as a protocol document for intent extraction.
 
+## Config and suppressions
+
+Optional `srp.config.json` in the project root (or `--config <file>`). Unknown keys and bad values exit 2.
+
+```json
+{
+  "ignorePaths": ["src/legacy/**", "*.generated.sol"],
+  "disabledDetectors": ["evm-weak-randomness"],
+  "severityOverrides": { "evm-unchecked-arithmetic": "low" }
+}
+```
+
+Inline, on the finding's line or the line above: `// srp-ignore evm-reentrancy-external-call: guarded by the pause flag`. Several detectors can be comma separated.
+
+Suppression is never silent. Every suppressed finding is dropped from the findings and added as a low residual unknown that names the detector, location and reason, so reports and SARIF still show what was waved through. `severityOverrides` changes the proposed severity, so it also changes the `--fail-on` gate. The MCP server and API do not read the config yet.
+
 ## Output
 
 | `--format` | Use |

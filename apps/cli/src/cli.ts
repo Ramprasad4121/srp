@@ -1,10 +1,13 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, statSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import {
   CHAINS,
   DETECTORS,
   SRP_VERSION,
+  applyConfig,
   capabilities,
+  loadConfig,
   exceedsThreshold,
   loadProject,
   renderAuditReport,
@@ -25,6 +28,7 @@ Usage:
       --out <file>           write output to a file instead of stdout
       --fail-on <severity>   exit 1 if a finding is at or above: none | low | medium | high | critical (default: high)
       --include-tests        also scan test/, script/, mocks
+      --config <file>        config file (default: srp.config.json in the project, if present)
   srp doctor [--json]        Analyzers, detectors, and local tools available
   srp explain <detector>     What a detector looks for
   srp verify-bundle <file>   Check an evidence bundle's schema and digest
@@ -105,8 +109,11 @@ export async function main(argv: string[], io = { out: (value: string) => proces
       if (!["text", "json", "summary", "sarif", "md"].includes(format)) throw new UsageError("--format must be text, json, summary, sarif, or md");
       const failOn = String(flags["fail-on"] ?? "high");
       const project = loadProject(rest[0] ?? ".", { chain, includeTests: Boolean(flags["include-tests"]) });
-      const report = runAudit(project.input);
-      report.unknowns.push(...project.skipped);
+      const rawReport = runAudit(project.input);
+      rawReport.unknowns.push(...project.skipped);
+      const projectDir = statSync(rest[0] ?? ".").isDirectory() ? (rest[0] ?? ".") : dirname(rest[0] ?? ".");
+      const config = loadConfig(projectDir, typeof flags.config === "string" ? flags.config : undefined);
+      const report = config || project.input.sources.some((source) => source.content.includes("srp-ignore")) ? applyConfig(rawReport, project.input.sources, config) : rawReport;
       const output = format === "json" ? JSON.stringify(report, null, 2)
         : format === "summary" ? JSON.stringify(summarizeReport(report), null, 2)
         : format === "sarif" ? JSON.stringify(toSarif(report), null, 2)
